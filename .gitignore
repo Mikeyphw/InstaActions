@@ -1,0 +1,28 @@
+# Android/Gradle outputs (R0 onwards)
+.gradle/
+build/
+**/build/
+local.properties
+*.apk
+*.aab
+*.keystore
+*.jks
+*.log
+
+# IDE/OS
+.idea/
+*.iml
+.DS_Store
+
+# Python caches
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# Sensitive data and artifacts
+.env
+.env.*
+secrets/
+logs/
+artifacts/
+.devtool/private/
