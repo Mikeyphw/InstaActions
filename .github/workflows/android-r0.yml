@@ -1,0 +1,57 @@
+name: R0 Android API 102
+on:
+  push:
+    paths:
+      - 'app/**'
+      - 'tools/**'
+      - '.github/workflows/android-r0.yml'
+      - 'gradle.properties'
+      - 'settings.gradle'
+      - 'build.gradle'
+      - 'project.json'
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ina-r0-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android platform 36
+        run: sdkmanager --install 'platforms;android-36' 'build-tools;35.0.0'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: JVM tests, Android debug APK and instrumentation APK
+        run: |
+          gradle --no-daemon --stacktrace \
+            :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest
+      - name: Verify actual APK metadata and Xposed contract
+        run: |
+          python3 tools/verify_r0_apk.py \
+            --apk app/build/outputs/apk/debug/app-debug.apk \
+            --test-apk app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+      - name: SHA-256 provenance
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/debug/app-debug.apk dist/InstaActions-r0-debug.apk
+          cp app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk dist/InstaActions-r0-androidTest.apk
+          (cd dist && sha256sum *.apk > SHA256SUMS)
+          cat dist/SHA256SUMS
+      - name: Upload debug APK and instrumented test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: InstaActions-R0-${{ github.sha }}
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14

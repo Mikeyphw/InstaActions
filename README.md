@@ -1,38 +1,38 @@
 # InstaActions
 
-A private, standalone Instagram quick-actions module intended to coexist with InstaEclipse.
+A private, standalone Android Xposed module for **personal** Instagram shortcuts,
+designed to coexist with [InstaEclipse](https://github.com/ReSo7200/InstaEclipse).
 
-**Status:** Repository bootstrap only. No installable APK or functional hooks exist yet.
+**Status: R0 source implemented; hosted Gradle and device acceptance pending.**
+No Instagram action hooks, UI injection, DMs, comments or repost modifications exist yet.
 
-## Target platform
+## Architecture and compatibility
 
-- Android 16; rooted device with KernelSU and Vector 2.2+ (libxposed API 102).
-- Default scope: `com.instagram.android` only.
-- InstaEclipse v0.8.2 coexistence is a required acceptance test, **not yet verified**.
-- Instagram 451.0.0.20.80 is InstaEclipse's documented tested baseline; version 453 requires explicit qualification.
-- Instagram Lite is a separate research track and is not initially supported.
-- All Android Gradle builds and instrumentation builds happen via GitHub Actions, not on Termux.
+- Android 16 target, minSdk 28; package `com.mikeyphw.instaactions`.
+- Modern libxposed API **102** / Vector **2.2+**.
+- Default scope: `com.instagram.android` main process only.
+- InstaEclipse independently installed/enabled; no shared preferences, classes or
+  UI gestures are modified by InstaActions.
+- Instagram 451.0.0.20.80 baseline, 453.0.0.0.56 experimental until real testing.
+- Instagram Lite is out of scope for R0.
 
-## Repository documents
+## R0 deliverables
 
-- [ROADMAP.md](ROADMAP.md) — milestones, gates and scope.
-- [Architecture](docs/ARCHITECTURE.md) — module boundaries, permissions and interaction model.
-- [Compatibility](docs/COMPATIBILITY.md) — precise supported/experimental status.
-- [Test Plan](docs/TEST_PLAN.md) — hosted and device acceptance.
-- [Hook Inventory](docs/HOOK_INVENTORY.md) — hook discovery ledger template.
-- [Security](docs/SECURITY.md) — constraints around contacts, comment submission and logs.
+- Companion app with installed-version indicators, precise scope and honest module-status labeling.
+- No-op `InstaActionsEntry` with logcat `INA_R0_PACKAGE_READY` (only if Vector invokes it).
+- Modern `META-INF/xposed` manifest/scope/entry metadata, no legacy API 82 entry.
+- JVM tests, instrumentation APK, hosted CI, APK metadata validator and SHA-256 output.
+- No permissions for internet, contacts, storage, messages or arbitrary package enumeration.
 
-## Development branches
+## Build and acceptance
 
-`main` is the baseline branch. Milestones are implemented on isolated `feature/ina-rN-*` branches, followed by a PR, Actions evidence and device acceptance. Consolidated Devtool overlays may be used as the delivery mechanism, but overlays must be source-bound and contain tests and a complete manifest.
+Android Gradle builds happen exclusively in GitHub Actions. Do **not** run Gradle
+locally on Termux. See [docs/BUILD.md](docs/BUILD.md) and
+[docs/R0_DEVICE_ACCEPTANCE.md](docs/R0_DEVICE_ACCEPTANCE.md).
 
-## Current CI
+Documentation:
+[ROADMAP](ROADMAP.md) · [Architecture](docs/ARCHITECTURE.md) ·
+[Compatibility](docs/COMPATIBILITY.md) · [Security](docs/SECURITY.md) ·
+[R0 execution](docs/R0_EXECUTION.md).
 
-The repository bootstrap CI verifies documentation and project configuration **only**. The Android module and its hosted Gradle workflows are delivered in R0; bootstrap CI passing must not be described as APK qualification.
-
-## Upstream reference
-
-- https://github.com/ReSo7200/InstaEclipse
-- https://libxposed.github.io/api/io/github/libxposed/api/package-summary.html
-
-Not affiliated with Instagram, Meta or InstaEclipse. No upstream source should be copied into this private repository without a deliberate license review.
+Independent from Meta, Instagram and InstaEclipse. Not a general mass-automation tool.

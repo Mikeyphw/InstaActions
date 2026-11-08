@@ -1,0 +1,11 @@
+[project]
+runner = "android"
+platform = "android"
+
+[workspace]
+default_target = "instaactions"
+
+[targets.instaactions]
+runner = "android"
+platform = "android"
+root = "."

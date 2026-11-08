@@ -15,7 +15,7 @@
 
 InstaActions must never hook InstaEclipse package methods, reuse its preferences or inject into its companion UI. Treat both as peers coexisting in Instagram. Detect potential duplicate controls for user messaging, but do not modify InstaEclipse runtime configuration automatically. Reserve the existing Explore long-press gesture for InstaEclipse.
 
-## API 102 metadata planned for R0
+## API 102 metadata implemented in R0 source
 
 - `app/src/main/resources/META-INF/xposed/java_init.list`: fully-qualified modern `XposedModule` subclass.
 - `app/src/main/resources/META-INF/xposed/module.prop`: `minApiVersion=102`, `targetApiVersion=102` and explicit options.
@@ -23,7 +23,7 @@ InstaActions must never hook InstaEclipse package methods, reuse its preferences
 - `android:label` and `android:description`: module name/description.
 - `compileOnly('io.github.libxposed:api:102.0.0')`.
 
-These paths describe the required R0 implementation. **They are not included in the repository bootstrap.**
+These paths are included in the R0 overlay. Verification inside the assembled APK is pending hosted CI.
 
 ## Hooking rules
 

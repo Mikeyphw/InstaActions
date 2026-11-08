@@ -1,16 +1,24 @@
-# R0 execution checklist (feature branch)
+# R0 execution — API 102 foundation
 
-This file is introduced on the first R0 feature branch to make it independently reviewable from main.
+## Implemented in R0 overlay (still subject to hosted proof)
 
-- [ ] Choose compatible AGP / Gradle / JDK versions and lock them for hosted Actions.
-- [ ] Implement Android app manifest, companion launch activity and module branding.
-- [ ] Wire libxposed API 102 via `compileOnly` dependency; avoid legacy module init accidentally loading.
-- [ ] Package `META-INF/xposed/java_init.list`, `scope.list`, `module.prop` and verify them inside APK.
-- [ ] Restrict target scope/process to `com.instagram.android` and add no-op hook lifecycle.
-- [ ] Add safe capability/debug screen that does not collect sensitive content.
-- [ ] Add JVM tests and hosted build workflow with APK/checksum artifact upload.
-- [ ] Build instrumentation test APK in Actions and add emulator smoke where practical.
-- [ ] Install APK on target Vector device with InstaEclipse also enabled and record results.
-- [ ] Report SHA, workflow run ID, package/version checks and actual real-device PASS/FAIL.
+- [x] Select AGP 8.13.2, Gradle 8.13, JDK 17 for hosted builds.
+- [x] Implement Android app manifest, companion activity and branding.
+- [x] Wire `compileOnly` libxposed API 102 with modern entry only.
+- [x] Package `META-INF/xposed` metadata and add hosted APK verification.
+- [x] Restrict entry to Instagram main process and install no hooks.
+- [x] Display truthful package diagnostics without exposing private content.
+- [x] Add pure JVM unit tests and instrumentation test APK build.
+- [x] Add GitHub Actions build, SHA-256 inventory and debug artifact retention.
 
-Do not close R0 on repository-contract checks alone.
+## Pending evidence (DO NOT mark R0 complete yet)
+
+- [ ] Hosted Gradle compile/unit tests/assemble debug pass.
+- [ ] APK verified by `aapt` and metadata verifier in Actions.
+- [ ] Commit SHA and hosted workflow run ID recorded.
+- [ ] APK installed in Vector 2.2+ on target real device.
+- [ ] Both InstaActions and InstaEclipse enabled on same Instagram scope.
+- [ ] `INA_R0_PACKAGE_READY` observed after Instagram launch; Instagram remains stable.
+- [ ] Compatibility matrix updated with actual device results.
+
+Strict completion gate: hosted CI **and** device acceptance evidence.

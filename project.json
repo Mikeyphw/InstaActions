@@ -9,7 +9,9 @@
   "android_target_sdk": 36,
   "ci_build_policy": "github-actions-only",
   "instaeclipse_integration": "independent-coexistence",
-  "phase": "bootstrap",
-  "r0_android_project_implemented": false,
-  "private_personal_use": true
+  "phase": "r0",
+  "r0_android_project_implemented": true,
+  "private_personal_use": true,
+  "ci_android_workflow": "android-r0.yml",
+  "module_version": "0.1.0-r0"
 }
