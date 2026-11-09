@@ -10,7 +10,7 @@ class R1BRuntimeDiagnosticsContract(unittest.TestCase):
         s = JAVA.read_text(encoding='utf-8')
         assert s.index('INA_DIAG_MODULE_LOADED') < s.index('getModuleApplicationInfo()')
         self.assertIn('Log.i(DIAGNOSTIC_TAG, event)', s)
-        self.assertIn('log(Log.INFO, DIAGNOSTIC_TAG, event)', s)
+        self.assertIn('log(Log.INFO, null, event)', s)
         self.assertIn('onPackageLoaded(PackageLoadedParam param)', s)
         self.assertIn('onPackageReady(PackageReadyParam param)', s)
         self.assertIn('INA_DIAG_PACKAGE_LOADED', s)
@@ -33,8 +33,8 @@ class R1BRuntimeDiagnosticsContract(unittest.TestCase):
 
     def test_bumped_version_and_diagnostics_doc(self):
         gradle = (ROOT/'app/build.gradle').read_text()
-        self.assertIn('versionCode 4',gradle)
-        self.assertIn("versionName '0.3.1-r1b-hf01'",gradle)
+        self.assertIn('versionCode 5',gradle)
+        self.assertIn("versionName '0.3.2-r1b-hf02'",gradle)
         doc = (ROOT/'docs/R1B_HF01_RUNTIME.md').read_text()
         for key in ('INA_DIAG_MODULE_LOADED', 'INA_DIAG_PACKAGE_READY',
                     'INA_DIAG_HOOKS_INSTALLED', 'INA_DIAG_FIRST_ACTIVITY_RESUMED'):

@@ -36,7 +36,14 @@ crashes/ANRs and install version. Redact private data. Do not claim PASS for med
 identity because this phase does not discover it. Unexpected `UNKNOWN` is a
 valid fail-closed output and a useful sign that a better runtime anchor is needed.
 
-## R1B HF01 diagnostic addendum
+## R1B HF02 capture correction
+
+Use the live logcat capture and Vector module-journal collector in the HF02 delivery.
+Never rely solely on a post-navigation `logcat -d` dump, or grep custom `INA_DIAG` tags in Vector `modules_*.log` when the framework does not route those tags there.
+The HF02 entry uses the VectorContext framework tag for durable diagnostic events, while Android logcat remains `INA_DIAG`.
+R1B acceptance remains NOT_RUN until callback and actual context transitions are recorded.
+
+## Historical HF01 diagnostic addendum
 
 Install the HF01 APK with **uninstall-before-install** because hosted debug
 signatures can differ. Re-enable InstaActions in Vector if uninstall clears its

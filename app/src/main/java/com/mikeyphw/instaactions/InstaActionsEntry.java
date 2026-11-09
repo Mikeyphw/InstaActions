@@ -23,7 +23,10 @@ public final class InstaActionsEntry extends XposedModule {
     private void diagnostic(String event) {
         Log.i(DIAGNOSTIC_TAG, event);
         try {
-            log(Log.INFO, DIAGNOSTIC_TAG, event);
+            // Vector's module journal retains the framework tag "VectorContext",
+            // not arbitrary module tags. Passing null invokes the stable
+            // VectorContext route while Android logcat keeps INA_DIAG.
+            log(Log.INFO, null, event);
         } catch (Throwable loggingUnavailable) {
             // Never interrupt app initialization merely because framework logging failed.
         }
