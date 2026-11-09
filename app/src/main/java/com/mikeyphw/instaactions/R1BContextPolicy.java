@@ -45,9 +45,16 @@ public final class R1BContextPolicy {
         }
         int reels = 0, story = 0, post = 0;
         boolean reelAnchor = false, storyAnchor = false, postAnchor = false;
+        boolean feedRowLike = false, feedRowSave = false, feedMediaGroup = false;
         for (String raw : resourceNames) {
             if (raw == null) continue;
             String id = raw.toLowerCase(Locale.ROOT);
+            // Anchors used in InstaEclipse's FeedVideoDownloadHook and
+            // FeedPhotoZoomHook. Unlike a generic media view, this like-button
+            // ID distinguishes classic Feed rows from Reel and Story controls.
+            if ("row_feed_button_like".equals(id)) feedRowLike = true;
+            if ("row_feed_button_save".equals(id)) feedRowSave = true;
+            if ("media_group".equals(id)) feedMediaGroup = true;
             // Navigation and collapsed story tray are not an active viewer.
             if (id.contains("tab") || id.contains("tray") || id.contains("nav_")
                     || id.contains("thumbnail") || id.contains("badge")
@@ -72,6 +79,15 @@ public final class R1BContextPolicy {
             } else if (containsAny(id, "post_actions", "feed_video", "feed_scroll")) {
                 post++;
             }
+        }
+        // Never infer Feed from a navigation tab, save button or generic media
+        // container alone. Also avoid mistaking a Feed row visible behind an
+        // active full-screen Reels/Stories viewer for the foreground surface.
+        if (feedRowLike && !reelAnchor && !storyAnchor) {
+            post += 5;
+            postAnchor = true;
+            if (feedRowSave) post++;
+            if (feedMediaGroup) post++;
         }
         int max = Math.max(reels, Math.max(story, post));
         if (max < 2) return new Decision(Surface.UNKNOWN, Confidence.NONE,

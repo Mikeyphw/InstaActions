@@ -68,3 +68,18 @@ Expected device flow: `INA_R1B_VERSION` -> `INA_R1B_OBSERVER_ATTACHED` ->
 not a successful determination of screen identity. Capture failure/ANR diagnostics
 without collecting app text or media identifiers. Do not merge without valid
 screen transitions and no regression in InstaEclipse coexistence.
+
+## HF04: unknown Feed resource diagnostics
+
+See `docs/R1B_HF04_FEED_HINTS.md`. `INA_R1B_RESOURCE_HINTS` contains only
+static resource/view type names, capped and sanitized. Capture labeled Feed,
+Reels, Stories, Feed-return evidence. Transient `REELS` on a Story boundary is
+not sufficient for acceptance. No action capabilities may be enabled.
+
+## HF04 source-backed Feed qualifier
+
+Source: InstaEclipse FeedPhotoZoomHook / FeedVideoDownloadHook.
+`row_feed_button_like` provides anchored Feed-row evidence;
+`row_feed_button_save` and `media_group` are only supporting hints.
+Verify Feed → Reels → Stories → Feed on device, checking for transient
+misclassification and ensuring no mutating action is ever enabled.

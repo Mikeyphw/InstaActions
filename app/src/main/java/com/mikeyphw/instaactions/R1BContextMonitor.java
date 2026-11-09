@@ -14,6 +14,7 @@ import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.Window;
 import java.util.ArrayDeque;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -90,6 +91,15 @@ final class R1BContextMonitor {
         private boolean pending;
         private long lastSampleMs;
         private R1BContextPolicy.Decision lastDecision;
+        private int hintsEmitted;
+        private long lastHintMs;
+        private final Runnable hintTimer = () -> {
+            if (active && lastDecision != null
+                    && lastDecision.surface == R1BContextPolicy.Surface.UNKNOWN
+                    && hintsEmitted < R1BResourceDiagnostics.MAX_LOGS_PER_SESSION) {
+                schedule();
+            }
+        };
         private final Runnable sampler = this::sample;
 
         Session(View decor, boolean versionQualified) {
@@ -113,6 +123,7 @@ final class R1BContextMonitor {
             active = false;
             pending = false;
             ui.removeCallbacks(sampler);
+            ui.removeCallbacks(hintTimer);
             if (observer != null && observer.isAlive()) {
                 observer.removeOnGlobalLayoutListener(this);
                 observer.removeOnScrollChangedListener(this);
@@ -139,6 +150,10 @@ final class R1BContextMonitor {
             try {
                 if (!decor.isShown()) return;
                 Set<String> names = new HashSet<>();
+                Map<String, Integer> visibleClasses = new HashMap<>();
+                int visibleNodes = 0;
+                int nodesWithId = 0;
+                int unresolvedIds = 0;
                 ArrayDeque<Node> queue = new ArrayDeque<>();
                 queue.add(new Node(decor, 0));
                 int visited = 0;
@@ -149,8 +164,15 @@ final class R1BContextMonitor {
                     visited++;
                     if (view.getVisibility() != View.VISIBLE || !view.isShown()
                             || !view.getGlobalVisibleRect(bounds)) continue;
+                    visibleNodes++;
+                    String className = view.getClass().getName();
+                    if (visibleClasses.containsKey(className)
+                            || visibleClasses.size() < R1BResourceDiagnostics.MAX_DISTINCT_CLASSES) {
+                        visibleClasses.put(className, visibleClasses.getOrDefault(className, 0) + 1);
+                    }
                     int id = view.getId();
                     if (id != View.NO_ID) {
+                        nodesWithId++;
                         try {
                             Resources resources = view.getResources();
                             if (ModuleConstants.TARGET_PACKAGE.equals(
@@ -159,6 +181,7 @@ final class R1BContextMonitor {
                             }
                         } catch (Resources.NotFoundException ignored) {
                             // Obfuscated or transient resource IDs are not evidence.
+                            unresolvedIds++;
                         }
                     }
                     if (view instanceof ViewGroup && node.depth < R1BContextPolicy.MAX_DEPTH) {
@@ -171,6 +194,25 @@ final class R1BContextMonitor {
                 }
                 R1BContextPolicy.Decision result = R1BContextPolicy.classify(
                         names, !queue.isEmpty());
+                // Diagnostic samples for UNKNOWN screens are independent of context
+                // transitions; cap to three per Activity, >=8 s apart. No view contents.
+                long now = SystemClock.uptimeMillis();
+                if (result.surface == R1BContextPolicy.Surface.UNKNOWN
+                        && hintsEmitted < R1BResourceDiagnostics.MAX_LOGS_PER_SESSION
+                        && (hintsEmitted == 0
+                            || now - lastHintMs >= R1BResourceDiagnostics.HINT_INTERVAL_MS)) {
+                    hintsEmitted++;
+                    lastHintMs = now;
+                    Log.i("INA_R1B", "INA_R1B_RESOURCE_HINTS "
+                            + R1BResourceDiagnostics.summarize(names, visibleClasses,
+                                    visited, visibleNodes, nodesWithId, unresolvedIds,
+                                    !queue.isEmpty()));
+                }
+                ui.removeCallbacks(hintTimer);
+                if (result.surface == R1BContextPolicy.Surface.UNKNOWN
+                        && hintsEmitted < R1BResourceDiagnostics.MAX_LOGS_PER_SESSION) {
+                    ui.postDelayed(hintTimer, R1BResourceDiagnostics.HINT_INTERVAL_MS);
+                }
                 if (!result.sameState(lastDecision)) {
                     lastDecision = result;
                     Log.i("INA_R1B", "INA_R1B_CONTEXT surface=" + result.surface
