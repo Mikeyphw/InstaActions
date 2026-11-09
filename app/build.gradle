@@ -43,6 +43,9 @@ android {
 
 dependencies {
     implementation 'org.luckypray:dexkit:2.0.3'
+    // DexKit exposes Kotlin Function1/Unit in its Java-visible matchers.
+    // DexKit's stdlib runtime dependency alone does not populate JavaCompile's compile classpath.
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.25'
     compileOnly 'io.github.libxposed:api:102.0.0'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.2.1'

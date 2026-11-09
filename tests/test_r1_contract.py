@@ -12,6 +12,15 @@ class R1ReadOnlyContract(unittest.TestCase):
         self.assertIn('android:extractNativeLibs="true"',
                       (ROOT / 'app/src/main/AndroidManifest.xml').read_text())
 
+    def test_dexkit_kotlin_jvm_api_has_explicit_stdlib(self):
+        # DexKit 2.0.3 has Kotlin Function1 and Unit in Java-visible signatures.
+        # Its Kotlin stdlib runtime transitive dependency is not enough for javac.
+        gradle = (ROOT / 'app/build.gradle').read_text(encoding='utf-8')
+        self.assertIn("implementation 'org.jetbrains.kotlin:kotlin-stdlib:1.9.25'", gradle)
+        self.assertIn("implementation 'org.luckypray:dexkit:2.0.3'", gradle)
+        self.assertNotIn('org.jetbrains.kotlin.android', gradle)
+        self.assertNotIn('kotlin-stdlib:1.5.0', gradle)
+
     def test_read_only_lifecycle_guard(self):
         entry = (JAVA / 'InstaActionsEntry.java').read_text()
         ctl = (JAVA / 'R1ProbeController.java').read_text()
