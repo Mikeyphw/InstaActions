@@ -26,6 +26,7 @@ import java.util.Set;
  */
 final class R1BContextMonitor {
     private static final Map<Activity, Session> SESSIONS = new IdentityHashMap<>();
+    private static final Set<String> REPORTED_VERSIONS = new HashSet<>();
     private R1BContextMonitor() { }
 
     static void resumed(Activity activity) {
@@ -33,13 +34,22 @@ final class R1BContextMonitor {
         try {
             PackageInfo info = activity.getPackageManager().getPackageInfo(
                     ModuleConstants.TARGET_PACKAGE, 0);
-            if (!R1ProbePolicy.supportedVersion(info.versionName)) return;
+            // R1A DexKit remains version-locked. R1B is only a bounded Android
+            // View-tree observer, so it may collect diagnostic hints on newer
+            // Instagram builds without granting any action capability.
+            boolean versionQualified = R1ProbePolicy.supportedVersion(info.versionName);
+            String version = info.versionName == null ? "unknown" : info.versionName;
             synchronized (SESSIONS) {
+                if (REPORTED_VERSIONS.add(version)) {
+                    Log.i("INA_R1B", "INA_R1B_VERSION version=" + safeVersion(version)
+                            + " qualified=" + versionQualified
+                            + " mode=read_only_preview dexkit_gate=unchanged actions=off");
+                }
                 if (SESSIONS.containsKey(activity)) return;
                 Window window = activity.getWindow();
                 View decor = window == null ? null : window.getDecorView();
                 if (decor == null) return;
-                Session session = new Session(decor);
+                Session session = new Session(decor, versionQualified);
                 if (session.start()) SESSIONS.put(activity, session);
             }
         } catch (PackageManager.NameNotFoundException ignored) {
@@ -49,6 +59,12 @@ final class R1BContextMonitor {
                     + failure.getClass().getSimpleName());
             paused(activity);
         }
+    }
+
+    private static String safeVersion(String value) {
+        // Only a bounded, printable package version is emitted; no account/media data.
+        String normalized = value.replaceAll("[^A-Za-z0-9._-]", "_");
+        return normalized.length() > 64 ? normalized.substring(0, 64) : normalized;
     }
 
     static void paused(Activity activity) {
@@ -67,6 +83,7 @@ final class R1BContextMonitor {
     private static final class Session implements ViewTreeObserver.OnGlobalLayoutListener,
             ViewTreeObserver.OnScrollChangedListener {
         private final View decor;
+        private final boolean versionQualified;
         private final Handler ui = new Handler(Looper.getMainLooper());
         private ViewTreeObserver observer;
         private boolean active;
@@ -75,7 +92,10 @@ final class R1BContextMonitor {
         private R1BContextPolicy.Decision lastDecision;
         private final Runnable sampler = this::sample;
 
-        Session(View decor) { this.decor = decor; }
+        Session(View decor, boolean versionQualified) {
+            this.decor = decor;
+            this.versionQualified = versionQualified;
+        }
 
         boolean start() {
             observer = decor.getViewTreeObserver();
@@ -83,7 +103,8 @@ final class R1BContextMonitor {
             observer.addOnGlobalLayoutListener(this);
             observer.addOnScrollChangedListener(this);
             active = true;
-            Log.i("INA_R1B", "INA_R1B_OBSERVER_ATTACHED scope=instagram_main actions=off");
+            Log.i("INA_R1B", "INA_R1B_OBSERVER_ATTACHED scope=instagram_main"
+                    + " qualified=" + versionQualified + " mode=read_only_preview actions=off");
             schedule();
             return true;
         }
@@ -156,6 +177,7 @@ final class R1BContextMonitor {
                             + " confidence=" + result.confidence
                             + " scores=" + result.reelsScore + "/" + result.storyScore
                             + "/" + result.postScore + " truncated=" + result.truncated
+                            + " qualified=" + versionQualified
                             + " media_id=unavailable actions=off");
                 }
             } catch (Throwable error) {

@@ -4,7 +4,8 @@ Status: **NOT_RUN**. Hosted compilation/packaging is not runtime validation.
 
 ## Scope and safety
 
-- Vector 2.2+ / API 102, Android 16, Instagram 451 or 453 qualified only.
+- Vector 2.2+ / API 102, Android 16; DexKit discovery qualified for IG 451/453 only.
+- R1B passive View-tree **diagnostics** may run on other Instagram versions; any classification is provisional and cannot authorize actions.
 - InstaEclipse enabled first, then disabled for comparison.
 - View-tree observer is lifecycle-scoped and throttled to ≥800ms.
 - No Instagram method hooks, taps, networking, content, media ID, contacts, captions or message collection.
@@ -20,7 +21,8 @@ Status: **NOT_RUN**. Hosted compilation/packaging is not runtime validation.
 5. Confirm no new button or changed Instagram behavior, and watch for crashes/ANRs.
 6. Capture `INA_R1`, `INA_R1B` tags, and compare enabled/disabled InstaEclipse runs.
 7. Repeat the cold-start test; ensure listener attach/detach lifecycle and no log flood.
-8. Wrong Instagram version must cause no `INA_R1B_OBSERVER_ATTACHED`.
+8. On unqualified Instagram versions expect `INA_R1_SCAN_SKIP` and `INA_R1B_VERSION qualified=false`, plus passive observer events.
+9. Confirm DexKit is never scheduled on unqualified versions and all action hooks stay off.
 
 ```zsh
 adb -s localhost:5555 shell am force-stop com.instagram.android
@@ -50,3 +52,19 @@ signatures can differ. Re-enable InstaActions in Vector if uninstall clears its
 scope. Collect both `INA_DIAG` logcat entries and Vector `modules_*.log` entries,
 which can show framework callback errors invisible in Android logcat. See
 `docs/R1B_HF01_RUNTIME.md` and the delivery `INSTALL_AND_PROBE.zsh`.
+
+## R1B HF03 version-policy separation
+
+HF02 live logs verified all Vector callbacks and the first Activity resume. The
+DexKit scan correctly emitted `INA_R1_SCAN_SKIP reason=unqualified_version`.
+HF02's passive observer also silently refused unsupported versions due to a
+shared guard; HF03 removes **only that observer guard**. It logs the package's
+non-private version, marks `qualified=false`, and attaches a bounded read-only
+Android ViewTreeObserver. R1A DexKit still refuses unqualified versions; no
+Instagram business class hook, media identity lookup or action dispatch is enabled.
+
+Expected device flow: `INA_R1B_VERSION` -> `INA_R1B_OBSERVER_ATTACHED` ->
+`INA_R1B_CONTEXT`, on Feed/Reels/Stories. `UNKNOWN` is a safe classification,
+not a successful determination of screen identity. Capture failure/ANR diagnostics
+without collecting app text or media identifiers. Do not merge without valid
+screen transitions and no regression in InstaEclipse coexistence.
