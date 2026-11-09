@@ -35,3 +35,11 @@ Record only surface/score/confidence, whether expected transitions were observed
 crashes/ANRs and install version. Redact private data. Do not claim PASS for media
 identity because this phase does not discover it. Unexpected `UNKNOWN` is a
 valid fail-closed output and a useful sign that a better runtime anchor is needed.
+
+## R1B HF01 diagnostic addendum
+
+Install the HF01 APK with **uninstall-before-install** because hosted debug
+signatures can differ. Re-enable InstaActions in Vector if uninstall clears its
+scope. Collect both `INA_DIAG` logcat entries and Vector `modules_*.log` entries,
+which can show framework callback errors invisible in Android logcat. See
+`docs/R1B_HF01_RUNTIME.md` and the delivery `INSTALL_AND_PROBE.zsh`.

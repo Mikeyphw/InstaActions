@@ -10,7 +10,7 @@ def check(apk: Path):
         assert names, 'R1B: APK has no DEX'
         payload = b''.join(z.read(n) for n in names)
         for token in (b'R1BContextMonitor', b'R1BContextPolicy',
-                      b'INA_R1B_CONTEXT', b'media_id=unavailable actions=off'):
+                      b'INA_R1B_CONTEXT', b'media_id=unavailable actions=off', b'INA_DIAG_MODULE_LOADED', b'INA_DIAG_PACKAGE_READY', b'INA_DIAG_HOOKS_INSTALLED', b'INA_DIAG_FIRST_ACTIVITY_RESUMED'):
             assert token in payload, 'R1B: missing DEX marker ' + token.decode()
         assert 'META-INF/xposed/scope.list' in z.namelist()
         assert z.read('META-INF/xposed/scope.list').decode().strip() == 'com.instagram.android'
