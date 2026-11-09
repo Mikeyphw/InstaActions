@@ -26,8 +26,11 @@ public class R1BContextPolicyTest {
         assertEquals(R1BContextPolicy.Confidence.ANCHORED, found.confidence);
     }
     @Test public void feedPostAndAmbiguityAreConservative() {
-        assertEquals(R1BContextPolicy.Surface.POST,
+        // A generic Feed/Litho container is not a specific media row.
+        assertEquals(R1BContextPolicy.Surface.UNKNOWN,
                 R1BContextPolicy.classify(ids("feed_media_container"), false).surface);
+        assertEquals(R1BContextPolicy.Surface.POST,
+                R1BContextPolicy.classify(ids("row_feed_button_like"), false).surface);
         assertEquals(R1BContextPolicy.Surface.UNKNOWN,
                 R1BContextPolicy.classify(
                         ids("clips_viewer_layout", "story_viewer_root"), false).surface);
@@ -42,9 +45,9 @@ public class R1BContextPolicyTest {
     }
     @Test public void noStateChangeForEqualState() {
         R1BContextPolicy.Decision first = R1BContextPolicy.classify(
-                ids("feed_media_container"), false);
+                ids("row_feed_button_like"), false);
         R1BContextPolicy.Decision same = R1BContextPolicy.classify(
-                ids("feed_media_container", "post_actions"), false);
+                ids("row_feed_button_like", "post_actions"), false);
         assertTrue(first.sameState(same));
         assertFalse(first.sameState(R1BContextPolicy.classify(
                 ids("clips_viewer_layout"), false)));

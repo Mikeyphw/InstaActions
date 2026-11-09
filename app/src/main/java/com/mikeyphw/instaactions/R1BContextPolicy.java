@@ -44,6 +44,7 @@ public final class R1BContextPolicy {
             return new Decision(Surface.UNKNOWN, Confidence.NONE, 0, 0, 0, truncated);
         }
         int reels = 0, story = 0, post = 0;
+        int weakPostHints = 0;
         boolean reelAnchor = false, storyAnchor = false, postAnchor = false;
         boolean feedRowLike = false, feedRowSave = false, feedMediaGroup = false;
         for (String raw : resourceNames) {
@@ -73,11 +74,11 @@ public final class R1BContextPolicy {
             } else if (containsAny(id, "story_video", "story_progress", "stories_player")) {
                 story++;
             }
+            // Generic Feed containers may belong to a background pager or
+            // a Litho host; they are NEVER standalone Post/media evidence.
             if (containsAny(id, "post_container", "feed_post", "feed_media",
-                    "feed_item", "post_media")) {
-                post += 3; postAnchor = true;
-            } else if (containsAny(id, "post_actions", "feed_video", "feed_scroll")) {
-                post++;
+                    "feed_item", "post_media", "post_actions", "feed_video")) {
+                weakPostHints++;
             }
         }
         // Never infer Feed from a navigation tab, save button or generic media
@@ -88,6 +89,7 @@ public final class R1BContextPolicy {
             postAnchor = true;
             if (feedRowSave) post++;
             if (feedMediaGroup) post++;
+            post += Math.min(2, weakPostHints);
         }
         int max = Math.max(reels, Math.max(story, post));
         if (max < 2) return new Decision(Surface.UNKNOWN, Confidence.NONE,

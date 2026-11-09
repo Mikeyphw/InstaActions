@@ -83,3 +83,12 @@ Source: InstaEclipse FeedPhotoZoomHook / FeedVideoDownloadHook.
 `row_feed_button_save` and `media_group` are only supporting hints.
 Verify Feed → Reels → Stories → Feed on device, checking for transient
 misclassification and ensuring no mutating action is ever enabled.
+
+## HF05 — hybrid navigation gate (NOT_RUN)
+
+See `docs/R1B_HF05_HYBRID_NAVIGATION.md` for the separate HOME_FEED navigation
+preview and POST-row media distinction. `INA_R1B_NAV_EVIDENCE` records only
+View selection booleans, `INA_R1B_NAVIGATION` requires stable successive
+samples. Feed must never be inferred from the `feed_tab` resource's presence.
+Expected manual path: Feed → Reels → Stories → Feed, with InstaEclipse enabled.
+HF05 acceptance is not implied by HF04's successful Reels/Stories detection.

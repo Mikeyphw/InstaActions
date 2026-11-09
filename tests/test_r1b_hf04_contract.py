@@ -51,8 +51,8 @@ class R1BHF04LiveResourceEvidence(unittest.TestCase):
                       (JAVA/'R1BContextMonitor.java').read_text())
     def test_build_and_docs(self):
         gradle=(ROOT/'app/build.gradle').read_text()
-        self.assertIn('versionCode 7',gradle)
-        self.assertIn("versionName '0.3.4-r1b-hf04'",gradle)
+        self.assertIn('versionCode 8',gradle)
+        self.assertIn("versionName '0.3.5-r1b-hf05'",gradle)
         self.assertIn('INA_R1B_RESOURCE_HINTS',(ROOT/'docs/R1B_HF04_FEED_HINTS.md').read_text())
         self.assertIn('b2453613ff8a7adf332d49d852a2ad4ba8d618a1',
                       (ROOT/'docs/R1B_HF04_FEED_HINTS.md').read_text())

@@ -13,6 +13,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.Window;
+import android.widget.Checkable;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -50,7 +51,8 @@ final class R1BContextMonitor {
                 Window window = activity.getWindow();
                 View decor = window == null ? null : window.getDecorView();
                 if (decor == null) return;
-                Session session = new Session(decor, versionQualified);
+                Session session = new Session(decor, versionQualified,
+                        R1BNavigationPolicy.isMainActivity(activity.getClass().getName()));
                 if (session.start()) SESSIONS.put(activity, session);
             }
         } catch (PackageManager.NameNotFoundException ignored) {
@@ -85,7 +87,12 @@ final class R1BContextMonitor {
             ViewTreeObserver.OnScrollChangedListener {
         private final View decor;
         private final boolean versionQualified;
+        private final boolean mainActivity;
         private final Handler ui = new Handler(Looper.getMainLooper());
+        private final R1BNavigationStabilizer navigation = new R1BNavigationStabilizer();
+        private R1BNavigationPolicy.Screen lastNavigation;
+        private int lastNavEvidenceBits = -1;
+        private int navEvidenceEmitted;
         private ViewTreeObserver observer;
         private boolean active;
         private boolean pending;
@@ -101,10 +108,20 @@ final class R1BContextMonitor {
             }
         };
         private final Runnable sampler = this::sample;
+        // Tab selection can change without relayout or scrolling. This bounded
+        // interval is a fallback; active navigation still uses layout events.
+        private final Runnable navigationTimer = new Runnable() {
+            @Override public void run() {
+                if (!active) return;
+                schedule();
+                ui.postDelayed(this, 1600L);
+            }
+        };
 
-        Session(View decor, boolean versionQualified) {
+        Session(View decor, boolean versionQualified, boolean mainActivity) {
             this.decor = decor;
             this.versionQualified = versionQualified;
+            this.mainActivity = mainActivity;
         }
 
         boolean start() {
@@ -116,6 +133,7 @@ final class R1BContextMonitor {
             Log.i("INA_R1B", "INA_R1B_OBSERVER_ATTACHED scope=instagram_main"
                     + " qualified=" + versionQualified + " mode=read_only_preview actions=off");
             schedule();
+            ui.postDelayed(navigationTimer, 1600L);
             return true;
         }
 
@@ -124,12 +142,30 @@ final class R1BContextMonitor {
             pending = false;
             ui.removeCallbacks(sampler);
             ui.removeCallbacks(hintTimer);
+            ui.removeCallbacks(navigationTimer);
+            navigation.reset();
             if (observer != null && observer.isAlive()) {
                 observer.removeOnGlobalLayoutListener(this);
                 observer.removeOnScrollChangedListener(this);
             }
             observer = null;
             Log.i("INA_R1B", "INA_R1B_OBSERVER_DETACHED actions=off");
+        }
+
+        // Only Android View selection state is read. Never inspect labels,
+        // captions, accessibility text, listeners, model objects or touch data.
+        private static boolean isExplicitlySelected(View view) {
+            return view.isSelected() || view.isActivated()
+                    || (view instanceof Checkable && ((Checkable) view).isChecked());
+        }
+
+        private static boolean isOtherNavigationTab(String name) {
+            switch (name) {
+                case "clips_tab": case "direct_tab": case "search_tab":
+                case "creation_tab": case "news_tab": case "profile_tab":
+                    return true;
+                default: return false;
+            }
         }
 
         @Override public void onGlobalLayout() { schedule(); }
@@ -154,6 +190,10 @@ final class R1BContextMonitor {
                 int visibleNodes = 0;
                 int nodesWithId = 0;
                 int unresolvedIds = 0;
+                boolean feedTabVisible = false;
+                boolean feedTabSelected = false;
+                boolean otherTabSelected = false;
+                boolean mainFeedBarVisible = false;
                 ArrayDeque<Node> queue = new ArrayDeque<>();
                 queue.add(new Node(decor, 0));
                 int visited = 0;
@@ -177,7 +217,18 @@ final class R1BContextMonitor {
                             Resources resources = view.getResources();
                             if (ModuleConstants.TARGET_PACKAGE.equals(
                                     resources.getResourcePackageName(id))) {
-                                names.add(resources.getResourceEntryName(id));
+                                String resourceName = resources.getResourceEntryName(id);
+                                names.add(resourceName);
+                                if ("main_feed_action_bar".equals(resourceName)) {
+                                    mainFeedBarVisible = true;
+                                }
+                                if ("feed_tab".equals(resourceName)) {
+                                    feedTabVisible = true;
+                                    if (isExplicitlySelected(view)) feedTabSelected = true;
+                                } else if (isOtherNavigationTab(resourceName)
+                                        && isExplicitlySelected(view)) {
+                                    otherTabSelected = true;
+                                }
                             }
                         } catch (Resources.NotFoundException ignored) {
                             // Obfuscated or transient resource IDs are not evidence.
@@ -220,6 +271,36 @@ final class R1BContextMonitor {
                             + " scores=" + result.reelsScore + "/" + result.storyScore
                             + "/" + result.postScore + " truncated=" + result.truncated
                             + " qualified=" + versionQualified
+                            + " media_id=unavailable actions=off");
+                }
+                // Distinct evidence channels: VIEW/MEDIA reports only a definite
+                // viewer or a Feed-row anchor; NAVIGATION reports a preview of
+                // the active screen, not any media's identity or action grant.
+                boolean truncated = !queue.isEmpty();
+                R1BNavigationPolicy.Screen candidate = R1BNavigationPolicy.infer(
+                        mainActivity, feedTabVisible, feedTabSelected,
+                        otherTabSelected, mainFeedBarVisible, truncated, result);
+                R1BNavigationPolicy.Screen confirmed = navigation.accept(candidate, now);
+                int bits = (mainActivity ? 1 : 0) | (feedTabVisible ? 2 : 0)
+                        | (feedTabSelected ? 4 : 0) | (otherTabSelected ? 8 : 0)
+                        | (mainFeedBarVisible ? 16 : 0) | (truncated ? 32 : 0);
+                if (bits != lastNavEvidenceBits && navEvidenceEmitted < 6) {
+                    navEvidenceEmitted++;
+                    lastNavEvidenceBits = bits;
+                    Log.i("INA_R1B", "INA_R1B_NAV_EVIDENCE main=" + mainActivity
+                            + " feed_visible=" + feedTabVisible
+                            + " feed_selected=" + feedTabSelected
+                            + " other_selected=" + otherTabSelected
+                            + " feed_bar=" + mainFeedBarVisible
+                            + " truncated=" + truncated + " actions=off");
+                }
+                if (confirmed != lastNavigation) {
+                    lastNavigation = confirmed;
+                    Log.i("INA_R1B", "INA_R1B_NAVIGATION surface=" + confirmed
+                            + " evidence=" + candidate
+                            + " media_surface=" + result.surface
+                            + " confidence=" + (confirmed == R1BNavigationPolicy.Screen.UNKNOWN
+                                    ? "NONE" : "STABLE_PREVIEW")
                             + " media_id=unavailable actions=off");
                 }
             } catch (Throwable error) {
