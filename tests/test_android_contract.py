@@ -31,6 +31,19 @@ class AndroidR0Contract(unittest.TestCase):
         self.assertIn('com.instagram.android',
                       (ROOT / 'app/src/main/java/com/mikeyphw/instaactions/ModuleConstants.java').read_text())
 
+    def test_hosted_sdk_setup_does_not_request_removed_tools(self):
+        ci = (ROOT / '.github/workflows/android-r0.yml').read_text()
+        self.assertIn('android-actions/setup-android@v4', ci)
+        self.assertIn("packages: 'platform-tools'", ci)
+        self.assertNotIn('android-actions/setup-android@v3', ci)
+        self.assertNotIn("sdkmanager --install 'tools'", ci)
+        self.assertIn('actions/checkout@v7', ci)
+        self.assertIn('actions/setup-java@v6', ci)
+        self.assertIn('gradle/actions/setup-gradle@v6', ci)
+        self.assertIn('cache-provider: basic', ci)
+        self.assertIn('runs-on: ubuntu-24.04', ci)
+        self.assertIn('python3 -m unittest discover', ci)
+
     def test_ci_is_hosted_and_has_apk_proof(self):
         ci = (ROOT / '.github/workflows/android-r0.yml').read_text()
         for token in ('gradle-version:', ':app:assembleDebug', ':app:testDebugUnitTest',
