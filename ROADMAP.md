@@ -1,7 +1,7 @@
 # InstaActions — Project Roadmap
 
 Version: 1.0 (2026-11-08)  
-Status: Planning / bootstrap  
+Status: R0 hosted CI passed; R1A read-only probe source prepared, device qualification pending  
 Repository target: `Mikeyphw/InstaActions` (private)
 
 ## Vision
@@ -109,3 +109,9 @@ Acceptance: install, enable, scope, relaunch and smoke-test steps confirmed on t
 ## Definition of 'done'
 
 No milestone closes without a named commit SHA, successful required Actions run IDs, a compatibility matrix update and the relevant on-device test record. Tests that cannot be run must be labeled `NOT_RUN` (not `PASS`).
+
+## R1A implementation note (2026-11-08)
+
+R1A is read-only background DexKit candidate discovery for five upstream markers.
+R1B remains responsible for confirmed visible media context and ID tracking.
+No R1 acceptance gate closes until device evidence is recorded with InstaEclipse active.

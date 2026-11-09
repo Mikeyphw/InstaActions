@@ -48,20 +48,25 @@ public final class MainActivity extends Activity {
         });
         setContentView(scroll);
         title("InstaActions", 26);
-        label("R0  •  Foundation and diagnostics", 14, 0xffa5b4fc);
+        label("R1  •  Read-only hook discovery", 14, 0xffa5b4fc);
         section("Installation");
         label("Instagram: " + installedVersion(ModuleConstants.TARGET_PACKAGE), 16, Color.WHITE);
         label("InstaEclipse: " + installedVersion("ps.reso.instaeclipse"), 16, Color.WHITE);
         label("Vector module enabled: NOT VERIFIED HERE", 15, 0xfffbbf24);
         section("Safety / scope");
         label("Target: com.instagram.android (main process only)", 15, Color.WHITE);
-        label("Action hooks: OFF (R0)", 15, 0xff86efac);
+        label("Instagram action hooks: OFF (R1)", 15, 0xff86efac);
         label("No network, storage or account permissions requested.", 15, Color.LTGRAY);
+        section("R1 probe status");
+        label("Discovery: logged in Instagram process; not yet confirmed here", 15, 0xfffbbf24);
+        label("Qualified builds: Instagram 451.0.0.20.80 / 453.0.0.0.56", 14, Color.WHITE);
+        label("Reel/Story/Feed surfaces: candidate markers only", 14, Color.LTGRAY);
+        label("Method matches are not proof of working action hooks.", 14, Color.LTGRAY);
         section("Device acceptance");
         label("1. Install this APK and enable only Instagram in Vector.", 15, Color.WHITE);
         label("2. Keep InstaEclipse enabled and force-stop Instagram.", 15, Color.WHITE);
-        label("3. Open Instagram and look for INA_R0_PACKAGE_READY in logcat.", 15, Color.WHITE);
-        label("4. Confirm Instagram UI stays unchanged and both modules remain active.",
+        label("3. Open Instagram and look for INA_R1_SUMMARY in logcat.", 15, Color.WHITE);
+        label("4. Confirm Instagram UI stays unchanged with InstaEclipse enabled.",
                 15, Color.WHITE);
         label("Note: installed package detection is not proof that a module loaded.",
                 13, Color.LTGRAY);

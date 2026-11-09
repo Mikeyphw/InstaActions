@@ -8,7 +8,7 @@ META = ROOT / 'app/src/main/resources/META-INF/xposed'
 class AndroidR0Contract(unittest.TestCase):
     def test_project_stage_and_scope(self):
         project = json.loads((ROOT / 'project.json').read_text())
-        self.assertEqual(project['phase'], 'r0')
+        self.assertEqual(project['phase'], 'r1')
         self.assertTrue(project['r0_android_project_implemented'])
         self.assertEqual(project['scope_packages'], ['com.instagram.android'])
 
@@ -22,12 +22,13 @@ class AndroidR0Contract(unittest.TestCase):
         self.assertEqual(prop['targetApiVersion'], '102')
         self.assertEqual(prop['staticScope'], 'false')
 
-    def test_entry_is_noop_and_api102(self):
+    def test_entry_is_nonmutating_api102(self):
         entry = (ROOT / 'app/src/main/java/com/mikeyphw/instaactions/InstaActionsEntry.java').read_text()
         self.assertIn('extends XposedModule', entry)
         self.assertIn('onPackageReady', entry)
-        self.assertNotIn('.hook(', entry)
-        self.assertNotIn('DexKit', entry)
+        self.assertIn('hook(resumed).intercept', entry)
+        self.assertIn('chain.proceed()', entry)
+        self.assertNotIn('hookInstagram', entry)
         self.assertIn('com.instagram.android',
                       (ROOT / 'app/src/main/java/com/mikeyphw/instaactions/ModuleConstants.java').read_text())
 

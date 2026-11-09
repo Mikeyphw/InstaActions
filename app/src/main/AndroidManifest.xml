@@ -9,6 +9,7 @@
         android:description="@string/module_description"
         android:icon="@drawable/ic_instaactions"
         android:allowBackup="false"
+        android:extractNativeLibs="true"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.NoActionBar">
         <activity
