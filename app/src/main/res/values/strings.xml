@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">InstaActions</string>
+    <string name="module_description">Personal Instagram quick actions (R0 foundation)</string>
+    <string-array name="xposed_scope">
+        <item>com.instagram.android</item>
+    </string-array>
+</resources>
