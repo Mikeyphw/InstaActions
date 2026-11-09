@@ -27,3 +27,13 @@ No network calls, sharing, posting, UI injection or Instagram method hooks are i
 A UNIQUE DexKit result alone does not prove runtime functionality.
 The hook inventory must be populated from actual device logs, and collisions
 assessed with InstaEclipse enabled before R2.
+
+## R1B UI-surface evidence (read-only, not DexKit-bound)
+
+| probe | source | cap | risk | evidence |
+| --- | --- | --- | --- | --- |
+| visible-resource-IDs | Activity decor `ViewTreeObserver` | 384 visible nodes / 18 levels / ≥800ms | LOW; in-process UI-thread scan | NOT_RUN |
+| reel/story/post surface | conservative resource-name markers | unknown on tie/truncation | MEDIUM false negatives | NOT_RUN |
+| media identity | no hook installed | none | no collection | UNAVAILABLE |
+
+Classifiers emit only enum/score logs; no resource IDs, content or media identifiers are logged. Verify on real device before elevating candidate labels to trusted context.

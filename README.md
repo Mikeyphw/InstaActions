@@ -45,3 +45,13 @@ Independent from Meta, Instagram and InstaEclipse. Not a general mass-automation
 - Probe results are diagnostic hints, not verified method mappings or detected media identities. No username, media ID, DM, URL or payload is logged.
 - Use `adb -s localhost:5555 logcat -d -s INA_R1:I '*:S'` for device proof.
 - See [R1 device acceptance](docs/R1_DEVICE_ACCEPTANCE.md) for the complete checklist.
+
+## R1B read-only surface observation
+
+R1A hosted CI passed at `ea635eb`. R1B adds bounded, throttled UI-resource
+observation on qualified Instagram versions only. It logs **candidate** screen
+transitions (Reels, Stories, Posts, Unknown) without reading text, media IDs,
+usernames or messages. It installs no Instagram-internal action hook and does
+not change InstaEclipse UI. Run `adb -s localhost:5555 logcat -d -s INA_R1B:I "*:S"`
+for observations. **Media identity remains unavailable**, and R1B is incomplete
+until actual device observations establish reliable surface detection.

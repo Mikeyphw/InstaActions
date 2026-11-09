@@ -48,7 +48,7 @@ public final class MainActivity extends Activity {
         });
         setContentView(scroll);
         title("InstaActions", 26);
-        label("R1  •  Read-only hook discovery", 14, 0xffa5b4fc);
+        label("R1B  •  Read-only context telemetry", 14, 0xffa5b4fc);
         section("Installation");
         label("Instagram: " + installedVersion(ModuleConstants.TARGET_PACKAGE), 16, Color.WHITE);
         label("InstaEclipse: " + installedVersion("ps.reso.instaeclipse"), 16, Color.WHITE);
@@ -62,6 +62,14 @@ public final class MainActivity extends Activity {
         label("Qualified builds: Instagram 451.0.0.20.80 / 453.0.0.0.56", 14, Color.WHITE);
         label("Reel/Story/Feed surfaces: candidate markers only", 14, Color.LTGRAY);
         label("Method matches are not proof of working action hooks.", 14, Color.LTGRAY);
+        section("R1B surface tracker");
+        label("Visible Instagram resource IDs only; no user content or media IDs.",
+                14, Color.WHITE);
+        label("Reels / Story / Post are tentative UI classifications.",
+                14, Color.LTGRAY);
+        label("Actions: OFF. Context identity: NOT VERIFIED.", 14, 0xfffbbf24);
+        label("Look for INA_R1B_CONTEXT in logcat after navigating Instagram.",
+                14, Color.LTGRAY);
         section("Device acceptance");
         label("1. Install this APK and enable only Instagram in Vector.", 15, Color.WHITE);
         label("2. Keep InstaEclipse enabled and force-stop Instagram.", 15, Color.WHITE);

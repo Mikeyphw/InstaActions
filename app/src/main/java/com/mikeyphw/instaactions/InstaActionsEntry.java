@@ -32,8 +32,13 @@ public final class InstaActionsEntry extends XposedModule {
                 try {
                     Object owner = chain.getThisObject();
                     if (owner instanceof Activity) {
-                        R1ProbeController.onActivityResumed((Activity) owner,
-                                targetApk, moduleNativeLibDir);
+                        try {
+                            R1ProbeController.onActivityResumed((Activity) owner,
+                                    targetApk, moduleNativeLibDir);
+                        } finally {
+                            // Independent of R1A's scan success/failure.
+                            R1BContextMonitor.resumed((Activity) owner);
+                        }
                     }
                 } catch (Throwable diagnosticFailure) {
                     Log.w("INA_R1", "INA_R1_CALLBACK_FAILURE type="
@@ -41,6 +46,23 @@ public final class InstaActionsEntry extends XposedModule {
                 }
                 return result;
             });
+            // Observe only Activity lifecycle; no Instagram-internal callbacks are hooked.
+            for (String method : new String[] {"onPause", "onDestroy"}) {
+                Method leaving = Activity.class.getDeclaredMethod(method);
+                hook(leaving).intercept(chain -> {
+                    Object result = chain.proceed();
+                    try {
+                        Object owner = chain.getThisObject();
+                        if (owner instanceof Activity) R1BContextMonitor.paused((Activity) owner);
+                    } catch (Throwable diagnosticFailure) {
+                        Log.w("INA_R1B", "INA_R1B_DETACH_FAILED type="
+                                + diagnosticFailure.getClass().getSimpleName());
+                    }
+                    return result;
+                });
+            }
+            Log.i("INA_R1B", "INA_R1B_LIFECYCLE_READY hooks=resume_pause_destroy"
+                    + " action_hooks=0");
             Log.i("INA_R1", "INA_R1_LIFECYCLE_HOOK_INSTALLED target=instagram_main"
                     + " action_hooks=0");
         } catch (Throwable failure) {

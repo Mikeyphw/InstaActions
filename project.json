@@ -15,5 +15,7 @@
   "ci_android_workflow": "android-r0.yml",
   "module_version": "0.2.0-r1",
   "r1_readonly_hook_discovery_implemented": true,
-  "r1_device_acceptance": "NOT_RUN"
+  "r1_device_acceptance": "NOT_RUN",
+  "r1b_readonly_context_source": true,
+  "r1b_media_identity_verified": false
 }
