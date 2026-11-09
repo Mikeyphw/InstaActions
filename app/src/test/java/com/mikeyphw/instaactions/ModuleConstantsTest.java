@@ -10,7 +10,7 @@ public class ModuleConstantsTest {
         assertFalse(ModuleConstants.isMainInstagramProcess("ps.reso.instaeclipse"));
         assertFalse(ModuleConstants.isMainInstagramProcess(null));
     }
-    @Test public void noActionHooksAtR0() {
+    @Test public void actionHooksRemainOffAtR1() {
         assertFalse(ModuleConstants.ACTION_HOOKS_ENABLED);
     }
 }

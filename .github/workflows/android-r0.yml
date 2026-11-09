@@ -1,4 +1,4 @@
-name: R0 Android API 102
+name: R0 / R1 Android API 102
 on:
   push:
     paths:
@@ -46,17 +46,22 @@ jobs:
           python3 tools/verify_r0_apk.py \
             --apk app/build/outputs/apk/debug/app-debug.apk \
             --test-apk app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+      - name: Verify R1 native DexKit packaging
+        run: |
+          python3 tools/verify_r1_apk.py \
+            --apk app/build/outputs/apk/debug/app-debug.apk \
+            --test-apk app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
       - name: SHA-256 provenance
         run: |
           mkdir -p dist
-          cp app/build/outputs/apk/debug/app-debug.apk dist/InstaActions-r0-debug.apk
+          cp app/build/outputs/apk/debug/app-debug.apk dist/InstaActions-r1-debug.apk
           cp app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk dist/InstaActions-r0-androidTest.apk
           (cd dist && sha256sum *.apk > SHA256SUMS)
           cat dist/SHA256SUMS
       - name: Upload debug APK and instrumented test APK
         uses: actions/upload-artifact@v4
         with:
-          name: InstaActions-R0-${{ github.sha }}
+          name: InstaActions-R1-${{ github.sha }}
           path: dist/*
           if-no-files-found: error
           retention-days: 14
