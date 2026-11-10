@@ -17,5 +17,10 @@
   "r1_readonly_hook_discovery_implemented": true,
   "r1_device_acceptance": "NOT_RUN",
   "r1b_readonly_context_source": true,
-  "r1b_media_identity_verified": false
+  "r1b_media_identity_verified": false,
+  "r1b_navigation_device_qualified": true,
+  "r1b_device_evidence_sha": "530feede55917cd7d050e3dd89800608abe48710",
+  "r1c_readonly_candidate_inventory_source": true,
+  "r1c_media_identity_verified": false,
+  "r1c_device_acceptance": "NOT_RUN"
 }

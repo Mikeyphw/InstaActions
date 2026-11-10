@@ -67,6 +67,7 @@ public final class InstaActionsEntry extends XposedModule {
         }
         final ApplicationInfo target = param.getApplicationInfo();
         final String targetApk = target == null ? null : target.sourceDir;
+        final ClassLoader instagramLoader = param.getClassLoader();
         diagnostic("INA_DIAG_TARGET_APK_PRESENT value="
                 + (targetApk != null && !targetApk.isEmpty()));
         try {
@@ -85,6 +86,9 @@ public final class InstaActionsEntry extends XposedModule {
                                     targetApk, moduleNativeLibDir);
                         } finally {
                             R1BContextMonitor.resumed((Activity) owner);
+                            // Independent, read-only metadata inventory. Not a media binding.
+                            R1CDiscoveryController.onActivityResumed((Activity) owner,
+                                    targetApk, moduleNativeLibDir, instagramLoader);
                         }
                     }
                 } catch (Throwable diagnosticFailure) {
