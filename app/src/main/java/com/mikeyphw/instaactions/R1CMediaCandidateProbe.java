@@ -115,6 +115,34 @@ final class R1CMediaCandidateProbe {
                                     + failure.getClass().getSimpleName() + " actions=off");
                         }
                     }
+                    // D03: independent exact APK-455 descriptor query. The D02
+                    // marker-owner scan cannot prove the modern Reels list builder:
+                    // the signature might belong to a non-string-referencing owner.
+                    // DexKit returns metadata only. No getMethodInstance, reflection,
+                    // invocation, media getter or Instagram-internal hook is used.
+                    try {
+                        MethodDataList list = bridge.findMethod(FindMethod.create()
+                                .matcher(MethodMatcher.create()
+                                        .declaredClass(R1CModernReelsPolicy.OWNER)
+                                        .paramCount(2)
+                                        .returnType("java.util.ArrayList")));
+                        int raw = list.size();
+                        boolean truncated = raw > R1CModernReelsPolicy.MAX_MATCHES;
+                        int exact = 0;
+                        for (int i = 0; i < raw && i < R1CModernReelsPolicy.MAX_MATCHES; i++) {
+                            if (R1CModernReelsPolicy.exact(list.get(i).getDescriptor())) exact++;
+                        }
+                        Log.i("INA_R1C", "INA_R1C_DIRECT_REELS raw=" + raw
+                                + " exact=" + exact + " truncated=" + truncated
+                                + " result=" + R1CModernReelsPolicy.conclusion(raw, exact, truncated)
+                                + " source=ig455_static_apk media_id=unavailable"
+                                + " binding_hooks=off actions=off");
+                    } catch (Throwable failure) {
+                        failed++;
+                        Log.w("INA_R1C", "INA_R1C_DIRECT_REELS status=FAILED type="
+                                + failure.getClass().getSimpleName()
+                                + " media_id=unavailable binding_hooks=off actions=off");
+                    }
                 }
             } catch (Throwable failure) {
                 failed++;
