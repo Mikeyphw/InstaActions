@@ -1,117 +1,153 @@
-# InstaActions — Project Roadmap
+# InstaActions — canonical R0–R8 roadmap and current source status
 
-Version: 1.0 (2026-11-08)  
-Status: R0 hosted CI passed; R1A read-only probe source prepared, device qualification pending  
-Repository target: `Mikeyphw/InstaActions` (private)
+Last source baseline: `Mikeyphw/InstaActions` R1C D04 commit
+`b246b0f38b38623bdb77987d9fb11318f5c95709`.
+R1B PR #3 is merged. R1C is unmerged. **D05 HF02 is a candidate
+source change; it must pass exact-new-SHA GitHub Actions and on-device
+manual InstaEclipse ON/OFF acceptance before being qualified.**
+Repository visibility is public as checked on 2026-11-10; private personal
+use and a possible private APK release are separate from repository visibility.
 
-## Vision
+Important status: D04 runtime proof confirms Media *type* during the Reel
+menu only. D05 weak-reference continuity is NOT visual Reel identity, and
+D06 remains mandatory. No action dispatch has been enabled.
 
-Add a configurable, context-aware quick-actions button to Instagram Reels and posts, later extending to stories and other surfaces as supported. A short tap runs a selected single action or macro; a long press opens an action panel. A separate companion app manages macros, destinations, comment pools and diagnostics. InstaActions is independently installable and must coexist with InstaEclipse without overwriting its menu or relying on its internal classes.
+---
 
-## Constraints and non-goals
+# Full InstaActions roadmap — from foundation to release
 
-- Vector 2.2+ and libxposed API 102 first; classic API 82 compatibility is not in initial scope.
-- Android 16 rooted real-device qualification; compatibility with Android 9+ may be added after validation.
-- Scope only `com.instagram.android` unless the user explicitly opts into other packages later.
-- Instagram 451.0.0.20.80 is a baseline; Instagram 453 is experimental pending tests.
-- Instagram Lite 534 requires a separate feasibility assessment and is **not** implicitly supported.
-- Never hardcode UI coordinates, Instagram credentials or DM session cookies.
-- No background mass likes, unsolicited bulk DMs, comment flooding, scraping or unattended posting.
-- No local Gradle builds: GitHub Actions owns all Android builds and instrumentation test APKs.
-- No mandatory translations, larger fonts or accessibility redesign.
-- Each feature needs a kill switch, compatible fallback and structured status reporting.
+## Product vision and constraints
 
-## Release and quality contract
+**InstaActions** is an independent libxposed API102/Vector module for **personal, explicitly invoked, context-aware Instagram quick actions**. It should coexist with InstaEclipse rather than replacing it or duplicating its already available options. Intended targets are Home Feed posts, Reels and Stories, with precise media-identity and active-screen gating. Android user device: Android 16/API 36 on rooted Termux + KernelSU + Vector/LSPosed; `adb -s localhost:5555` is the known working target (do not use failed `emulator-5554`).
 
-Each milestone requires: reviewable source changes; consolidated and source-pinned Devtool overlay (if using Devtool); deterministic unit tests; hosted Actions checks; compatibility reports; user-facing notes; and a branch/commit/CI evidence trail. Hooked behavior requires device evidence rather than an APK build alone. Fail closed on unknown Instagram versions, missing method matches, incompatible UI trees and conflicting hooks. Avoid duplicate execution and record why actions are unavailable.
+No mass automation, no autonomous engagement, no background comment spam, no account content in diagnostic logs, no unrestricted/guess-based Instagram-internal hooks, no auto-merge before acceptance. Source docs and tests must stay aligned with implementation.
 
-### R0 — Foundation and repository qualification
+## R0 — Foundation [MERGED, COMPLETED]
 
-Deliver: private repo, bootstrap docs, CI contract checks, minimal Android app/module skeleton, companion launch activity, API 102 entry (`META-INF/xposed/java_init.list`), `module.prop`, `scope.list`, build settings, version info, encrypted-free local settings prototype, safe non-hooking `onPackageReady` diagnostics, hosted debug APK and host-side JVM tests.
+- Android application/module skeleton; `com.mikeyphw.instaactions` package; Instagram scope `com.instagram.android`; libxposed API 102; Vector 2.2+.
+- Hosted GitHub Actions Android build, artifact SHA-256, metadata and APK contract checks, baseline instrumentation.
+- Debug install/reinstall workflow handles signing changes. R0 PR #1 merged.
 
-Acceptance: Actions compile/assemble produces checksummed installable APK; package/scope metadata verified from APK; module visible in Vector; Instagram main process load logged without altering Instagram UI; InstaEclipse loads separately; diagnostics avoid private user content. No runtime write hooks yet.
+## R1A — Read-only hook discovery [MERGED, COMPLETED]
 
-### R1 — Read-only Instagram capability discovery
+- Version-gated DexKit marker inventory and lifecycle hooks; original allowlist IG 451/453 remains independent of R1B/R1C.
+- Hook discovery and Vector logging diagnostics, no mutation. PR #2 merged.
 
-Deliver: DexKit-driven per-version adapter registry, cached method probes, process/package guard, context model (post/reel/story and media identity), lifecycle tracking, feature-status screen, read-only hook inventory. Probes must be bounded and must not run on unrelated processes.
+## R1B — Screen and viewer detection [MERGED, DEVICE-ACCEPTED]
 
-Acceptance: reliable detection and media-context transitions for tested surfaces; no crash/ANR with InstaEclipse enabled; unknown versions fall back to no-op. Document matches and negative findings per IG version.
+- R1B HF01–HF03: stable Vector diagnostics, detach/attach evidence, passive scan decoupled from strict R1A DexKit allowlist for read-only screen hints.
+- HF04: source-backed Feed row ID checks; diagnostic evidence showed Feed `UNKNOWN` while Reels/Stories were detected; Instagram uses Litho.
+- HF05: separate stable navigation (`HOME_FEED`, `REELS`, `STORY`, `UNKNOWN`) from actual media/viewer inference (`REELS`, `STORY`, `POST`, `UNKNOWN`). Explicit selected Feed tab, main Feed bar, two samples >=1000ms; fail closed on contradictory/truncated signal, invalidate on Activity pause/destroy.
+- Device test successfully observed Feed → Reels → Story → Feed; CI green; PR #3 merged. **Screen recognition is not media ID verification**.
 
-### R2 — UI foundation
+## R1C — Source-backed Media model and runtime association [IN PROGRESS, UNMERGED]
 
-Deliver: configurable floating action button, tap/hold gestures, action panel, screen-specific show/hide conditions, button position/opacity, collision avoidance with Instagram/InstaEclipse overlays, dynamic layout compatibility and settings persistence.
+### D01 — Candidate inventory [DEVICE DISCOVERY PASS]
+- IG455 version-only, read-only class metadata + 3 DexKit markers; 3 of 5 model classes found; Story and Feed markers each unique, Reels marker raw 32; no failures. No live binding.
 
-Acceptance: no touch interception outside button/panel, restored state after recreation, correct visibility on Reels/posts, no menu conflict when long-pressing Instagram Explore.
+### D02 HF01/HF02 — APK-aware static shape qualification [DEVICE SHAPE PASS]
+- Static APK says Story target has 202 methods; fixed incorrect bounded-incomplete interpretation.
+- Story unique strong signature; Feed menu unique strong signature; raw Reels marker 32 across 12 owner classes, one weak candidate, no modern-list candidate by that route.
+- Packaging repaired HF02: executable Python ZIP must contain **separate nested canonical Devtool ZIP**, never be passed directly to Devtool.
 
-### R3 — Basic single actions
+### D03 — Exact modern Reels descriptor [DEVICE STATIC PASS]
+- `LX/07EF;->A05(LX/03jS;Lcom/instagram/feed/media/Media;)Ljava/util/ArrayList;`; exact=1, raw=1. This method is **PRIVATE FINAL INSTANCE** (DEX flags `0x12`), not static.
+- No Media ID/binding claims.
 
-Deliver: like/unlike, copy post/reel URL, save/unsave, configurable speed cycling and native repost trigger (where available). Prefer Instagram's existing action dispatch; avoid reimplementing networking. Respect InstaEclipse's settings and disable duplicate controls rather than fighting them.
+### D04 — Passive runtime callback [DEVICE ACCEPTANCE PASS FOR TYPE/SCREEN ONLY]
+- Installed APK SHA `fb6ca8...` and size 238346353 gated before installing libxposed observer.
+- One read-only interceptor on method `X.07EF.A05(X.03jS, Media)`; `proceed()` once, preserve return/exception, observe parameter type and stable R1B screen, bounded <=64 events per process.
+- Actual device during Reels overflow: **4 callbacks, all Media-typed; 3 on stable REELS, 1 on transitional UNKNOWN**. No reported crash indicators. No callbacks in Feed/Story test stages. D04 exact-SHA Android+repository CI passed.
+- **No current visible media verification**.
 
-Acceptance: verify all actions, idempotence and error reporting on test content; no automatic network replay after failure. Speed correctly restores/updates on media transitions. Repost explicitly marked unsupported on versions without native action.
+### D05 — Weak-reference continuity [SOURCE PACKAGE PREPARED, NOT APPLIED]
+- Add `WeakReference`-only previous Media object comparison while stable REELS; outcomes `BASELINE`, `BASELINE_COLLECTED` (GC), `SAME_REFERENCE`, `DIFFERENT_REFERENCE`, `SKIPPED_UNSTABLE`, `SKIPPED_WRONG_TYPE`.
+- No IDs/fields/hashCodes/toString; no strong retention; invalidation on Activity pause/destroy or non-Reels; existing <=64-event bound.
+- Test Reel A menu twice, then genuinely different Reel B menu twice in one uninterrupted foreground window (actual probe uses 110 seconds; old doc says 90 seconds and should be corrected as stale).
+- **NEW PRIORITY:** controlled InstaEclipse-enabled vs InstaEclipse-disabled comparison, with Instagram restarted, scope checked and InstaEclipse restored. See `06_INSTAECLIPSE_COEXISTENCE.md`.
+- Hosted CI, phone acceptance and proof of on-screen identity pending. DO NOT merge R1C.
 
-### R4 — Saved quick-send destinations
+### D06 (or follow-on) — True active view-to-Media association [NOT STARTED]
+- Identify per-surface current binding method with source-backed signatures, e.g. Story `ReelViewerFragment.onCurrentActiveItemBound`, Feed actual row-bind and Reels modern builder/context.
+- Differentiate menu-reference continuity from **currently displayed** media. A/B test with actual swipe/change, timing and independent visible state, and content-neutral diagnostics.
+- Promote identity only when separate independent evidence binds an exact Media object to the foreground surface and changes/invalidation are correct. Do not log plaintext IDs; consider short-lived opaque per-process tokens only if necessary and reviewed for leakage (avoid persistence).
+- Gate on exact APK/version/method shape; zero ambiguous candidates; avoid interfering with InstaEclipse's hooks; test with coexistence modes and multiple entry paths (tab, feed→Reel, story tray).
+- Verify lifecycle invalidation, rapid navigation, rotation/process restart, menu close/reopen, GC, performance and crash-free operation.
+- R1C PR only after explicit runtime acceptance for each claimed surface (or limited scoped capability claims). No auto-merge.
 
-Deliver: contact/group chooser with account-specific saved aliases, native share sheet fallback, recipient identity confirmation, optional confirmation before send and last-used destination. Do not store tokens or access DM databases if native UI can be used.
+## R2 — Contextual quick-actions UI [NOT STARTED]
 
-Acceptance: verified intended recipient and media before initiating each send; repeated button taps cannot duplicate a send. If direct-send hook is unverified, open native share UI prefiltered where possible, or open unfiltered share UI without claiming direct-send capability.
+- Design unobtrusive context-aware button/panel with clean visual design; observe status/navigation bars, screen insets, Android 16 Material3 where appropriate. Avoid 'debug-y' UI, huge fonts or unnecessary accessibility changes.
+- Display only actions genuinely available and justified for the current verified media type; grey/disable or hide when screen/media `UNKNOWN`.
+- Avoid duplicating InstaEclipse Reel/post menu options; provide optional native toolbar or action sheet if useful.
+- Settings: enable/disable each action, choose UI placement, coexistence behavior, debug diagnostics off by default, no PT-BR requirement for module if project uses English UI.
+- UI tests: Feed, Reels, Story, overlay dismissal, navigation, rotation, split-screen, IME, theme, bars and collision with InstaEclipse. No action dispatch until R3 gate.
 
-### R5 — Configurable random comments
+## R3 — User-triggered core quick actions [NOT STARTED]
 
-Deliver: user-defined editable comment pools, weighted or uniform random selection, preview or single-tap mode, per-media suppression of repeat posts, action cooldown and edit/import/export. Explicitly separate `draft chosen` from `comment submitted` in UI/logs.
+- Like/unlike (explicit click, accurate current state, idempotence, rollback/confirmation), Save/unsave, Copy link/metadata (bounded and consented), Repost/share when supported, playback-speed control.
+- Each action: verified Media identity, single explicit user intent, exact signature, version/ABI and UX safety gate; report unsupported as unavailable.
+- Never duplicate Instagram/InstaEclipse native entries unnecessarily; prefer existing stable official intents/options when possible.
+- Test actual post/Reel/Story variants, carousel slide identity, video vs photo, inaccessible/private content, transient errors, network offline, retries.
 
-Acceptance: one user tap creates at most one comment; no unattended loops, bulk posting, cross-account leakage or spam-oriented scheduling. Unsupported direct submit falls back to prefilling native comment UI.
+## R4 — Sharing to contacts/groups [NOT STARTED]
 
-### R6 — Macro engine
+- Human-selected recipients and explicit confirmation; use Android/Instagram native sharing/intent or safe integration where feasible.
+- Avoid harvesting contacts, private messages, group membership or arbitrary follower lists; show recipient scope clearly.
+- Support one media share at a time; guard stale media context, confirm destinations and avoid accidental sends.
 
-Deliver: sequential action graph (simple ordered steps first), per-step failure policy (stop/skip), action timeout and cancellation, contextual filters (Reels vs posts), reusable profiles, local backup/restore and an execution history without message bodies. Distinguish local actions from external irreversible actions.
+## R5 — Explicit single-comment workflow [NOT STARTED]
 
-Acceptance: deterministic unit tests for ordering, guard conditions and duplicate suppression; failures do not trigger replay of already-completed sends/comments/reposts; user sees completed/failed/skipped results.
+- A **single human-triggered**, contextual reply/comment from a small user-authored or user-approved candidate set, optionally randomly selected, with preview and confirm before posting.
+- No automatic posting, mass engagement, hidden background scheduling, spamming or evasion of Instagram controls; block duplicate/replay.
+- Never read comment threads/user messages unnecessarily; conservative error handling and accurate completion receipts.
 
-### R7 — Compatibility and regression qualification
+## R6 — Safe macros / idempotence [NOT STARTED]
 
-Deliver: hosted emulator + physical device acceptance, Instagram 451 baseline and Instagram 453 experimental matrix, InstaEclipse enabled/disabled parity checks, orientation/lifecycle/reentrancy tests, instrumentation test APK and failure artifact collection. Research Insta Lite separately without implying support.
+- User-defined sequences of supported individually qualified actions, each with clear preview, granularity, confirmation and cancellation.
+- Single-target atomicity/idempotence, duplicate prevention, no unbounded loops, rate limits, temporal expiry and on-screen context validation before each operation.
+- Resumable receipts without sensitive content, fail-closed on navigation or identity change, undo where semantics permit.
 
-Acceptance: documented PASS/FAIL/UNSUPPORTED per action per version; no bootloop, crash regressions, UI obstruction or mutual-hook interference. No release based solely on synthetic emulator results.
+## R7 — Full device and CI acceptance [NOT STARTED]
 
-### R8 — Private release and maintenance
+- Hosted CI on exact SHA; source/test/doc staleness audit; APK provenance and signature; emulator/physical device behavior at Android 16/API 36; Vector/API102 compatibility.
+- Regression matrix for Feed/Reels/Stories, Instagram version change, startup/detach, performance/memory, blacklisted apps, InstaEclipse enabled/disabled, crash-free logs and UI functional acceptance.
+- App privacy/security and installation/upgrade/cold-start/reboot handling. Separate device acceptance for specific hooks from broad app/release qualification.
 
-Deliver: private release APK, GitHub Actions provenance/checksums, versioned changelog, rollback instructions, export format version, hook inventory snapshot, debug-log redaction and upgrade regression checklist.
+## R8 — Release / maintenance [NOT STARTED]
 
-Acceptance: install, enable, scope, relaunch and smoke-test steps confirmed on target device; version/commit match release; rollback works; both modules remain enabled.
+- Versioned signed APK with hashes, reproducible CI workflow, changelog, tested capabilities matrix and known Instagram build compatibility.
+- Clear experimental flags and fail-closed unsupported-version path. Build/installation instructions, rollback, diagnostics privacy, no automatic unsafe update to unsupported Instagram.
+- Release only after required runtime evidence and explicit user decision; no auto-merge or automatic full-gate run just because targeted CI passes.
 
-## Optional backlog (not part of completion gates)
+## Success gate for any new capability
 
-- Instagram Lite after a dedicated hook inventory.
-- Classic LSPosed API 82 / older Android support.
-- Contextual widgets and optional Tasker entry point (local-only and explicit).
-- UI presets per Instagram account and configurable toolbar placement.
+`static source candidate` → `exact-build proof` → `runtime callback observation` → `independent active view-to-media correlation` → `lifecycle invalidation/coexistence` → `UI acceptance` → `human-triggered action validation` → `release qualification`. Never skip gates or conflate them.
 
-## Initial feature matrix
+## D05 HF02 — pre-application replacement and fail-closed qualification
 
-| Feature | R-target | Expected execution model | Fallback |
-| --- | --- | --- | --- |
-| Like/unlike | R3 | Instagram native action | Disabled with explanation |
-| Speed cycle | R3 | Existing player controller | No-op |
-| Copy link | R3 | Current media context / share intent | Native copy/share |
-| Save/unsave | R3 | Instagram native action | Disabled |
-| Repost | R3 | Instagram native repost | Disabled |
-| Direct send to saved contact/group | R4 | Verified native share dispatch | Native share sheet |
-| Random comment | R5 | Select one user-authored string | Prefill comment composer |
-| Multi-action macro | R6 | Synchronous guarded state machine | Stop / skip per policy |
+HF02 replaces the never-applied D05 HF01. The ZIP delivery is **not** deployed
+by its generation; it must be explicitly invoked at D04. Its Python/Rich
+launcher checks exact D04, source hashes, a clean repository, and expected
+branch before applying Devtool. After Devtool it verifies the direct-parent
+commit, exact file delta and SHA-256 of every committed file before pushing.
+No force push, no local Gradle, no automatic merge.
 
-## Recommended branch sequence
+The device probe first verifies the new direct-child commit's exact canonical
+contents and BOTH hosted CI workflows (not the old D04 runs). It checks the
+CI artifact checksums and requires manual Vector ON / OFF / restored scope
+attestations. Each condition uses a separate 110-second A1/A2/B1/B2 timestamped
+window; only exact allowlisted markers leave the device. InstaEclipse-only
+menu rows must be observed distinctly ON, OFF and restored after relaunch.
+No media IDs, usernames, captions, full logcat, or content URLs are exported.
+All UI/state observations remain *manually attested*, and no hook overlap or
+actual visible Media identity is claimed. D06 cannot be skipped.
 
-- `main`: bootstrap baseline only.
-- `feature/ina-r0-api102-foundation-20261108`: Android project / modern Xposed skeleton.
-- `feature/ina-r1-hook-discovery-YYYYMMDD` etc., per phase.
-- Consolidated hotfix branches only when needed, e.g. `fix/ina-r3-hf01-YYYYMMDD`.
 
-## Definition of 'done'
+### D05 HF03 — Hermetic test-import recovery (2026-11-10)
 
-No milestone closes without a named commit SHA, successful required Actions run IDs, a compatibility matrix update and the relevant on-device test record. Tests that cannot be run must be labeled `NOT_RUN` (not `PASS`).
-
-## R1A implementation note (2026-11-08)
-
-R1A is read-only background DexKit candidate discovery for five upstream markers.
-R1B remains responsible for confirmed visible media context and ID tracking.
-No R1 acceptance gate closes until device evidence is recorded with InstaEclipse active.
+HF02 validation failed on Termux because `tests/test_r1c_d05_evidence_policy.py`
+imported an unrelated Hermes `tools` package. Devtool verified rollback to D04.
+HF03 replaces unapplied HF02, imports the repository policy by exact file path,
+and adds a subprocess regression with `sys.modules["tools"]` shadowed.
+No D05 runtime hook behavior changes; no CI/device qualification is implied.

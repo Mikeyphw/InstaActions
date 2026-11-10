@@ -14,7 +14,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * D04 exact-APK read-only runtime correlation. Does NOT read Media values,
- * identify a user/post, or enable action hooks. No object is retained by observe.
+ * identify a user/post, or enable action hooks. D05 holds only a weak
+ * in-memory comparison reference, never a Media value, ID, or account field.
  */
 final class R1CD04PassiveProbe {
     private static final String TAG = "INA_R1C";
@@ -23,6 +24,13 @@ final class R1CD04PassiveProbe {
     private static final String CONTEXT = "X.03jS";
     private static final String METHOD = "A05";
     private static final AtomicBoolean STARTED = new AtomicBoolean(false);
+    private static volatile Counter installedCounter;
+
+    /** Invalidate ephemeral comparison state whenever a resumed Activity leaves. */
+    static void paused() {
+        Counter counter = installedCounter;
+        if (counter != null) counter.invalidate();
+    }
 
     interface Installer { void install(Method method, Counter counter) throws Throwable; }
     private R1CD04PassiveProbe() { }
@@ -95,7 +103,9 @@ final class R1CD04PassiveProbe {
             }
             // APK DEX access_flags=0x12: PRIVATE FINAL *INSTANCE* method, not static.
             // No setAccessible, invoke, getId, media getter or method result reads.
-            installer.install(target, new Counter(media));
+            Counter counter = new Counter(media);
+            installer.install(target, counter);
+            installedCounter = counter;
             Log.i(TAG, "INA_R1C_D04_HOOK status=INSTALLED"
                     + " signature=exact_ig455 mode=passive_no_mutation actions=off");
         } catch (Throwable failure) {
@@ -127,6 +137,8 @@ final class R1CD04PassiveProbe {
     static final class Counter {
         private final Class<?> media;
         private int events;
+        private final R1CD05ReferenceContinuity continuity =
+                new R1CD05ReferenceContinuity();
         Counter(Class<?> media) { this.media = media; }
 
         /** Only type/nullness and already-confirmed navigation; never access object fields. */
@@ -137,12 +149,19 @@ final class R1CD04PassiveProbe {
                     : media.isInstance(mediaArg) ? "MEDIA_TYPED" : "WRONG_TYPE";
             final R1BNavigationPolicy.Screen safeScreen = screen == null
                     ? R1BNavigationPolicy.Screen.UNKNOWN : screen;
+            R1CD05ReferenceContinuity.Result continuityResult =
+                    continuity.accept(mediaArg, safeScreen, "MEDIA_TYPED".equals(shape));
             Log.i(TAG, "INA_R1C_D04_EVENT ordinal=" + events
                     + " screen=" + safeScreen + " arg=" + shape
-                    + " media_id=unavailable retained=false actions=off");
+                    + " media_id=unavailable retained=weak_only actions=off");
+            Log.i(TAG, "INA_R1C_D05_REFERENCE ordinal=" + events
+                    + " screen=" + safeScreen + " comparison=" + continuityResult
+                    + " media_id=unavailable object_id=excluded retained=weak_only actions=off");
             if (events == R1CD04Policy.MAX_RECORDED_EVENTS) {
                 Log.i(TAG, "INA_R1C_D04_LIMIT reached=" + events + " actions=off");
             }
         }
+
+        synchronized void invalidate() { continuity.invalidate(); }
     }
 }

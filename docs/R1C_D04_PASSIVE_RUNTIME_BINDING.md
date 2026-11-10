@@ -1,6 +1,8 @@
 # R1C D04 — exact-build, read-only runtime Reels association
 
-Status: SOURCE_PREPARED / HOSTED_CI_NOT_RUN / DEVICE_NOT_RUN. Source pinned to R1C D03 commit `9de5c417257c4fbbb0a22dfac432a6620f0bca3c`.
+Status: DEVICE_ACCEPTED_MENU_TYPE_ONLY / HOSTED_ANDROID_CI_PASS / REPOSITORY_CONTRACT_PASS.
+D04 exact head `b246b0f38b38623bdb77987d9fb11318f5c95709`;
+Android CI `42811396047`, repository CI `42811396128`; built from D03 commit `9de5c417257c4fbbb0a22dfac432a6620f0bca3c`.
 
 ## Established evidence and implementation
 
@@ -17,3 +19,7 @@ The original R1A supported-version allowlist (451/453) remains unchanged; D04 is
 After both hosted workflows pass on the exact new commit, run the embedded probe. For each stage, open the selected Instagram screen and **open the three-dot options menu during `reels_overflow`** so the list builder can run. Stages: `feed`, `reels`, `reels_overflow`, `story`, `feed_return`. Confirm: one `INA_R1C_D04_GATE status=PASS` and one `INA_R1C_D04_HOOK status=INSTALLED`, with `INA_R1C_D04_EVENT` records showing `screen=REELS arg=MEDIA_TYPED` during the Reels menu stage (if the target method is on this path); no spurious association on Feed/Story, crashes or ANRs. If no events occur, mark `INCONCLUSIVE_METHOD_NOT_INVOKED`, **not success**. If APK SHA differs, mark gate REFUSED and do not bypass the check. Screens may transiently go UNKNOWN, so event correlation requires stable Reels state; navigation alone is not media identity.
 
 Do NOT merge R1C or enable any action or stored media identity on this evidence. Subsequent work must prove an instance-to-on-screen association with invalidation and safety tests.
+
+## Device acceptance addendum (2026-11-10)
+
+D04 capture matched `b246b0f38b38623bdb77987d9fb11318f5c95709`; exact APK SHA gating and observer installation passed, 4 media-typed callbacks all in `reels_overflow`, 3 with `REELS`, 1 with transition `UNKNOWN`. Zero recorded crash indicators. Qualifies the menu-callback/type association only, **not live visible media identity**. See `docs/R1C_D05_REFERENCE_CONTINUITY.md`.

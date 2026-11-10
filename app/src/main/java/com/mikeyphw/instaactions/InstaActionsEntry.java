@@ -126,7 +126,10 @@ public final class InstaActionsEntry extends XposedModule {
                     Object result = chain.proceed();
                     try {
                         Object owner = chain.getThisObject();
-                        if (owner instanceof Activity) R1BContextMonitor.paused((Activity) owner);
+                        if (owner instanceof Activity) {
+                            try { R1BContextMonitor.paused((Activity) owner); }
+                            finally { R1CD04PassiveProbe.paused(); }
+                        }
                     } catch (Throwable diagnosticFailure) {
                         diagnostic("INA_DIAG_DETACH_CALLBACK_FAILED type="
                                 + diagnosticFailure.getClass().getSimpleName());
