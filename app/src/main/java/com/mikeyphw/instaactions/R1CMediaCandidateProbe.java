@@ -91,6 +91,19 @@ final class R1CMediaCandidateProbe {
                             if (outcome == R1CDiscoveryPolicy.Outcome.UNIQUE_CANDIDATE) unique++;
                             else if (outcome == R1CDiscoveryPolicy.Outcome.MISSING) missing++;
                             else ambiguous++;
+                            // A raw string match is not a live binder. Use bounded,
+                            // declaration-only structural narrowing from InstaEclipse;
+                            // no method invocation, class initialization or hooks.
+                            R1CStaticShapeProbe.Summary shape =
+                                    R1CStaticShapeProbe.inspect(marker[0], candidates, loader);
+                            Log.i("INA_R1C", "INA_R1C_SHAPE id=" + marker[0]
+                                    + " raw=" + shape.raw + " owners=" + shape.owners
+                                    + " candidate_methods=" + shape.candidateMethods
+                                    + " strong_methods=" + shape.strongMethods
+                                    + " modern_list_methods=" + shape.modernListMethods
+                                    + " result=" + shape.result()
+                                    + " truncated=" + shape.truncated
+                                    + " media_id=unavailable binding_hooks=off actions=off");
                             // Counts only: no obfuscated descriptors or user content in logs.
                             Log.i("INA_R1C", "INA_R1C_ANCHOR id=" + marker[0]
                                     + " status=" + outcome + " count=" + matches

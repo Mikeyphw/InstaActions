@@ -11,6 +11,9 @@ public final class R1CDiscoveryPolicy {
     public static final boolean ACTION_HOOKS_ENABLED = false;
     public static final int MAX_MARKER_QUERIES = 3;
     public static final int MAX_CLASS_PROBES = 5;
+    public static final int MAX_RAW_MATCHES = 64;
+    public static final int MAX_OWNER_CLASSES = 48;
+    public static final int MAX_METHODS_PER_OWNER = 192;
     public static final String TARGET_VERSION = "455.0.0.8.72";
 
     private R1CDiscoveryPolicy() { throw new AssertionError("No instances"); }

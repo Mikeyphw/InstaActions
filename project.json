@@ -22,5 +22,11 @@
   "r1b_device_evidence_sha": "530feede55917cd7d050e3dd89800608abe48710",
   "r1c_readonly_candidate_inventory_source": true,
   "r1c_media_identity_verified": false,
-  "r1c_device_acceptance": "NOT_RUN"
+  "r1c_device_acceptance": "NOT_RUN",
+  "r1c_d01_device_inventory": "PASS_IG455_CANDIDATES_ONLY",
+  "r1c_d02_static_signature_narrowing": true,
+  "r1c_d02_device_acceptance": "NOT_RUN",
+  "r1c_d02_apk455_static_qualified": true,
+  "r1c_d02_runtime_qualified": false,
+  "r1c_d02_revision": "hf01"
 }

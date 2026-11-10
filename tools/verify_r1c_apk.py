@@ -10,13 +10,13 @@ def check(apk:Path):
         assert dexes, 'R1C: APK has no DEX'
         blob=b''.join(z.read(n) for n in dexes)
         for token in (b'R1CDiscoveryPolicy', b'R1CDiscoveryController',
-                b'R1CMediaCandidateProbe', b'INA_R1C_MODEL',
-                b'INA_R1C_ANCHOR', b'INA_R1C_SUMMARY',
+                b'R1CMediaCandidateProbe', b'R1CStaticShapeProbe', b'INA_R1C_MODEL',
+                b'INA_R1C_ANCHOR', b'INA_R1C_SHAPE', b'INA_R1C_SUMMARY',
                 b'identity_verified=false binding_hooks=off actions=off',
                 b'R1BNavigationPolicy'):
             assert token in blob, f'R1C missing DEX marker {token!r}'
         assert z.read('META-INF/xposed/scope.list').decode().strip() == 'com.instagram.android'
-    print('INA_R1C_D01_HOSTED_PACKAGING_PASS (live media identity NOT_RUN)')
+    print('INA_R1C_D02_HOSTED_PACKAGING_PASS (live media identity NOT_RUN)')
 
 if __name__=='__main__':
     p=argparse.ArgumentParser()

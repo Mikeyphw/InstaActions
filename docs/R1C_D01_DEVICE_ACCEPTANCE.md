@@ -1,6 +1,6 @@
 # R1C-D01 — source-backed media-candidate inventory
 
-Status: **NOT_RUN** on device (source and CI tests are not acceptance).
+Status: **DEVICE_INVENTORY_PASS** (user-supplied `r1c-d01-device-capture.zip`, 2026-11-09; source and CI alone are not acceptance).
 
 ## Known baseline
 
@@ -16,6 +16,13 @@ This is a strictly read-only, one-time, background metadata inventory for the **
 - Bounded DexKit markers: `ReelViewerFragment.onCurrentActiveItemBound` (StoryDownloadHook), `ClipsOrganicMediaItemViewMoreOptionsController` (ReelDownloadHook), `MediaOptionsOverflowMenuCreator` (PostDownloadContextMenuHook)
 
 All diagnostic records avoid account, media, caption, URL and message content. `UNIQUE_CANDIDATE` is a syntactic hint only, not an installed hook or working media binding. `identity_verified=false`, `binding_hooks=off`, `actions=off`. Original R1A DexKit version gate is unchanged.
+
+## Verified device evidence (Instagram 455.0.0.8.72)
+
+- `INA_R1C_MODEL`: slots 0 (`Media`), 1 (`MediaExtKt`), 4 (`MediaFrameLayout`) present; slots 2/3 (legacy dictionaries) absent as expected on newer builds per InstaEclipse.
+- `story_page_bind`: one unique candidate; `feed_options`: one unique candidate; `reels_options`: 32 raw string matches, **not** 32 valid binders.
+- `INA_R1C_SUMMARY`: `classes=3/5 unique=2 missing=0 ambiguous=1 failed=0 identity_verified=false binding_hooks=off actions=off`.
+- R1B stable states seen in each of Feed, Reels, Stories and return Feed windows. No crash indicators in the supplied filtered capture. This is not exhaustive ANR/crash qualification.
 
 ## Device acceptance
 

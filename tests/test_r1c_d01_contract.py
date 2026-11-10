@@ -46,14 +46,14 @@ class R1CD01Contract(unittest.TestCase):
         self.assertIn('chain.proceed()',e)
     def test_ci_and_version(self):
         g=(ROOT/'app/build.gradle').read_text()
-        self.assertIn('versionCode 9',g)
-        self.assertIn('0.4.0-r1c-d01',g)
+        self.assertIn('versionCode 10',g)
+        self.assertIn('0.4.1-r1c-d02',g)
         w=(ROOT/'.github/workflows/android-r0.yml').read_text()
         self.assertIn('tools/verify_r1c_apk.py',w)
         self.assertIn('InstaActions-R1C-',w)
     def test_qualification_is_not_assumed(self):
         doc=(ROOT/'docs/R1C_D01_DEVICE_ACCEPTANCE.md').read_text()
-        self.assertIn('NOT_RUN',doc)
+        self.assertIn('DEVICE_INVENTORY_PASS',doc)
         self.assertIn('identity_verified=false',doc)
 
 if __name__=='__main__':unittest.main()
