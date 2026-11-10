@@ -13,7 +13,7 @@
   "r0_android_project_implemented": true,
   "private_personal_use": true,
   "ci_android_workflow": "android-r0.yml",
-  "module_version": "0.2.0-r1",
+  "module_version": "0.4.3-r1c-d04",
   "r1_readonly_hook_discovery_implemented": true,
   "r1_device_acceptance": "NOT_RUN",
   "r1b_readonly_context_source": true,
@@ -30,5 +30,7 @@
   "r1c_d02_runtime_qualified": true,
   "r1c_d02_revision": "hf01",
   "r1c_d03_direct_reels_candidate_source": true,
-  "r1c_d03_device_acceptance": "NOT_RUN"
+  "r1c_d03_device_acceptance": "PASS_STATIC_DESCRIPTOR_ONLY",
+  "r1c_d04_passive_runtime_source": true,
+  "r1c_d04_runtime_device_acceptance": "NOT_RUN"
 }

@@ -1,6 +1,6 @@
 # R1C D03 — Independent modern Reels descriptor inventory
 
-Status: SOURCE_PREPARED / HOSTED_CI_NOT_RUN / DEVICE_NOT_RUN. Source pinned to `5f87ef4ee637b1470d03ac49ad9bc406dbfd181e`.
+Status: DEVICE_STATIC_DESCRIPTOR_PASS (R1C D03 SHA `9de5c417257c4fbbb0a22dfac432a6620f0bca3c`; no runtime binding qualification). Source pinned to `5f87ef4ee637b1470d03ac49ad9bc406dbfd181e`.
 
 ## Why this exists
 

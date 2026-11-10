@@ -6,6 +6,7 @@ import android.util.Log;
 import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicBoolean;
 import io.github.libxposed.api.XposedModule;
+import io.github.libxposed.api.XposedInterface;
 
 /**
  * Vector API 102 R1B. Diagnostic callbacks are deliberately before any scope
@@ -89,6 +90,28 @@ public final class InstaActionsEntry extends XposedModule {
                             // Independent, read-only metadata inventory. Not a media binding.
                             R1CDiscoveryController.onActivityResumed((Activity) owner,
                                     targetApk, moduleNativeLibDir, instagramLoader);
+                            // D04 installs one passive, exact-build-only method observer.
+                            // The interceptor NEVER alters arguments, return values or exceptions.
+                            R1CD04PassiveProbe.onActivityResumed((Activity) owner,
+                                    targetApk, instagramLoader, (method, counter) -> {
+                                        hook(method)
+                                                .setId("ina-r1c-d04-reels-passive")
+                                                .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+                                                .intercept(observation -> {
+                                                    try {
+                                                        return observation.proceed();
+                                                    } finally {
+                                                        // The original exception propagates unchanged.
+                                                        // A probe failure must never escape this finally.
+                                                        try {
+                                                            counter.observe(observation.getArg(1),
+                                                                    R1BContextMonitor.stableScreen());
+                                                        } catch (Throwable ignored) {
+                                                            // Fail closed: instrumentation cannot affect Instagram.
+                                                        }
+                                                    }
+                                                });
+                                    });
                         }
                     }
                 } catch (Throwable diagnosticFailure) {

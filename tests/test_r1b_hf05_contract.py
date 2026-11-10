@@ -59,8 +59,8 @@ class R1BHF05HybridNavigationContract(unittest.TestCase):
 
     def test_version_and_acceptance_docs(self):
         gradle = (ROOT/'app/build.gradle').read_text()
-        self.assertIn('versionCode 11',gradle)
-        self.assertIn("versionName '0.4.2-r1c-d03'",gradle)
+        self.assertIn('versionCode 12',gradle)
+        self.assertIn("versionName '0.4.3-r1c-d04'",gradle)
         docs=(ROOT/'docs/R1B_HF05_HYBRID_NAVIGATION.md').read_text()
         for token in ('HOME_FEED','POST','INA_R1B_NAVIGATION',
                       'INA_R1B_NAV_EVIDENCE','DexKit', 'NOT_QUALIFIED'):

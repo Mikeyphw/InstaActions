@@ -46,8 +46,8 @@ class R1CD01Contract(unittest.TestCase):
         self.assertIn('chain.proceed()',e)
     def test_ci_and_version(self):
         g=(ROOT/'app/build.gradle').read_text()
-        self.assertIn('versionCode 11',g)
-        self.assertIn('0.4.2-r1c-d03',g)
+        self.assertIn('versionCode 12',g)
+        self.assertIn('0.4.3-r1c-d04',g)
         w=(ROOT/'.github/workflows/android-r0.yml').read_text()
         self.assertIn('tools/verify_r1c_apk.py',w)
         self.assertIn('InstaActions-R1C-',w)
