@@ -151,3 +151,12 @@ imported an unrelated Hermes `tools` package. Devtool verified rollback to D04.
 HF03 replaces unapplied HF02, imports the repository policy by exact file path,
 and adds a subprocess regression with `sys.modules["tools"]` shadowed.
 No D05 runtime hook behavior changes; no CI/device qualification is implied.
+
+### R1C D05 FAB01 — Instagram in-app diagnostics (source prepared 2026-11-11)
+
+Adapt the independent, activity-local floating chip pattern from
+Mikeyphw/InstaTaskManager to an InstaActions-only diagnostic panel.
+Maintain InstaEclipse enabled for all tests; no mandatory Vector scope flips.
+Four explicit user-controlled A1/A2/B1/B2 windows, safe live counters,
+clipboard/share report and activity-lifecycle invalidation; no action or
+media-identity qualification. Pending hosted CI and physical device acceptance.

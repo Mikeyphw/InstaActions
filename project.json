@@ -13,7 +13,7 @@
   "r0_android_project_implemented": true,
   "private_personal_use": true,
   "ci_android_workflow": "android-r0.yml",
-  "module_version": "0.4.4-r1c-d05",
+  "module_version": "0.4.5-r1c-d05-fab01",
   "r1_readonly_hook_discovery_implemented": true,
   "r1_device_acceptance": "NOT_RUN",
   "r1b_readonly_context_source": true,
@@ -35,7 +35,11 @@
   "r1c_d04_runtime_device_acceptance": "PASS_REELS_MENU_MEDIA_TYPE_ONLY",
   "r1c_d05_reference_continuity_source": true,
   "r1c_d05_device_acceptance": "NOT_RUN",
-  "r1c_d05_delivery_revision": "HF02_SOURCE_CHANGE",
-  "r1c_d05_hosted_ci_qualified": false,
-  "r1c_d05_media_identity_verified": false
+  "r1c_d05_delivery_revision": "FAB01_SOURCE_PREPARED",
+  "r1c_d05_hosted_ci_qualified": true,
+  "r1c_d05_media_identity_verified": false,
+  "r1c_d05_fab_source": true,
+  "r1c_d05_fab_device_acceptance": "NOT_RUN",
+  "r1c_d05_fab_instaeclipse_scope_policy": "KEEP_ENABLED",
+  "r1c_d05_fab_hosted_ci_qualified": false
 }

@@ -32,35 +32,45 @@ User capture `r1c-d04-passive-capture.zip` header pinned Android run `4281139604
 - `BASELINE`, `SAME_REFERENCE`, `DIFFERENT_REFERENCE` are **object continuity
   diagnostics only**; a rebuilt Media wrapper may differ for the same Reel.
 
-## Device probe
+## Current device qualification — FAB01 (InstaEclipse enabled throughout)
 
-One uninterrupted Instagram-foreground 110-second `reels_ab_continuity` window:
-1. On Reel A, open its three-dot menu, close, and reopen.
-2. Swipe to a genuinely different Reel B; open its three-dot menu twice.
-3. Do not return to Termux between A and B; the script captures continuously.
+**FAB01 replaces the prior HF02/HF03 Termux-driven ON/OFF Vector-scope protocol.**
+Leave InstaEclipse and InstaActions enabled throughout this test. Do not switch
+Vector scope to perform the current D05 acceptance.
 
-Verify all events are Media typed, within the window and only with REELS stable
-or UNKNOWN during transitions; check for at least one BASELINE and whether
-SAME_REFERENCE and DIFFERENT_REFERENCE appear. **Neither pattern qualifies
-screen-to-media identity** without an independent visible-binding source.
-R1C remains unmerged, action hooks disabled.
+After the NEW FAB01 hosted Android and repository workflows both pass on the
+exact FAB01 commit, install that debug APK and restart Instagram. Open the
+floating **IA** chip on Instagram's main Activity. Wait for the **exact IG455
+hook to show INSTALLED**; it is bound to the existing SHA-256 and method gate.
 
-## R1C D05 HF02 — source/CI and coexistence qualification
+1. Start **A1**. On Reel A open its three-dot menu, close, tap IA > Next.
+2. **A2**: reopen the same Reel A menu, close, tap IA > Next.
+3. **B1**: swipe to a different Reel B, open menu, close, tap IA > Next.
+4. **B2**: reopen the same Reel B menu, close, tap IA > Finish.
+5. Copy or share **safe report**: only bounded per-window enum counts, never
+   raw logcat, media data, URLs, captions, account identifiers or content.
 
-The external Python/Rich probe must reject the **old D04 SHA** even when its two
-CI runs pass, and require a **new direct-child SHA** with byte-for-byte canonical committed files, versionCode 13,
-and D05 reference marker, plus both hosted workflows passing on that exact SHA.
+Each window is at most 60 seconds; empty/expired windows are **INCONCLUSIVE**.
+Stage letters are manually chosen, not proof of visible-media identity.
+An unexpected Activity pause/destroy cancels an active capture, and no UI
+survives outside Instagram's main Activity. The module itself never modifies
+InstaEclipse, changes Vector scope, installs an action hook or grants media IDs.
 
-Run the same A/B continuity sequence in two independent conditions:
+The **old** 110-second Termux `reels_ab_continuity` method with manual
+InstaEclipse ON/OFF/restore attestations is *superseded for current acceptance*;
+previous records remain useful historical evidence only.
+A scope-toggle diagnosis is optional later *only if independently established
+interference makes it necessary*.
 
-1. **InstaEclipse ON** for Instagram, InstaActions ON; stop/restart Instagram.
-2. **InstaEclipse OFF** for Instagram, InstaActions ON; stop/restart Instagram.
-3. Restore **InstaEclipse ON** in Vector afterwards and force stop Instagram.
+## Historical HF02/HF03 delivery and provenance notes
 
-Each condition has a separate uninterrupted **110-second** A/B Reel test.
-Vector scope is changed **only manually**. Typed confirmations are **user attestations, not programmatically verified Vector scope status**. If scope
-cannot be confirmed, or the hook is not installed or does not emit callback
-markers, device qualification is **INCONCLUSIVE**. Raw logcat remains local.
+HF02 originally hardened the external Python/Rich probe (strict new-commit
+validation and sanitized `adb logcat` parsing). HF03 fixed the Termux Hermes
+`tools` namespace collision and was successfully pushed and hosted-CI qualified
+at commit `06dad42f68ac2e3a39db7af2bf5fd75225634899`.
+Those older probes are **not** the current FAB01 device qualification route.
+VersionCode 14 identifies the NEW FAB01 debug APK; both workflows must pass on
+its exact commit before installation. No old D04 or HF03 CI run can qualify FAB01.
 
 InstaEclipse upstream at e19ab0def2dc1ac197b7a2d4f8763f701ef68b1d
 has `ReelDownloadHook.installReduceOptionsListPatch`: it discovers an
@@ -71,7 +81,7 @@ Do not claim it equals `X.07EF.A05` without runtime descriptor or DEX proof.
 The upstream source implementation is GPL-3.0; this phase ports no code.
 See `docs/R1C_D05_INSTAECLIPSE_SOURCE_AUDIT.md` for the complete mapping.
 
-### HF02 evidence and post-commit hardening
+### HF02 historical evidence and post-commit hardening — superseded
 
 - Delivery is **not applied** by archive creation. The user explicitly executes
   the self-contained outer Python ZIP, which contains a separately validated
@@ -107,3 +117,23 @@ absolute path and adds a separate foreign-`tools` import regression. Its exact
 source/CI/device gates, reference-only semantics, and manual InstaEclipse
 coexistence checks remain unchanged. HF03 is **NOT_RUN** on device until
 application and exact new-commit hosted CI evidence.
+
+
+### D05 FAB01 — Instagram-native read-only control surface (2026-11-11)
+
+The InstaActions activity-local IA chip is now draggable and opens a compact
+read-only diagnostic panel. No system overlay permission, action hook, internal
+Instagram method invocation, automated scope change, or InstaEclipse modification.
+The chip lives in Instagram's *main* Activity only and is removed at pause/destroy.
+The user manually advances A1/A2 on one Reel, B1/B2 on a different Reel.
+Counters accept only pre-existing D05 comparison enum + screen/type signals.
+Each stage expires after 60 seconds; missing callbacks or timeout results in
+INCONCLUSIVE, never a claimed visible-media identity. Raw logcat is not exported.
+A user may copy/share only the bounded, value-free count report.
+InstaEclipse stays enabled throughout. Coexistence is assumed, not read from
+Vector's private scope state. If actual interference is found later, an optional
+independent ON/OFF investigation may be designed, but is NOT part of FAB01.
+
+Hosted Android/JVM, installation, and physical callback acceptance are NOT_RUN
+until a direct-child commit of HF03 and its exact-SHA GitHub Actions pass.
+Do not merge or enable any action based on this diagnostic evidence.

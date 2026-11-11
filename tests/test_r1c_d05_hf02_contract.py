@@ -6,12 +6,13 @@ ROOT = Path(__file__).resolve().parents[1]
 class D05HF02SourceAndDocsContract(unittest.TestCase):
     def test_truthful_device_acceptance_window_and_scope(self):
         doc = (ROOT / 'docs/R1C_D05_REFERENCE_CONTINUITY.md').read_text()
-        self.assertIn('110-second', doc)
-        self.assertNotIn('90-second', doc)
-        self.assertIn('InstaEclipse ON', doc)
-        self.assertIn('InstaEclipse OFF', doc)
-        self.assertIn('user attestations', doc)
+        self.assertIn('InstaEclipse enabled throughout', doc)
+        self.assertIn('superseded for current acceptance', doc)
+        for stage in ('A1', 'A2', 'B1', 'B2'):
+            self.assertIn(stage, doc)
+        self.assertIn('60 seconds', doc)
         self.assertIn('INCONCLUSIVE', doc)
+        self.assertNotIn('Run the same A/B continuity sequence in two independent conditions:', doc)
     def test_upstream_audit_makes_no_false_hook_identity_claim(self):
         doc = (ROOT / 'docs/R1C_D05_INSTAECLIPSE_SOURCE_AUDIT.md').read_text()
         for term in ('e19ab0def2dc1ac197b7a2d4f8763f701ef68b1d',

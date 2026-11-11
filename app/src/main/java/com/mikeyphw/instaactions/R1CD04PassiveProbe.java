@@ -26,6 +26,13 @@ final class R1CD04PassiveProbe {
     private static final AtomicBoolean STARTED = new AtomicBoolean(false);
     private static volatile Counter installedCounter;
 
+    /** The FAB may capture only after the exact APK SHA and method are verified. */
+    static boolean isInstalled() { return installedCounter != null; }
+    static boolean hasCaptureCapacity() {
+        Counter counter = installedCounter;
+        return counter != null && counter.hasFourEventsRemaining();
+    }
+
     /** Invalidate ephemeral comparison state whenever a resumed Activity leaves. */
     static void paused() {
         Counter counter = installedCounter;
@@ -157,11 +164,17 @@ final class R1CD04PassiveProbe {
             Log.i(TAG, "INA_R1C_D05_REFERENCE ordinal=" + events
                     + " screen=" + safeScreen + " comparison=" + continuityResult
                     + " media_id=unavailable object_id=excluded retained=weak_only actions=off");
+            // Pass enum-only evidence to the optional in-Instagram FAB session.
+            // No Media reference, field, ID, URL, or account value crosses this boundary.
+            R1CD05FabPanel.record(safeScreen, continuityResult, "MEDIA_TYPED".equals(shape));
             if (events == R1CD04Policy.MAX_RECORDED_EVENTS) {
                 Log.i(TAG, "INA_R1C_D04_LIMIT reached=" + events + " actions=off");
             }
         }
 
+        synchronized boolean hasFourEventsRemaining() {
+            return events <= R1CD04Policy.MAX_RECORDED_EVENTS - 4;
+        }
         synchronized void invalidate() { continuity.invalidate(); }
     }
 }

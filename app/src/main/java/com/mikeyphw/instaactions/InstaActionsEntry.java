@@ -112,6 +112,9 @@ public final class InstaActionsEntry extends XposedModule {
                                                     }
                                                 });
                                     });
+                            // UI-only diagnostic controller. No Instagram action hooks.
+                            try { R1CD05FabPanel.onResumed((Activity) owner); }
+                            catch (Throwable ignored) { /* FAB is strictly optional. */ }
                         }
                     }
                 } catch (Throwable diagnosticFailure) {
@@ -128,7 +131,11 @@ public final class InstaActionsEntry extends XposedModule {
                         Object owner = chain.getThisObject();
                         if (owner instanceof Activity) {
                             try { R1BContextMonitor.paused((Activity) owner); }
-                            finally { R1CD04PassiveProbe.paused(); }
+                            finally {
+                                R1CD04PassiveProbe.paused();
+                                try { R1CD05FabPanel.onLeaving((Activity) owner); }
+                                catch (Throwable ignored) { /* Optional UI teardown. */ }
+                            }
                         }
                     } catch (Throwable diagnosticFailure) {
                         diagnostic("INA_DIAG_DETACH_CALLBACK_FAILED type="
