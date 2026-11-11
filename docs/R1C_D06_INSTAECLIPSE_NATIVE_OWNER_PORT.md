@@ -1,6 +1,12 @@
 # InstaActions R1C D06 — InstaEclipse-derived native menu ownership
 
-**Status: SOURCE_PREPARED / NEW_HOSTED_CI_NOT_RUN / DEVICE_NOT_RUN / VISIBLE_REEL_IDENTITY_NOT_VERIFIED.**
+**Status (HF01): SOURCE_PREPARED / HF01_HOSTED_CI_NOT_RUN / VISIBLE_REEL_IDENTITY_NOT_VERIFIED.**
+
+**PORT01 outcome:** User FAB A1/A2/B1/B2 evidence with 5 Media-typed callbacks,
+all 5 D06 `BUDGET_EXCEEDED`, while D05 reference continuity was stable. PORT01
+hosted CI passed on `22a7a11b859e7709852628654ab0ce540265e9ee`
+(repository `43112900092`, Android `43112900103`), but its owner resolution was
+**INCONCLUSIVE**. This does not identify which budget was exhausted.
 
 ## Verified source pins
 
@@ -12,7 +18,7 @@
 
 ## What was actually ported and where
 
-The `R1CD06MenuOwnership` utility translates **unique direct typed-field identity ownership** into a typed `Verdict`. It checks only exact declared `Media` fields of the native menu builder *receiver* and its explicit context parameter, up to six classes and 64 declared fields each; it rejects ambiguous, mismatched, inaccessible, and truncated observations. Like upstream, it doesn't choose arbitrary preloaded Media or accept an unrelated object graph's first item. No Media fields/methods are read or logged. `field.get(holder)` returns a reference only for equality against the menu callback's own exact `Media` argument. No references persist beyond the callback.
+The `R1CD06MenuOwnership` utility translates **unique direct typed-field identity ownership** into a typed `Verdict`. It checks only exact declared `Media` fields of the native menu builder *receiver* and its explicit context parameter, using separate bounded class-depth (12), declared-layout (2048 total, 1024 per class), and exact-Media candidate (16) budgets; it rejects ambiguous, mismatched, inaccessible, and truncated observations. Like upstream, it doesn't choose arbitrary preloaded Media or accept an unrelated object graph's first item. No Media fields/methods are read or logged. `field.get(holder)` returns a reference only for equality against the menu callback's own exact `Media` argument. No references persist beyond the callback.
 
 **Limits:** this is not a port of InstaEclipse's media ID, download/snapshot, playback, comment, or menu-mutation functions. `ReelDownloadHook.installReduceOptionsListPatch` is only a candidate overlap with `X.07EF.A05`, **not a proven descriptor match**. No independent view binder is installed and a direct owner match does *not* establish which Reel is visible. R2/R3 actions remain disabled.
 
@@ -36,3 +42,26 @@ A **separate exact IG455 active-view-to-Media binding** is still required before
 - Hosted Android Gradle builds are GitHub Actions only. APK verifier must see `R1CD06MenuOwnership`, `INA_R1C_D06_OWNER`, and `INA_D06_MENU_OWNER_REPORT_V1` in DEX.
 - The launcher `status`/`install` only accepts *both* exact new SHA workflow successes and a checksum-verified APK. `adb install -r` only; never silently uninstalls.
 - Rooted Android 16 API36 + libxposed API102 remain the target; no Android Lite or other package scope.
+
+## D06 HF01: Bounded layout hotfix, InstaEclipse kept enabled
+
+PORT01 treated **all** declared obfuscated fields as consuming one shared 64-field
+budget, so a structurally wide menu owner could hit the bound even when there
+were few or no direct Media fields. HF01 separates (a) total declared fields,
+(b) per-class width, (c) superclass depth, and (d) **exact Media-typed instance
+fields actually relevant** to the ownership rule. Each layer remains bounded.
+No field values outside exact `Media` typed references are read. On any cap,
+the full owner check is still refused: `OWNER_*_LIMIT` or `CONTEXT_*_LIMIT`
+are content-neutral and specify the failing holder/limit without field names.
+
+An `OWNER_DIRECT_MATCH`, `CONTEXT_DIRECT_MATCH` or `OWNER_AND_CONTEXT_MATCH`
+on a single callback is never allowed to conceal a refusal in the same capture
+stage: all callbacks in all four valid user-labeled windows must be positive to
+report `FOUR_WINDOWS_DIRECT_OWNER_MATCH_ONLY`. Even that does not prove
+independent visible-Reel identity; the action gate remains OFF.
+
+**Procedure:** after HF01 commit passes exact-SHA hosted CI, use existing
+Python/Rich ZIP `install` command; leave InstaEclipse enabled, restart Instagram,
+repeat IA FAB A1/A2/B1/B2 and paste the safe report. No Vector scope toggle,
+no Termux switching during captures. If any budget remains, its precise
+`OWNER_*_LIMIT` / `CONTEXT_*_LIMIT` field identifies the next structural fix.

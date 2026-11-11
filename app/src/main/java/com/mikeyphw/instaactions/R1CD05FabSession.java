@@ -94,15 +94,20 @@ final class R1CD05FabSession {
     synchronized String currentOwnership() {
         int i = index(step);
         if (i < 0) return "No live window";
+        if (stageEvents[i] == 0) return "WAITING";
         R1CD06MenuOwnership.Verdict[] all = R1CD06MenuOwnership.Verdict.values();
+        // Failures take precedence over a previous matching callback.
+        // Never show a positive UI status for a mixed/ambiguous stage.
         for (R1CD06MenuOwnership.Verdict verdict : all) {
-            if (ownerCounts[i][verdict.ordinal()] > 0
-                    && (verdict == R1CD06MenuOwnership.Verdict.OWNER_DIRECT_MATCH
-                        || verdict == R1CD06MenuOwnership.Verdict.CONTEXT_DIRECT_MATCH
-                        || verdict == R1CD06MenuOwnership.Verdict.OWNER_AND_CONTEXT_MATCH))
-                return verdict.name();
+            if (verdict == R1CD06MenuOwnership.Verdict.OWNER_DIRECT_MATCH
+                    || verdict == R1CD06MenuOwnership.Verdict.CONTEXT_DIRECT_MATCH
+                    || verdict == R1CD06MenuOwnership.Verdict.OWNER_AND_CONTEXT_MATCH) continue;
+            if (ownerCounts[i][verdict.ordinal()] > 0) return verdict.name();
         }
-        return stageEvents[i] > 0 ? "UNVERIFIED / AMBIGUOUS / MISMATCH" : "WAITING";
+        for (R1CD06MenuOwnership.Verdict verdict : all) {
+            if (ownerCounts[i][verdict.ordinal()] > 0) return verdict.name();
+        }
+        return "UNVERIFIED";
     }
 
     private boolean ownedOnEveryWindow() {
@@ -110,7 +115,9 @@ final class R1CD05FabSession {
             int accepted = ownerCounts[i][R1CD06MenuOwnership.Verdict.OWNER_DIRECT_MATCH.ordinal()]
                     + ownerCounts[i][R1CD06MenuOwnership.Verdict.CONTEXT_DIRECT_MATCH.ordinal()]
                     + ownerCounts[i][R1CD06MenuOwnership.Verdict.OWNER_AND_CONTEXT_MATCH.ordinal()];
-            if (!windowsValid[i] || accepted < 1) return false;
+            // One accepted callback cannot mask a failed/ambiguous callback in
+            // the same window. All events must be positively resolved.
+            if (!windowsValid[i] || accepted < 1 || accepted != stageEvents[i]) return false;
         }
         return true;
     }

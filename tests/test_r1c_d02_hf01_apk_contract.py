@@ -19,7 +19,7 @@ class R1CD02HF01APKContract(unittest.TestCase):
         for path in (ROOT/'tests').glob('test_r1b_hf*_contract.py'):
             src=path.read_text()
             self.assertNotIn("versionName '0.4.1-r1c-d02-hf01'",src,path.name)
-            self.assertIn("versionName '0.4.6-r1c-d06-upstream-ownership'",src,path.name)
+            self.assertIn("versionName '0.4.7-r1c-d06-hf01-bounded-owner'",src,path.name)
     def test_feed_and_story_rules_are_independent(self):
         src=(JAVA/'R1CStaticShapeProbe.java').read_text()
         self.assertIn('if ("story_page_bind".equals(marker))',src)

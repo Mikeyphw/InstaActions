@@ -10,8 +10,8 @@ class D06UpstreamContract(unittest.TestCase):
         note=(ROOT/'third_party/InstaEclipse/NOTICE.md').read_text()
         for x in ('SPDX-License-Identifier: GPL-3.0-only',
                   'SelectedMediaAdapter.java', 'e19ab0def2dc1ac197b7a2d4f8763f701ef68b1d',
-                  'MAX_FIELDS = 64', 'MAX_CLASSES = 6', 'field.getType() != mediaType',
-                  'selected != value', 'State.AMBIGUOUS', 'State.BUDGET_EXCEEDED'):
+                  'MAX_MEDIA_FIELDS = 16', 'MAX_CLASSES = 12', 'MAX_TOTAL_DECLARED_FIELDS = 2048', 'field.getType() != mediaType',
+                  'selected != value', 'State.AMBIGUOUS', 'State.DECLARED_FIELD_LIMIT'):
             self.assertIn(x,s)
         self.assertIn('GPL-3.0-only',note)
         self.assertIn('GNU GENERAL PUBLIC LICENSE',
@@ -56,8 +56,8 @@ class D06UpstreamContract(unittest.TestCase):
         self.assertFalse(data['r1c_d06_visible_media_verified'])
         self.assertFalse(data['r1c_d06_menu_owner_verified'])
         self.assertFalse(data['r1c_d06_hosted_ci_qualified'])
-        self.assertEqual(data['r1c_d06_device_acceptance'],'NOT_RUN')
-        self.assertIn('versionCode 15',(ROOT/'app/build.gradle').read_text())
+        self.assertEqual(data['r1c_d06_device_acceptance'],'USER_REPORTED_INCONCLUSIVE_BUDGET_EXCEEDED')
+        self.assertIn('versionCode 16',(ROOT/'app/build.gradle').read_text())
         self.assertIn('R1CD06MenuOwnership', (ROOT/'tools/verify_r1c_apk.py').read_text())
         self.assertTrue((ROOT/'app/src/test/java/com/mikeyphw/instaactions/R1CD06MenuOwnershipTest.java').is_file())
 if __name__=='__main__': unittest.main()

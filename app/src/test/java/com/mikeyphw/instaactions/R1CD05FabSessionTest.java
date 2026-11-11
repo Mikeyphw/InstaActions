@@ -11,6 +11,24 @@ public class R1CD05FabSessionTest {
     private static final R1CD05ReferenceContinuity.Result DIFFERENT =
             R1CD05ReferenceContinuity.Result.DIFFERENT_REFERENCE;
 
+    @Test public void oneOwnerMatchCannotMaskBudgetRefusalInSameWindow() {
+        R1CD05FabSession s = new R1CD05FabSession();
+        s.start(true,100);
+        s.observe(REELS, R1CD05ReferenceContinuity.Result.BASELINE,true,
+                R1CD06MenuOwnership.Verdict.OWNER_DIRECT_MATCH,101);
+        s.observe(REELS, SAME,true,
+                R1CD06MenuOwnership.Verdict.OWNER_DECLARED_FIELD_LIMIT,102);
+        assertEquals("OWNER_DECLARED_FIELD_LIMIT",s.currentOwnership());
+        s.advance(103);
+        for (int i=0;i<3;i++) {
+            s.observe(REELS,SAME,true,R1CD06MenuOwnership.Verdict.OWNER_DIRECT_MATCH,104+i*2);
+            s.advance(105+i*2);
+        }
+        assertEquals(R1CD05FabSession.Step.DONE,s.step());
+        assertTrue(s.report().contains("D06_OWNER_RESULT=UNVERIFIED_OR_INCONCLUSIVE"));
+        assertTrue(s.report().contains("A1_D06_OWNER_DECLARED_FIELD_LIMIT=1"));
+    }
+
     @Test public void exactHookGatePreventsStart() {
         R1CD05FabSession s = new R1CD05FabSession();
         assertFalse(s.start(false, 100));

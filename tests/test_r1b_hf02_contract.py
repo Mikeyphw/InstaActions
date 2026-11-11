@@ -15,8 +15,8 @@ class R1BHF02PersistentCapture(unittest.TestCase):
         self.assertIn('INA_DIAG_FIRST_ACTIVITY_RESUMED', entry)
     def test_version_change_and_actions_still_off(self):
         gradle = (ROOT/'app/build.gradle').read_text()
-        self.assertIn('versionCode 15', gradle)
-        self.assertIn("versionName '0.4.6-r1c-d06-upstream-ownership'", gradle)
+        self.assertIn('versionCode 16', gradle)
+        self.assertIn("versionName '0.4.7-r1c-d06-hf01-bounded-owner'", gradle)
         policy = (ROOT/'app/src/main/java/com/mikeyphw/instaactions/R1ProbePolicy.java').read_text()
         self.assertIn('MUTATING_ACTIONS_ENABLED = false', policy)
         self.assertIn('chain.proceed()', (ROOT/'app/src/main/java/com/mikeyphw/instaactions/InstaActionsEntry.java').read_text())

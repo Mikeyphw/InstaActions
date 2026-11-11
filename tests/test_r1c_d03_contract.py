@@ -21,13 +21,13 @@ class R1CD03Contract(unittest.TestCase):
                 self.assertNotIn(forbidden,text)
     def test_stale_contract_audit_and_original_guards(self):
         gradle=(ROOT/'app/build.gradle').read_text()
-        self.assertIn('versionCode 15',gradle)
-        self.assertIn("versionName '0.4.6-r1c-d06-upstream-ownership'",gradle)
+        self.assertIn('versionCode 16',gradle)
+        self.assertIn("versionName '0.4.7-r1c-d06-hf01-bounded-owner'",gradle)
         for p in (ROOT/'tests').glob('test_*.py'):
             if p.name == 'test_r1c_d03_contract.py': continue
             for line in p.read_text().splitlines():
                 if line.lstrip().startswith('self.assertIn(') and ('versionCode ' in line or "versionName '" in line):
-                    self.assertIn('versionCode 15' if 'versionCode' in line else '0.4.6-r1c-d06-upstream-ownership',line,p.name)
+                    self.assertIn('versionCode 16' if 'versionCode' in line else '0.4.7-r1c-d06-hf01-bounded-owner',line,p.name)
         disc=(JAVA/'R1CDiscoveryPolicy.java').read_text()
         self.assertIn('MEDIA_IDENTITY_VERIFIED = false',disc)
         self.assertIn('BINDING_HOOKS_ENABLED = false',disc)

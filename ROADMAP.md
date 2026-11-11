@@ -171,3 +171,13 @@ media-identity qualification. Pending hosted CI and physical device acceptance.
 - Run hosted CI on the exact next commit, physical A1/A2/B1/B2 with InstaEclipse ON, and verify NO crashes, ANRs or disappearing menu buttons; none of those gates can be preclaimed.
 - A confirmed native menu owner is a *necessary*, not sufficient, condition for active Reel-to-Media binding. Actual visible item source must be independently bound before enabling R2/R3 actions.
 - Keep all Gradle work in GitHub Actions, no automatic merge, no background actions, no extra module scope.
+
+### D06 HF01 — bounded owner-layout diagnosis (2026-11-11)
+
+PORT01 exact-SHA hosted CI passed on `22a7a11b859e7709852628654ab0ce540265e9ee`,
+but user-supplied FAB evidence showed **5/5 BUDGET_EXCEEDED** ownership checks.
+D05 reference continuity was healthy; independent visible-media binding remains unverified.
+HF01 preserves all passive action guards and InstaEclipse ON, differentiates
+owner vs context and field/depth/Media-candidate budgets, and requires every
+callback in a capture window to be owner-verified before reporting a positive
+four-window menu-ownership result. Device/CI qualification of HF01 is pending.

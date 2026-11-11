@@ -41,8 +41,8 @@ class Fab01Contract(unittest.TestCase):
 
     def test_version_and_status(self):
         build = (ROOT/'app/build.gradle').read_text()
-        self.assertIn('versionCode 15',build)
-        self.assertIn("versionName '0.4.6-r1c-d06-upstream-ownership'",build)
+        self.assertIn('versionCode 16',build)
+        self.assertIn("versionName '0.4.7-r1c-d06-hf01-bounded-owner'",build)
         import json
         project = json.loads((ROOT/'project.json').read_text())
         self.assertTrue(project['r1c_d05_fab_source'])
