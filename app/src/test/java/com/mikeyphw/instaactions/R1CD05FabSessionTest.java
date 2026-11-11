@@ -22,13 +22,13 @@ public class R1CD05FabSessionTest {
     @Test public void fourUserWindowsRemainReferenceOnly() {
         R1CD05FabSession s = new R1CD05FabSession();
         assertTrue(s.start(true, 1000));
-        s.observe(REELS, R1CD05ReferenceContinuity.Result.BASELINE, true, 1002);
+        s.observe(REELS, R1CD05ReferenceContinuity.Result.BASELINE, true, R1CD06MenuOwnership.Verdict.OWNER_DIRECT_MATCH, 1002);
         assertEquals(R1CD05FabSession.Step.A2, s.advance(1050));
-        s.observe(REELS, SAME, true, 1060);
+        s.observe(REELS, SAME, true, R1CD06MenuOwnership.Verdict.OWNER_DIRECT_MATCH, 1060);
         assertEquals(R1CD05FabSession.Step.B1, s.advance(1100));
-        s.observe(REELS, DIFFERENT, true, 1110);
+        s.observe(REELS, DIFFERENT, true, R1CD06MenuOwnership.Verdict.OWNER_DIRECT_MATCH, 1110);
         assertEquals(R1CD05FabSession.Step.B2, s.advance(1200));
-        s.observe(REELS, SAME, true, 1210);
+        s.observe(REELS, SAME, true, R1CD06MenuOwnership.Verdict.OWNER_DIRECT_MATCH, 1210);
         assertEquals(R1CD05FabSession.Step.DONE, s.advance(1300));
         String report = s.report();
         assertTrue(report.contains("RESULT=REFERENCE_COUNTS_ONLY"));
@@ -37,16 +37,19 @@ public class R1CD05FabSessionTest {
         assertTrue(report.contains("B1_DIFFERENT_REFERENCE=1"));
         assertTrue(report.contains("B2_SAME_REFERENCE=1"));
         assertTrue(report.contains("MEDIA_IDENTITY=NOT_VERIFIED"));
+        assertTrue(report.contains("D06_VISIBLE_BINDING=NOT_VERIFIED"));
+        assertTrue(report.contains("A1_D06_OWNER_DIRECT_MATCH=1"));
+        assertTrue(report.contains("D06_OWNER_RESULT=FOUR_WINDOWS_DIRECT_OWNER_MATCH_ONLY"));
         assertFalse(report.contains("CAPTION="));
     }
 
     @Test public void expiredWindowDoesNotQualifyOrAcceptLateCallbacks() {
         R1CD05FabSession s = new R1CD05FabSession();
         s.start(true, 500);
-        s.observe(REELS, SAME, true, 500 + R1CD05FabSession.MAX_WINDOW_MS + 1);
+        s.observe(REELS, SAME, true, R1CD06MenuOwnership.Verdict.OWNER_DIRECT_MATCH, 500 + R1CD05FabSession.MAX_WINDOW_MS + 1);
         assertEquals(0, s.total());
         s.advance(500 + R1CD05FabSession.MAX_WINDOW_MS + 1);
-        s.observe(REELS, SAME, true, 60500 + 2);
+        s.observe(REELS, SAME, true, R1CD06MenuOwnership.Verdict.OWNER_DIRECT_MATCH, 60500 + 2);
         s.advance(61000);
         s.advance(61500);
         s.advance(62000);
@@ -57,7 +60,7 @@ public class R1CD05FabSessionTest {
         R1CD05FabSession s = new R1CD05FabSession();
         s.start(true, 200);
         s.observe(R1BNavigationPolicy.Screen.UNKNOWN,
-                R1CD05ReferenceContinuity.Result.SKIPPED_UNSTABLE, true, 210);
+                R1CD05ReferenceContinuity.Result.SKIPPED_UNSTABLE, true, R1CD06MenuOwnership.Verdict.OWNER_DIRECT_MATCH, 210);
         assertEquals(0, s.currentCount());
         assertTrue(s.report().contains("A1_UNKNOWN_SCREEN=1"));
         s.advance(220);
@@ -67,9 +70,9 @@ public class R1CD05FabSessionTest {
     @Test public void activityExitFailsClosedAndNewStartClearsCounts() {
         R1CD05FabSession s = new R1CD05FabSession();
         s.start(true, 100);
-        s.observe(REELS, SAME, true, 101);
+        s.observe(REELS, SAME, true, R1CD06MenuOwnership.Verdict.OWNER_DIRECT_MATCH, 101);
         s.cancel(true);
-        s.observe(REELS, SAME, true, 102);
+        s.observe(REELS, SAME, true, R1CD06MenuOwnership.Verdict.OWNER_DIRECT_MATCH, 102);
         assertEquals(1, s.total());
         assertEquals(R1CD05FabSession.Step.CANCELLED, s.step());
         assertTrue(s.start(true, 200));
@@ -80,8 +83,8 @@ public class R1CD05FabSessionTest {
     @Test public void nonReelTypedCallbackDoesNotQualify() {
         R1CD05FabSession s = new R1CD05FabSession();
         s.start(true, 100);
-        s.observe(R1BNavigationPolicy.Screen.STORY, SAME, true, 110);
-        s.observe(REELS, R1CD05ReferenceContinuity.Result.SKIPPED_WRONG_TYPE, false, 115);
+        s.observe(R1BNavigationPolicy.Screen.STORY, SAME, true, R1CD06MenuOwnership.Verdict.OWNER_DIRECT_MATCH, 110);
+        s.observe(REELS, R1CD05ReferenceContinuity.Result.SKIPPED_WRONG_TYPE, false, R1CD06MenuOwnership.Verdict.WRONG_MEDIA_TYPE, 115);
         s.advance(120);
         assertTrue(s.report().contains("WINDOW_A1_VALID=false"));
     }

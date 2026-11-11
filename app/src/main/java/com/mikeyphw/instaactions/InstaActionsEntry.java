@@ -105,7 +105,9 @@ public final class InstaActionsEntry extends XposedModule {
                                                         // A probe failure must never escape this finally.
                                                         try {
                                                             counter.observe(observation.getArg(1),
-                                                                    R1BContextMonitor.stableScreen());
+                                                                    R1BContextMonitor.stableScreen(),
+                                                                    observation.getThisObject(),
+                                                                    observation.getArg(0));
                                                         } catch (Throwable ignored) {
                                                             // Fail closed: instrumentation cannot affect Instagram.
                                                         }

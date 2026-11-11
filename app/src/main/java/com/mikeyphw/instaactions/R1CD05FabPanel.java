@@ -78,9 +78,10 @@ final class R1CD05FabPanel {
     }
 
     static void record(R1BNavigationPolicy.Screen screen,
-            R1CD05ReferenceContinuity.Result result, boolean typed) {
+            R1CD05ReferenceContinuity.Result result, boolean typed,
+            R1CD06MenuOwnership.Verdict ownership) {
         // No Android view work on Instagram's hooked callback thread.
-        CAPTURE.observe(screen, result, typed, SystemClock.elapsedRealtime());
+        CAPTURE.observe(screen, result, typed, ownership, SystemClock.elapsedRealtime());
     }
 
     private int dp(float value) {
@@ -182,7 +183,7 @@ final class R1CD05FabPanel {
         LinearLayout body = new LinearLayout(activity);
         body.setPadding(dp(12), dp(10), dp(12), dp(10));
         body.setOrientation(LinearLayout.VERTICAL);
-        TextView title = label("InstaActions · D05 Diagnostics", 16);
+        TextView title = label("InstaActions · D06 Native Menu Ownership", 16);
         title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         body.addView(title);
         body.addView(label("Read-only · no action hooks · InstaEclipse stays ON", 11));
@@ -227,7 +228,7 @@ final class R1CD05FabPanel {
         R1CD05FabSession.Step step = CAPTURE.step();
         if (step == R1CD05FabSession.Step.IDLE || step == R1CD05FabSession.Step.DONE
                 || step == R1CD05FabSession.Step.CANCELLED) {
-            if (!CAPTURE.start(R1CD04PassiveProbe.hasCaptureCapacity(), SystemClock.elapsedRealtime())) {
+            if (!R1CD04PassiveProbe.beginFabCapture(CAPTURE, SystemClock.elapsedRealtime())) {
                 toast("Hook not ready or event limit reached; restart Instagram if needed.");
                 return;
             }
@@ -249,9 +250,10 @@ final class R1CD05FabPanel {
                 + " - " + CAPTURE.currentCount() + " stable Reel callbacks" : "InstaActions diagnostics");
         if (status != null) {
             status.setText("Hook: " + (R1CD04PassiveProbe.isInstalled() ? "INSTALLED" : "VERIFYING / REFUSED")
+                    + "\nOwner: " + CAPTURE.currentOwnership()
                     + "\nStage: " + step + " · stable Reel callbacks: " + CAPTURE.currentCount()
                     + " · total: " + CAPTURE.total() + "\n" + CAPTURE.prompt()
-                    + "\n\nThis does not prove which Reel is visible.");
+                    + "\n\nOwner match is not visible-Reel identity.");
         }
         if (primary != null) {
             primary.setText(!active ? "Start A1" : step == R1CD05FabSession.Step.B2

@@ -13,7 +13,7 @@
   "r0_android_project_implemented": true,
   "private_personal_use": true,
   "ci_android_workflow": "android-r0.yml",
-  "module_version": "0.4.5-r1c-d05-fab01",
+  "module_version": "0.4.6-r1c-d06-upstream-ownership",
   "r1_readonly_hook_discovery_implemented": true,
   "r1_device_acceptance": "NOT_RUN",
   "r1b_readonly_context_source": true,
@@ -39,7 +39,14 @@
   "r1c_d05_hosted_ci_qualified": true,
   "r1c_d05_media_identity_verified": false,
   "r1c_d05_fab_source": true,
-  "r1c_d05_fab_device_acceptance": "NOT_RUN",
+  "r1c_d05_fab_device_acceptance": "USER_REPORTED_FOUR_WINDOWS_REFERENCE_ONLY",
   "r1c_d05_fab_instaeclipse_scope_policy": "KEEP_ENABLED",
-  "r1c_d05_fab_hosted_ci_qualified": false
+  "r1c_d05_fab_hosted_ci_qualified": true,
+  "r1c_d06_upstream": "ReSo7200/InstaEclipse@e19ab0def2dc1ac197b7a2d4f8763f701ef68b1d",
+  "r1c_d06_source_implemented": true,
+  "r1c_d06_hosted_ci_qualified": false,
+  "r1c_d06_device_acceptance": "NOT_RUN",
+  "r1c_d06_menu_owner_verified": false,
+  "r1c_d06_visible_media_verified": false,
+  "r1c_d06_action_hooks_enabled": false
 }

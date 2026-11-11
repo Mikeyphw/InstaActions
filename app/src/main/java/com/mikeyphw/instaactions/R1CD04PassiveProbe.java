@@ -33,6 +33,21 @@ final class R1CD04PassiveProbe {
         return counter != null && counter.hasFourEventsRemaining();
     }
 
+    /** Atomically reset D05 weak-reference baseline and start the FAB capture.
+     * Counter lock serializes with the passive interceptor, preventing an old
+     * pre-capture Media callback from being counted as A1.
+     */
+    static boolean beginFabCapture(R1CD05FabSession session, long nowMs) {
+        Counter counter = installedCounter;
+        if (session == null || counter == null) return false;
+        synchronized (counter) {
+            if (!counter.hasFourEventsRemaining()) return false;
+            if (!session.start(true, nowMs)) return false;
+            counter.invalidate();
+            return true;
+        }
+    }
+
     /** Invalidate ephemeral comparison state whenever a resumed Activity leaves. */
     static void paused() {
         Counter counter = installedCounter;
@@ -110,7 +125,7 @@ final class R1CD04PassiveProbe {
             }
             // APK DEX access_flags=0x12: PRIVATE FINAL *INSTANCE* method, not static.
             // No setAccessible, invoke, getId, media getter or method result reads.
-            Counter counter = new Counter(media);
+            Counter counter = new Counter(media, target.getDeclaringClass(), target.getParameterTypes()[0]);
             installer.install(target, counter);
             installedCounter = counter;
             Log.i(TAG, "INA_R1C_D04_HOOK status=INSTALLED"
@@ -143,13 +158,20 @@ final class R1CD04PassiveProbe {
 
     static final class Counter {
         private final Class<?> media;
+        private final Class<?> menuOwnerType;
+        private final Class<?> contextType;
         private int events;
         private final R1CD05ReferenceContinuity continuity =
                 new R1CD05ReferenceContinuity();
-        Counter(Class<?> media) { this.media = media; }
+        Counter(Class<?> media, Class<?> ownerType, Class<?> contextType) {
+            this.media = media;
+            this.menuOwnerType = ownerType;
+            this.contextType = contextType;
+        }
 
         /** Only type/nullness and already-confirmed navigation; never access object fields. */
-        synchronized void observe(Object mediaArg, R1BNavigationPolicy.Screen screen) {
+        synchronized void observe(Object mediaArg, R1BNavigationPolicy.Screen screen,
+                Object menuOwner, Object menuContext) {
             if (events >= R1CD04Policy.MAX_RECORDED_EVENTS) return;
             events++;
             final String shape = mediaArg == null ? "NULL"
@@ -164,9 +186,18 @@ final class R1CD04PassiveProbe {
             Log.i(TAG, "INA_R1C_D05_REFERENCE ordinal=" + events
                     + " screen=" + safeScreen + " comparison=" + continuityResult
                     + " media_id=unavailable object_id=excluded retained=weak_only actions=off");
-            // Pass enum-only evidence to the optional in-Instagram FAB session.
-            // No Media reference, field, ID, URL, or account value crosses this boundary.
-            R1CD05FabPanel.record(safeScreen, continuityResult, "MEDIA_TYPED".equals(shape));
+            // Ported upstream ownership invariant: only exact direct typed fields,
+            // UNIQUE by reference, can corroborate the selected menu argument.
+            // This is not independently verified visible-Reel identity.
+            R1CD06MenuOwnership.Verdict ownership = R1CD06MenuOwnership.resolve(
+                    menuOwner, menuContext, mediaArg, menuOwnerType, contextType,
+                    media, safeScreen);
+            Log.i(TAG, "INA_R1C_D06_OWNER ordinal=" + events
+                    + " result=" + ownership + " visible_media=unverified"
+                    + " media_id=excluded actions=off");
+            // Pass enum-only evidence into the activity-local diagnostic panel.
+            R1CD05FabPanel.record(safeScreen, continuityResult,
+                    "MEDIA_TYPED".equals(shape), ownership);
             if (events == R1CD04Policy.MAX_RECORDED_EVENTS) {
                 Log.i(TAG, "INA_R1C_D04_LIMIT reached=" + events + " actions=off");
             }

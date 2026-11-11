@@ -12,6 +12,9 @@ final class R1CD05FabSession {
     private static final String[] METRICS = {"MEDIA_TYPED_REELS", "UNKNOWN_SCREEN", "SKIPPED_UNSTABLE",
             "SKIPPED_WRONG_TYPE", "BASELINE", "BASELINE_COLLECTED", "SAME_REFERENCE", "DIFFERENT_REFERENCE"};
     private final int[][] counts = new int[4][METRICS.length];
+    // D06 ownership verdicts are separate from D05 reference comparisons.
+    private final int[][] ownerCounts =
+            new int[4][R1CD06MenuOwnership.Verdict.values().length];
     private final boolean[] windowsValid = new boolean[4];
     private final int[] stageEvents = new int[4];
     private final long[] durationsMs = new long[4];
@@ -31,6 +34,7 @@ final class R1CD05FabSession {
         if (!hookInstalled || step == Step.A1 || step == Step.A2 || step == Step.B1 || step == Step.B2)
             return false;
         for (int[] row : counts) java.util.Arrays.fill(row, 0);
+        for (int[] row : ownerCounts) java.util.Arrays.fill(row, 0);
         java.util.Arrays.fill(windowsValid, false);
         java.util.Arrays.fill(stageEvents, 0);
         java.util.Arrays.fill(durationsMs, 0);
@@ -54,12 +58,14 @@ final class R1CD05FabSession {
     }
 
     synchronized void observe(R1BNavigationPolicy.Screen screen,
-            R1CD05ReferenceContinuity.Result result, boolean typed, long nowMs) {
+            R1CD05ReferenceContinuity.Result result, boolean typed,
+            R1CD06MenuOwnership.Verdict ownership, long nowMs) {
         int i = index(step);
         if (i < 0 || nowMs < windowStart || nowMs - windowStart > MAX_WINDOW_MS
                 || totalEvents >= 64 || stageEvents[i] >= MAX_STAGE_EVENTS) return;
         totalEvents++;
         stageEvents[i]++;
+        if (ownership != null) ownerCounts[i][ownership.ordinal()]++;
         if (screen == R1BNavigationPolicy.Screen.REELS && typed) counts[i][0]++;
         if (screen == R1BNavigationPolicy.Screen.UNKNOWN) counts[i][1]++;
         switch (result) {
@@ -85,6 +91,30 @@ final class R1CD05FabSession {
     }
     private boolean validAll() { for (boolean b: windowsValid) if (!b) return false; return true; }
 
+    synchronized String currentOwnership() {
+        int i = index(step);
+        if (i < 0) return "No live window";
+        R1CD06MenuOwnership.Verdict[] all = R1CD06MenuOwnership.Verdict.values();
+        for (R1CD06MenuOwnership.Verdict verdict : all) {
+            if (ownerCounts[i][verdict.ordinal()] > 0
+                    && (verdict == R1CD06MenuOwnership.Verdict.OWNER_DIRECT_MATCH
+                        || verdict == R1CD06MenuOwnership.Verdict.CONTEXT_DIRECT_MATCH
+                        || verdict == R1CD06MenuOwnership.Verdict.OWNER_AND_CONTEXT_MATCH))
+                return verdict.name();
+        }
+        return stageEvents[i] > 0 ? "UNVERIFIED / AMBIGUOUS / MISMATCH" : "WAITING";
+    }
+
+    private boolean ownedOnEveryWindow() {
+        for (int i=0; i < 4; i++) {
+            int accepted = ownerCounts[i][R1CD06MenuOwnership.Verdict.OWNER_DIRECT_MATCH.ordinal()]
+                    + ownerCounts[i][R1CD06MenuOwnership.Verdict.CONTEXT_DIRECT_MATCH.ordinal()]
+                    + ownerCounts[i][R1CD06MenuOwnership.Verdict.OWNER_AND_CONTEXT_MATCH.ordinal()];
+            if (!windowsValid[i] || accepted < 1) return false;
+        }
+        return true;
+    }
+
     synchronized String prompt() {
         switch(step) {
             case IDLE: return "Start a read-only D05 capture. InstaEclipse stays enabled.";
@@ -106,6 +136,8 @@ final class R1CD05FabSession {
            .append("HOOK=exact_IG455_gate_required_at_start\n")
            .append("INSTA_ECLIPSE=user_kept_enabled_not_programmatically_verified\n")
            .append("MEDIA_IDENTITY=NOT_VERIFIED\nACTIONS=OFF\n")
+           .append("D06_SELECTION=UPSTREAM_DERIVED_DIRECT_OWNER_ONLY\n")
+           .append("D06_VISIBLE_BINDING=NOT_VERIFIED\n")
            .append("NOTE=windows_are_user_labeled_not_visible_media_identity\n");
         String[] names = {"A1", "A2", "B1", "B2"};
         for (int i=0;i<4;i++) {
@@ -114,6 +146,18 @@ final class R1CD05FabSession {
             for (int j=0;j<METRICS.length;j++) {
                 out.append(names[i]).append('_').append(METRICS[j]).append('=')
                    .append(counts[i][j]).append('\n');
+            }
+        }
+        out.append("INA_D06_MENU_OWNER_REPORT_V1\n")
+           .append("D06_OWNER_RESULT=")
+           .append(step == Step.DONE && ownedOnEveryWindow()
+                   ? "FOUR_WINDOWS_DIRECT_OWNER_MATCH_ONLY" : "UNVERIFIED_OR_INCONCLUSIVE")
+           .append('\n');
+        R1CD06MenuOwnership.Verdict[] verdicts = R1CD06MenuOwnership.Verdict.values();
+        for (int i = 0; i < 4; i++) {
+            for (R1CD06MenuOwnership.Verdict verdict : verdicts) {
+                out.append(names[i]).append("_D06_").append(verdict.name())
+                   .append('=').append(ownerCounts[i][verdict.ordinal()]).append('\n');
             }
         }
         return out.toString();

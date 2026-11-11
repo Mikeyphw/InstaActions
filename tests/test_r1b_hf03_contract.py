@@ -34,8 +34,8 @@ class R1BHF03VersionSeparation(unittest.TestCase):
         self.assertIn('ui.removeCallbacks(sampler)',src)
     def test_provenance(self):
         src=(ROOT/'app/build.gradle').read_text()
-        self.assertIn('versionCode 14',src)
-        self.assertIn("versionName '0.4.5-r1c-d05-fab01'",src)
+        self.assertIn('versionCode 15',src)
+        self.assertIn("versionName '0.4.6-r1c-d06-upstream-ownership'",src)
         doc=(ROOT/'docs/R1B_HF03_VERSION_GATE.md').read_text()
         self.assertIn('497d7b4d4e896bf25338d4668ebb67387c3d6468',doc)
         self.assertIn('provisional',doc)

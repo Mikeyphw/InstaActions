@@ -160,3 +160,14 @@ Maintain InstaEclipse enabled for all tests; no mandatory Vector scope flips.
 Four explicit user-controlled A1/A2/B1/B2 windows, safe live counters,
 clipboard/share report and activity-lifecycle invalidation; no action or
 media-identity qualification. Pending hosted CI and physical device acceptance.
+
+
+## R1C D06 — InstaEclipse source-derived native menu ownership (new source stage)
+
+- Source parent: FAB01 commit `196d2de7a9b38bc26a40ee29a89c4321911b9e1f`.
+- Adapt `SelectedMediaAdapter.uniqueDirectTypedField`/`ownedDirectMedia` (GPL-3.0-only, attributed in `third_party/InstaEclipse/NOTICE.md`) for native Instagram menu builder *receiver* and explicit context argument, rejecting ambiguity, mismatch and reflection failures. No reuse of InstaEclipse's installed runtime or switching its Vector scope.
+- Preserve Android API102, installed Instagram 455 SHA-256 pin, exactly one `chain.proceed()`, D04/D05 64-event cap, A/B FAB, content-free report. New status: `MENU_OWNER=UNVERIFIED` until device evidence, and **visible Media still unverified**.
+- Fix D05 FAB first event by atomically invalidating its old weak-reference baseline at capture start.
+- Run hosted CI on the exact next commit, physical A1/A2/B1/B2 with InstaEclipse ON, and verify NO crashes, ANRs or disappearing menu buttons; none of those gates can be preclaimed.
+- A confirmed native menu owner is a *necessary*, not sufficient, condition for active Reel-to-Media binding. Actual visible item source must be independently bound before enabling R2/R3 actions.
+- Keep all Gradle work in GitHub Actions, no automatic merge, no background actions, no extra module scope.

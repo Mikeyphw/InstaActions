@@ -38,3 +38,10 @@ Every stage has a 60-second maximum and a 16-callback window cap. Expired or emp
 - The report's `INSTA_ECLIPSE=user_kept_enabled_not_programmatically_verified` field is truthful: enablement is assumed from the user setting, not proven via private Vector state.
 - User-selected sharing happens only when the person taps **Share safe report**; it opens the system chooser and does not send to a recipient on its own.
 - Because there is no media identity, the A1/A2/B1/B2 labels are **human-declared time windows**; comparison outcomes cannot prove which Reel or account was visible.
+
+
+## D06 superseding follow-up (source prepared; do not confuse with D05 evidence)
+
+D06 keeps the existing four-window A/B FAB and adds *menu-owned direct-typed-field* verdicts adapted from InstaEclipse's GPL-3.0-only `SelectedMediaAdapter.java`. The D05 `A1_DIFFERENT_REFERENCE` seen before capture occurred because the previous reference was not reset; D06 atomically resets it when starting the FAB. This does not retroactively change the earlier device report.
+
+An owner verdict means only that the native menu builder's receiver/context holds precisely one exact-typed `Media` reference equal to the callback argument. It does **not** verify a distinct visible-Reel binding. Unknown and ambiguous cases are explicit. Full D06 device acceptance and active-view binding remain NOT_RUN until examined.

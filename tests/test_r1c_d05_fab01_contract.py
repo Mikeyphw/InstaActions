@@ -41,12 +41,12 @@ class Fab01Contract(unittest.TestCase):
 
     def test_version_and_status(self):
         build = (ROOT/'app/build.gradle').read_text()
-        self.assertIn('versionCode 14',build)
-        self.assertIn("versionName '0.4.5-r1c-d05-fab01'",build)
+        self.assertIn('versionCode 15',build)
+        self.assertIn("versionName '0.4.6-r1c-d06-upstream-ownership'",build)
         import json
         project = json.loads((ROOT/'project.json').read_text())
         self.assertTrue(project['r1c_d05_fab_source'])
-        self.assertEqual(project['r1c_d05_fab_device_acceptance'], 'NOT_RUN')
+        self.assertEqual(project['r1c_d05_fab_device_acceptance'], 'USER_REPORTED_FOUR_WINDOWS_REFERENCE_ONLY')
         self.assertFalse(project['r1c_d05_media_identity_verified'])
         self.assertEqual(project['r1c_d05_fab_instaeclipse_scope_policy'], 'KEEP_ENABLED')
 
