@@ -37,12 +37,12 @@ class D04Contract(unittest.TestCase):
         self.assertIn('ACTIONS_ENABLED = false',(JAVA/'R1CD04Policy.java').read_text())
         self.assertIn('BINDING_HOOKS_ENABLED = false',(JAVA/'R1CDiscoveryPolicy.java').read_text())
         self.assertIn('if (!R1ProbePolicy.supportedVersion(version))',(JAVA/'R1ProbeController.java').read_text())
-        self.assertIn('versionCode 20',(ROOT/'app/build.gradle').read_text())
-        self.assertIn("versionName '0.5.1-r1c-d06-premenu-hf02'",(ROOT/'app/build.gradle').read_text())
+        self.assertIn('versionCode 21',(ROOT/'app/build.gradle').read_text())
+        self.assertIn("versionName '0.5.2-r1c-d07-repost-experimental'",(ROOT/'app/build.gradle').read_text())
         for path in (ROOT/'tests').glob('test_*.py'):
             for line in path.read_text().splitlines():
                 if line.lstrip().startswith('self.assertIn(') and ('versionCode ' in line or "versionName '" in line):
-                    self.assertIn('versionCode 20' if 'versionCode' in line else '0.5.1-r1c-d06-premenu-hf02',line,str(path))
+                    self.assertIn('versionCode 21' if 'versionCode' in line else '0.5.2-r1c-d07-repost-experimental',line,str(path))
         verifier=(ROOT/'tools/verify_r1c_apk.py').read_text()
         self.assertIn("b'R1CD04PassiveProbe'",verifier)
         self.assertIn("b'INA_R1C_D04_EVENT'",verifier)

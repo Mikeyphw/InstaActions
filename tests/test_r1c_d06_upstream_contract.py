@@ -57,7 +57,7 @@ class D06UpstreamContract(unittest.TestCase):
         self.assertFalse(data['r1c_d06_menu_owner_verified'])
         self.assertFalse(data['r1c_d06_hosted_ci_qualified'])
         self.assertEqual(data['r1c_d06_device_acceptance'],'USER_REPORTED_FOUR_WINDOWS_CONTEXT_DIRECT_MATCH_ONLY')
-        self.assertIn('versionCode 20',(ROOT/'app/build.gradle').read_text())
+        self.assertIn('versionCode 21',(ROOT/'app/build.gradle').read_text())
         self.assertIn('R1CD06MenuOwnership', (ROOT/'tools/verify_r1c_apk.py').read_text())
         self.assertTrue((ROOT/'app/src/test/java/com/mikeyphw/instaactions/R1CD06MenuOwnershipTest.java').is_file())
 if __name__=='__main__': unittest.main()

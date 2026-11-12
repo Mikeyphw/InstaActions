@@ -13,7 +13,7 @@
   "r0_android_project_implemented": true,
   "private_personal_use": true,
   "ci_android_workflow": "android-r0.yml",
-  "module_version": "0.5.1-r1c-d06-premenu-hf02",
+  "module_version": "0.5.2-r1c-d07-repost-experimental",
   "r1_readonly_hook_discovery_implemented": true,
   "r1_device_acceptance": "NOT_RUN",
   "r1b_readonly_context_source": true,
@@ -66,5 +66,12 @@
   "r1c_d06_hf02_source_implemented": true,
   "r1c_d06_hf02_ci_qualified": false,
   "r1c_d06_hf02_device_acceptance": "NOT_RUN",
-  "r1c_d06_hf02_focus": "PREMENU_WEAK_VIEW_SNAPSHOT_VS_CALLBACK_VISIBILITY"
+  "r1c_d06_hf02_focus": "PREMENU_WEAK_VIEW_SNAPSHOT_VS_CALLBACK_VISIBILITY",
+  "r1c_d07_repost_source_implemented": true,
+  "r1c_d07_repost_hosted_ci_qualified": false,
+  "r1c_d07_repost_device_acceptance": "NOT_RUN",
+  "r1c_d07_reels_tab": "MANUAL_USER_ASSERTION_REQUIRED",
+  "r1c_d07_feed_posts": "NOT_QUALIFIED",
+  "r1c_d07_repost_native_mutation": "DEFAULT_OFF_MANUAL_LEASE_90S_64_CALLS",
+  "r1c_d07_module_coexistence": "REQUIRES_ITM_REPOST_OFF"
 }

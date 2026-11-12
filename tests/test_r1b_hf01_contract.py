@@ -33,8 +33,8 @@ class R1BRuntimeDiagnosticsContract(unittest.TestCase):
 
     def test_bumped_version_and_diagnostics_doc(self):
         gradle = (ROOT/'app/build.gradle').read_text()
-        self.assertIn('versionCode 20',gradle)
-        self.assertIn("versionName '0.5.1-r1c-d06-premenu-hf02'",gradle)
+        self.assertIn('versionCode 21',gradle)
+        self.assertIn("versionName '0.5.2-r1c-d07-repost-experimental'",gradle)
         doc = (ROOT/'docs/R1B_HF01_RUNTIME.md').read_text()
         for key in ('INA_DIAG_MODULE_LOADED', 'INA_DIAG_PACKAGE_READY',
                     'INA_DIAG_HOOKS_INSTALLED', 'INA_DIAG_FIRST_ACTIVITY_RESUMED'):

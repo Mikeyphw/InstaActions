@@ -37,8 +37,8 @@ class R1CD02Contract(unittest.TestCase):
         self.assertIn('TARGET_VERSION = "455.0.0.8.72"',policy)
     def test_package_contract_and_updated_historical_docs(self):
         gradle=(ROOT/'app/build.gradle').read_text()
-        self.assertIn('versionCode 20',gradle)
-        self.assertIn("versionName '0.5.1-r1c-d06-premenu-hf02'",gradle)
+        self.assertIn('versionCode 21',gradle)
+        self.assertIn("versionName '0.5.2-r1c-d07-repost-experimental'",gradle)
         script=(ROOT/'tools/verify_r1c_apk.py').read_text()
         self.assertIn("b'R1CStaticShapeProbe'",script)
         self.assertIn("b'INA_R1C_SHAPE'",script)

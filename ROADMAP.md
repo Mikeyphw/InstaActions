@@ -219,3 +219,15 @@ samples but absent in 4/4 menu-time view scans. Add weak stage-bound pre-menu
 pager+page evidence and exact AndroidX adapter-position consistency, with
 separate bounded direct-Media corroboration, all actions disabled. No new
 Instagram hooks. No new upstream discovery. Physical qualification pending.
+
+
+---
+
+## R1C D07A + D07B — Native Repost evidence port from InstaTaskManager [SOURCE IMPLEMENTED, HOSTED + PHYSICAL PENDING]
+
+- **D07A:** Transfer exact IG455 `X.0Ie0` selector-4 + `X.0F2B` 11/12 read-only counters, actual `X.0ApG.D3r(0xdf82522e)` receiver discovery, read-only factory/config/session diagnostics, original return and exception preservation. Reuse existing D04 APK attestation without another full hash. Keep D06 HF02 identity **NOT VERIFIED**.
+- **D07B:** Manual A/B labels, explicit Reels-tab assertion, explicit ITM Repost recovery-OFF acknowledgment, fresh A/strict optional B gating, default-OFF 90 s/64 changed-check lease, one true/false eligibility change ONLY inside original selector-4. Native Android Repost action remains controlled by Instagram and user's tap. All other actions OFF. No auto-account identity or tab-origin proof; same-Activity account switch needs manual OFF.
+- **D07C:** exact-new-commit Android16/Vector API102 hosted CI + physical-device coexistence/rollback/Feed negative-control acceptance REQUIRED before claiming working or merging.
+- **D08:** ordinary posts and Reel-as-post parity separately, not extrapolated from dedicated Reels tab.
+- **D09:** Friends tab and avatar/facepile real data and UI investigation, entirely read-only until device-qualified.
+- **R2–R8:** ALL existing screen-local action, confirmation, privacy, automation restrictions, release gates, and InstaEclipse coexistence requirements retained unchanged.

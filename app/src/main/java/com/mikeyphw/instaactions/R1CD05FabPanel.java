@@ -44,6 +44,8 @@ final class R1CD05FabPanel {
     private Button primary;
     private Runnable ticker;
     private boolean detached;
+    // Manual admission only: we cannot read/control another Vector module's toggle.
+    private boolean itmRecoveryOffAcknowledged;
 
     private R1CD05FabPanel(Activity activity, FrameLayout decor) {
         this.activity = activity;
@@ -168,6 +170,13 @@ final class R1CD05FabPanel {
                     if (CAPTURE.needsPreflight())
                         CAPTURE.notePreflight(snapshot, SystemClock.elapsedRealtime());
                 }
+                // D07 starts only after D04's existing exact APK hash passed.
+                InstaActionsEntry.requestD07(activity);
+                if (R1CD07Recovery.isEnabled()
+                        && R1BContextMonitor.stableScreen() != R1BNavigationPolicy.Screen.REELS) {
+                    R1CD07Recovery.off("Anchored Reels navigation lost; native eligibility restored");
+                    itmRecoveryOffAcknowledged=false;
+                }
                 refresh();
                 MAIN.postDelayed(this, 1000);
             }
@@ -216,6 +225,45 @@ final class R1CD05FabPanel {
             R1CD06PreMenuReconciliation.clear();
             refresh();
         }));
+        body.addView(label("D07 · Native Repost recovery · dedicated Reels tab only", 14));
+        body.addView(label("Manual A/B labels are not account IDs. Start A while browsing Reels in the Reels tab; wait for 5+ original FALSE/singleton results. OFF before changing accounts/tabs. ITM recovery must be OFF.", 11));
+        body.addView(button("Start A · Reels tab (read-only)", () -> {
+            R1CD07GateTrace.stopExactTrial();
+            itmRecoveryOffAcknowledged=false;
+            toast(R1CD07GateTrace.begin(0));refresh();
+        }));
+        body.addView(button("Start B · comparison (read-only)", () -> {
+            R1CD07GateTrace.stopExactTrial();
+            itmRecoveryOffAcknowledged=false;
+            toast(R1CD07GateTrace.begin(1));refresh();
+        }));
+        body.addView(button("Stop A/B · recovery OFF", () -> {
+            itmRecoveryOffAcknowledged=false;
+            toast(R1CD07GateTrace.stop());refresh();
+        }));
+        body.addView(button("Confirm ITM Repost recovery is OFF", () -> {
+            itmRecoveryOffAcknowledged = true;
+            toast("Manual claim noted (not independently verified)");refresh();
+        }));
+        body.addView(button("Enable native Repost · Reels TAB (90 s)", () -> {
+            if (!itmRecoveryOffAcknowledged) {
+                toast("REFUSED: first confirm ITM Repost recovery OFF");return;
+            }
+            if (CAPTURE.isActiveWindow()) {
+                toast("REFUSED: stop D05 capture first");return;
+            }
+            // REELS is a supporting navigation hint, NEVER Reels-tab proof.
+            // The separate button explicitly records the user's tab assertion.
+            if (R1BContextMonitor.stableScreen() != R1BNavigationPolicy.Screen.REELS) {
+                toast("REFUSED: anchored Reels viewer not detected");return;
+            }
+            toast(R1CD07GateTrace.armHF13Recovery());refresh();
+        }));
+        body.addView(button("Recovery OFF (before account/tab change)", () -> {
+            toast(R1CD07GateTrace.stopExactTrial());
+            itmRecoveryOffAcknowledged=false;refresh();
+        }));
+        body.addView(button("Copy D07 safe Repost report", this::copyD07));
         body.addView(button("Copy safe report", this::copy));
         body.addView(button("Share safe report", this::share));
         body.addView(button("Close", this::close));
@@ -245,7 +293,20 @@ final class R1CD05FabPanel {
         Toast.makeText(activity.getApplicationContext(), text, Toast.LENGTH_SHORT).show();
     }
 
+    private void copyD07() {
+        ClipboardManager manager=(ClipboardManager)
+                activity.getSystemService(Context.CLIPBOARD_SERVICE);
+        if(manager==null){toast("Clipboard unavailable");return;}
+        manager.setPrimaryClip(ClipData.newPlainText("INA D07 safe Repost report",
+                R1CD07GateTrace.report() +
+                "D06_MEDIA_IDENTITY=NOT_VERIFIED\nACTIONS=OFF\n"
+                + "ITM_REPOST_OFF=MANUAL_ASSERTION_NOT_VERIFIED\n"));
+        toast("D07 content-free report copied");
+    }
+
     private void primaryAction() {
+        R1CD07Recovery.onCaptureTransition();
+        itmRecoveryOffAcknowledged=false;
         R1CD05FabSession.Step step = CAPTURE.step();
         if (step == R1CD05FabSession.Step.IDLE || step == R1CD05FabSession.Step.DONE
                 || step == R1CD05FabSession.Step.CANCELLED) {
@@ -282,7 +343,10 @@ final class R1CD05FabPanel {
                     + "\nViewer preflight: " + CAPTURE.currentPreflight()
                     + "\nStage: " + step + " · stable Reel callbacks: " + CAPTURE.currentCount()
                     + " · total: " + CAPTURE.total() + "\n" + CAPTURE.prompt()
-                    + "\n\nPage match is candidate evidence only. Actions OFF.");
+                    + "\n\nD07 Repost: " + R1CD07GateTrace.feedback()
+                    + "\nD07 gate: " + InstaActionsEntry.dataGateStatus()
+                    + "\nITM recovery OFF assertion: " + itmRecoveryOffAcknowledged
+                    + "\nD06 identity NOT VERIFIED · other actions OFF.");
         }
         if (primary != null) {
             primary.setText(!active ? "Start A1" : step == R1CD05FabSession.Step.B2
@@ -305,6 +369,8 @@ final class R1CD05FabPanel {
         catch (RuntimeException unavailable) { toast("No share target available"); }
     }
     private void detach() {
+        R1CD07Recovery.onActivityExit();
+        itmRecoveryOffAcknowledged=false;
         detached = true;
         if (ticker != null) MAIN.removeCallbacks(ticker);
         CAPTURE.cancel(true);

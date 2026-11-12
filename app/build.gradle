@@ -10,8 +10,8 @@ android {
         applicationId 'com.mikeyphw.instaactions'
         minSdk 28
         targetSdk 36
-        versionCode 20
-        versionName '0.5.1-r1c-d06-premenu-hf02'
+        versionCode 21
+        versionName '0.5.2-r1c-d07-repost-experimental'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
 
