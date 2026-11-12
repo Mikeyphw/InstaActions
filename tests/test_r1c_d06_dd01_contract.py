@@ -30,10 +30,10 @@ class DeepDiagnosticContract(unittest.TestCase):
             self.assertIn(marker,d)
     def test_version_and_unchanged_action_policy(self):
         data=json.loads((ROOT/'project.json').read_text())
-        self.assertEqual(data['module_version'],'0.5.0-r1c-d06-source-first-1')
+        self.assertEqual(data['module_version'],'0.5.1-r1c-d06-premenu-hf02')
         self.assertTrue(data['r1c_d06_deep_diagnostics_source'])
-        self.assertFalse(data['r1c_d06_deep_diagnostics_ci_qualified'])
+        self.assertTrue(data['r1c_d06_deep_diagnostics_ci_qualified'])
         self.assertFalse(data['r1c_d06_action_hooks_enabled'])
         self.assertEqual(data['r1c_d05_fab_instaeclipse_scope_policy'],'KEEP_ENABLED')
-        self.assertIn('versionCode 19',(ROOT/'app/build.gradle').read_text())
+        self.assertIn('versionCode 20',(ROOT/'app/build.gradle').read_text())
 if __name__=='__main__':unittest.main()

@@ -210,3 +210,12 @@ four-window menu-ownership result. Device/CI qualification of HF01 is pending.
 ## D06 SF01 — upstream source conformance (pending CI/device)
 
 One-pass source-gated IG455 conformance using the exact `ReelDownloadHook` PLAYBACK_CONTROLS/UNSAVE list-builder fingerprint and `ReelsControlsHook` ClipsViewPagerImpl_getViewAtIndex marker, beside DD01. D05/D06 menu ownership qualified only within their original scope; no more repeat four-window test for source-shape confirmation. See `docs/R1C_D06_SOURCE_FIRST_FINDINGS.md`.
+
+
+### D06 HF02 — callback-overlay / pre-menu reconciliation
+
+Resolved ambiguity from SF01: the UI pager is found in 39/39 preflight
+samples but absent in 4/4 menu-time view scans. Add weak stage-bound pre-menu
+pager+page evidence and exact AndroidX adapter-position consistency, with
+separate bounded direct-Media corroboration, all actions disabled. No new
+Instagram hooks. No new upstream discovery. Physical qualification pending.

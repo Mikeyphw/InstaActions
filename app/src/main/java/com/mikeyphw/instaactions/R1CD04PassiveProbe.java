@@ -224,9 +224,19 @@ final class R1CD04PassiveProbe {
                     : R1CD06VisiblePageBinding.Verdict.CAPTURE_INACTIVE;
             Log.i(TAG, "INA_R1C_D06_VISIBLE_PAGE ordinal=" + events
                     + " result=" + visible + " verified=NO actions=off");
+            // If the menu hides the pager from the fresh decor scan, reconcile
+            // against a recently visible, stage-bound weak page snapshot.
+            R1CD06PreMenuReconciliation.Verdict preMenu =
+                    R1CD05FabPanel.hasActiveWindow()
+                    ? R1CD06PreMenuReconciliation.compare(activeActivity.get(),
+                        mediaArg,media,safeScreen,ownership,R1CD05FabPanel.activeStage())
+                    : R1CD06PreMenuReconciliation.Verdict.NOT_QUALIFIED;
+            Log.i(TAG, "INA_R1C_D06_PREMENU ordinal=" + events
+                    + " callback_scan=" + visible + " snapshot=" + preMenu
+                    + " media_id=excluded verified=NO actions=off");
             // All callback evidence crossing into the FAB is enum/boolean-only.
             R1CD05FabPanel.record(safeScreen, continuityResult,
-                    "MEDIA_TYPED".equals(shape), ownership, visible);
+                    "MEDIA_TYPED".equals(shape), ownership, visible, preMenu);
             if (events == R1CD04Policy.MAX_RECORDED_EVENTS) {
                 Log.i(TAG, "INA_R1C_D04_LIMIT reached=" + events + " actions=off");
             }

@@ -41,3 +41,31 @@ The IA FAB shows `menu=` and `pager=` statuses and appends `INA_D06_INSTAECLIPSE
 ## Findings-first report layout
 
 `INA_D06_CONSOLIDATED_FINDINGS_V1` appears **before** the historical D05 and full DD01 counters. It lists the exact IG455 hook gate, upstream source/Dex conformance, the current capture's D05/D06 owner/viewer verdicts, one `NEXT_REQUIRED_CONFIRMATION`, and explicit unverified identity / disabled actions. The legacy report sections remain available for forensic analysis. If the native source scan has not completed, the summary says so instead of inventing a positive finding.
+
+
+## HF02: confirmed D06 callback-vs-preflight disagreement
+
+User-supplied SF01 device report: 39/39 main-thread structural samples saw
+one eligible vertical ViewPager2 and one centered page (2 pagers total), but
+all four menu callbacks returned NO_VERTICAL_PAGER. D05 was baseline/same/
+different/same and D06 context owner matched all 4. This **does not** show a
+missing pager; it is consistent with the menu transiently obscuring the pager
+from the callback's visibility-filtered traversal. The source confirms both
+scans use isShown() and getGlobalVisibleRect(), whereas the upstream native
+binder's ViewPager2 declaration was already exact-IG455-DEX qualified.
+
+HF02 adds bounded, stage-local weak references to the **pre-menu** page's
+AndroidX pager/recycler/page. The callback independently verifies same
+activity, stage, age <=3000ms, same currentItem and adapter position and
+same page child. It optionally compares direct typed Media fields on that
+page. It does not read a Media ID, remember Media, assert live visibility or
+enable any action. An absent field is NO_DIRECT_MEDIA, not proof of mismatch.
+
+Fail-closed: stale/index-changed/recycled/ambiguous/scan-limited evidence is
+unqualified. Any apparent candidate remains NOT_VERIFIED until independent
+active-page lifecycle/selector binding is established. The original fresh
+menu-time view scan and all D05/D06 owner evidence remain separately reported.
+
+Only new field-device test needed: one A1 window and one Reel menu callback;
+copy IA report. A2/B1/B2 are unnecessary for diagnosing the visibility
+transition, though remain available for regression. InstaEclipse stays enabled.

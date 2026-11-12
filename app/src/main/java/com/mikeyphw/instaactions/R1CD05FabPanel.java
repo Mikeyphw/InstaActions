@@ -78,14 +78,17 @@ final class R1CD05FabPanel {
     }
 
     static boolean hasActiveWindow() { return CAPTURE.isActiveWindow(); }
+    static R1CD05FabSession.Step activeStage() { return CAPTURE.step(); }
 
     static void record(R1BNavigationPolicy.Screen screen,
             R1CD05ReferenceContinuity.Result result, boolean typed,
             R1CD06MenuOwnership.Verdict ownership,
-            R1CD06VisiblePageBinding.Verdict visible) {
+            R1CD06VisiblePageBinding.Verdict visible,
+            R1CD06PreMenuReconciliation.Verdict preMenu) {
         // All Android view work has already been bounded on the callback main thread;
         // only enums and counts enter the FAB's report session.
-        CAPTURE.observe(screen, result, typed, ownership, visible, SystemClock.elapsedRealtime());
+        CAPTURE.observe(screen, result, typed, ownership, visible, preMenu,
+                SystemClock.elapsedRealtime());
     }
 
     private int dp(float value) {
@@ -156,10 +159,14 @@ final class R1CD05FabPanel {
                 // Capture a separate bounded, content-free live viewer snapshot.
                 // Even when the menu callback is off-main-thread, the report
                 // still diagnoses the pager/page structure independently.
-                if (CAPTURE.needsPreflight()) {
+                // Keep the weak pre-menu view snapshot fresh throughout the
+                // active window, even after 12 reportable structural samples.
+                // The extra samples are not added to the bounded raw report.
+                if (CAPTURE.isActiveWindow()) {
                     R1CD06ViewPreflight.Snapshot snapshot =
                             R1CD06ViewPreflight.inspect(activity);
-                    CAPTURE.notePreflight(snapshot, SystemClock.elapsedRealtime());
+                    if (CAPTURE.needsPreflight())
+                        CAPTURE.notePreflight(snapshot, SystemClock.elapsedRealtime());
                 }
                 refresh();
                 MAIN.postDelayed(this, 1000);
@@ -206,6 +213,7 @@ final class R1CD05FabPanel {
         body.addView(primary);
         body.addView(button("Cancel capture", () -> {
             CAPTURE.cancel(false);
+            R1CD06PreMenuReconciliation.clear();
             refresh();
         }));
         body.addView(button("Copy safe report", this::copy));
@@ -241,11 +249,15 @@ final class R1CD05FabPanel {
         R1CD05FabSession.Step step = CAPTURE.step();
         if (step == R1CD05FabSession.Step.IDLE || step == R1CD05FabSession.Step.DONE
                 || step == R1CD05FabSession.Step.CANCELLED) {
+            R1CD06PreMenuReconciliation.clear();
             if (!R1CD04PassiveProbe.beginFabCapture(CAPTURE, SystemClock.elapsedRealtime())) {
                 toast("Hook not ready or event limit reached; restart Instagram if needed.");
                 return;
             }
-        } else CAPTURE.advance(SystemClock.elapsedRealtime());
+        } else {
+            CAPTURE.advance(SystemClock.elapsedRealtime());
+            R1CD06PreMenuReconciliation.clear();
+        }
         refresh();
         if (CAPTURE.step() != R1CD05FabSession.Step.DONE) {
             toast("D05 " + CAPTURE.step() + ": use the Reel menu, then tap IA to advance");
@@ -266,6 +278,7 @@ final class R1CD05FabPanel {
                     + "\nHook: " + (R1CD04PassiveProbe.isInstalled() ? "INSTALLED" : "VERIFYING / REFUSED")
                     + "\nOwner: " + CAPTURE.currentOwnership()
                     + "\nVisible page: " + CAPTURE.currentVisiblePage()
+                    + "\nPre-menu: " + CAPTURE.currentPreMenu()
                     + "\nViewer preflight: " + CAPTURE.currentPreflight()
                     + "\nStage: " + step + " · stable Reel callbacks: " + CAPTURE.currentCount()
                     + " · total: " + CAPTURE.total() + "\n" + CAPTURE.prompt()
@@ -295,6 +308,7 @@ final class R1CD05FabPanel {
         detached = true;
         if (ticker != null) MAIN.removeCallbacks(ticker);
         CAPTURE.cancel(true);
+        R1CD06PreMenuReconciliation.clear();
         close();
         if (chip != null) { decor.removeView(chip); chip = null; }
     }

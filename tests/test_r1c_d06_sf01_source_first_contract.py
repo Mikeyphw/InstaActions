@@ -40,8 +40,8 @@ class SourceFirstContract(unittest.TestCase):
     def test_acceptance_remains_unqualified(self):
         import json
         d=json.loads((ROOT/'project.json').read_text())
-        self.assertFalse(d['r1c_d06_source_first_ci_qualified'])
-        self.assertEqual(d['r1c_d06_source_first_device_acceptance'],'NOT_RUN')
+        self.assertTrue(d['r1c_d06_source_first_ci_qualified'])
+        self.assertEqual(d['r1c_d06_source_first_device_acceptance'],'USER_REPORTED_IG455_SOURCE_CONFORMANCE_ONLY')
         self.assertFalse(d['r1c_d06_visible_media_verified'])
         self.assertIn('ONLY', (ROOT/'docs/R1C_D06_SOURCE_FIRST_FINDINGS.md').read_text().upper())
 if __name__=='__main__':unittest.main()

@@ -17,6 +17,8 @@ final class R1CD05FabSession {
             new int[4][R1CD06MenuOwnership.Verdict.values().length];
     private final int[][] visibleCounts =
             new int[4][R1CD06VisiblePageBinding.Verdict.values().length];
+    private final int[][] preMenuCounts =
+            new int[4][R1CD06PreMenuReconciliation.Verdict.values().length];
     // Structural-only FAB preflight, independent of menu callbacks and Media.
     private final int[][] preflightCounts = new int[4][R1CD06ViewPreflight.Status.values().length];
     private final int[][] preflightMax = new int[4][9];
@@ -43,6 +45,7 @@ final class R1CD05FabSession {
         for (int[] row : counts) java.util.Arrays.fill(row, 0);
         for (int[] row : ownerCounts) java.util.Arrays.fill(row, 0);
         for (int[] row : visibleCounts) java.util.Arrays.fill(row, 0);
+        for (int[] row : preMenuCounts) java.util.Arrays.fill(row, 0);
         for (int[] row : preflightCounts) java.util.Arrays.fill(row, 0);
         for (int[] row : preflightMax) java.util.Arrays.fill(row, 0);
         java.util.Arrays.fill(preflightSamples, 0);
@@ -72,6 +75,15 @@ final class R1CD05FabSession {
             R1CD05ReferenceContinuity.Result result, boolean typed,
             R1CD06MenuOwnership.Verdict ownership,
             R1CD06VisiblePageBinding.Verdict visible, long nowMs) {
+        observe(screen,result,typed,ownership,visible,
+                R1CD06PreMenuReconciliation.Verdict.NOT_QUALIFIED,nowMs);
+    }
+
+    synchronized void observe(R1BNavigationPolicy.Screen screen,
+            R1CD05ReferenceContinuity.Result result, boolean typed,
+            R1CD06MenuOwnership.Verdict ownership,
+            R1CD06VisiblePageBinding.Verdict visible,
+            R1CD06PreMenuReconciliation.Verdict preMenu, long nowMs) {
         int i = index(step);
         if (i < 0 || nowMs < windowStart || nowMs - windowStart > MAX_WINDOW_MS
                 || totalEvents >= 64 || stageEvents[i] >= MAX_STAGE_EVENTS) return;
@@ -79,6 +91,7 @@ final class R1CD05FabSession {
         stageEvents[i]++;
         if (ownership != null) ownerCounts[i][ownership.ordinal()]++;
         if (visible != null) visibleCounts[i][visible.ordinal()]++;
+        if (preMenu != null) preMenuCounts[i][preMenu.ordinal()]++;
         if (screen == R1BNavigationPolicy.Screen.REELS && typed) counts[i][0]++;
         if (screen == R1BNavigationPolicy.Screen.UNKNOWN) counts[i][1]++;
         switch (result) {
@@ -151,6 +164,18 @@ final class R1CD05FabSession {
         return "UNVERIFIED";
     }
 
+    synchronized String currentPreMenu() {
+        int i=index(step);
+        if(i<0)return "No live window";
+        if(stageEvents[i]==0)return "WAITING";
+        for(R1CD06PreMenuReconciliation.Verdict v:R1CD06PreMenuReconciliation.Verdict.values())
+            if(v!=R1CD06PreMenuReconciliation.Verdict.NOT_QUALIFIED
+                    && v!=R1CD06PreMenuReconciliation.Verdict.PREMENU_MEDIA_MATCH_CANDIDATE
+                    && preMenuCounts[i][v.ordinal()]>0)return v.name();
+        return preMenuCounts[i][R1CD06PreMenuReconciliation.Verdict.PREMENU_MEDIA_MATCH_CANDIDATE.ordinal()]>0
+                ? "PREMENU_MEDIA_MATCH_CANDIDATE" : "NOT_QUALIFIED";
+    }
+
     synchronized String currentVisiblePage() {
         int i = index(step);
         if (i < 0) return "No live window";
@@ -182,6 +207,19 @@ final class R1CD05FabSession {
                     +visibleCounts[i][R1CD06VisiblePageBinding.Verdict.PAGE_TIME_LIMIT.ordinal()];
             callbackCount+=stageEvents[i];
         }
+        int hidden=0,reconciled=0,missingModel=0,snapshotInvalid=0;
+        for(int i=0;i<4;i++){
+            hidden+=visibleCounts[i][R1CD06VisiblePageBinding.Verdict.NO_VERTICAL_PAGER.ordinal()];
+            reconciled+=preMenuCounts[i][R1CD06PreMenuReconciliation.Verdict.PREMENU_MEDIA_MATCH_CANDIDATE.ordinal()];
+            missingModel+=preMenuCounts[i][R1CD06PreMenuReconciliation.Verdict.NO_DIRECT_MEDIA.ordinal()];
+            snapshotInvalid+=preMenuCounts[i][R1CD06PreMenuReconciliation.Verdict.SNAPSHOT_EXPIRED.ordinal()]
+                    +preMenuCounts[i][R1CD06PreMenuReconciliation.Verdict.PAGE_INDEX_CHANGED.ordinal()]
+                    +preMenuCounts[i][R1CD06PreMenuReconciliation.Verdict.PAGE_REBOUND.ordinal()];
+        }
+        if(hidden>0 && reconciled>0)return "MENU_HIDES_PAGER_PREMENU_PAGE_MEDIA_CANDIDATE_ONLY";
+        if(hidden>0 && missingModel>0)return "MENU_HIDES_PAGER_PREMENU_PAGE_HAS_NO_DIRECT_MEDIA";
+        if(hidden>0 && snapshotInvalid>0)return "MENU_HIDES_PAGER_SNAPSHOT_CHANGED_OR_EXPIRED";
+        if(hidden>0 && found>0)return "MENU_HIDES_PAGER_CHECK_PREMENU_RECONCILIATION";
         if(samples==0)return "NO_FAB_PREFLIGHT_SAMPLES";
         if(callbackCount==0)return "NO_MENU_CALLBACKS_CAPTURED";
         if(offMain>0 && found>0)return "PAGER_PRESENT_BUT_CALLBACK_OFF_MAIN";
@@ -235,6 +273,7 @@ final class R1CD05FabSession {
            .append("EXACT_IG455_HOOK_GATE=").append(R1CD04PassiveProbe.isInstalled()).append('\n')
            .append("UPSTREAM_MENU_STATUS=").append(R1CD06UpstreamConformance.summary()).append('\n')
            .append("CURRENT_CAPTURE_STAGE=").append(step).append('\n')
+           .append("CALLBACK_VS_PREFLIGHT=").append(diagnosticSummary()).append('\n')
            .append("CURRENT_D05_CONTINUITY=").append(step == Step.DONE && validAll()
                     ? "FOUR_WINDOWS_REFERENCE_COUNTS_ONLY" : "NOT_QUALIFIED_IN_CURRENT_CAPTURE").append('\n')
            .append("CURRENT_D06_MENU_OWNER=").append(step == Step.DONE && ownedOnEveryWindow()
@@ -287,6 +326,17 @@ final class R1CD05FabSession {
                 out.append(names[i]).append("_VP_").append(verdict.name())
                    .append('=').append(visibleCounts[i][verdict.ordinal()]).append('\n');
             }
+        }
+        out.append("INA_D06_PREMENU_RECONCILIATION_V1\n")
+           .append("SOURCE=INSTAECLIPSE_PAGER_AND_ACTIVE_PAGE_SELECTION\n")
+           .append("SNAPSHOT=WEAK_PAGE_ONLY_NO_MEDIA_PERSISTED\n")
+           .append("MAX_SNAPSHOT_AGE_MS=")
+           .append(R1CD06PreMenuReconciliation.MAX_AGE_MS).append('\n')
+           .append("VISIBLE_MEDIA_IDENTITY=NOT_VERIFIED\n");
+        for(int i=0;i<4;i++){
+            for(R1CD06PreMenuReconciliation.Verdict v:R1CD06PreMenuReconciliation.Verdict.values())
+                out.append(names[i]).append("_PREMENU_").append(v.name()).append('=')
+                   .append(preMenuCounts[i][v.ordinal()]).append('\n');
         }
         out.append("INA_D06_DEEP_DIAGNOSIS_V1\n")
            .append("NEXT_DIAGNOSTIC_TARGET=").append(diagnosticSummary()).append('\n')

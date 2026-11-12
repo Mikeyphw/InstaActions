@@ -41,8 +41,8 @@ class Fab01Contract(unittest.TestCase):
 
     def test_version_and_status(self):
         build = (ROOT/'app/build.gradle').read_text()
-        self.assertIn('versionCode 19',build)
-        self.assertIn("versionName '0.5.0-r1c-d06-source-first-1'",build)
+        self.assertIn('versionCode 20',build)
+        self.assertIn("versionName '0.5.1-r1c-d06-premenu-hf02'",build)
         import json
         project = json.loads((ROOT/'project.json').read_text())
         self.assertTrue(project['r1c_d05_fab_source'])

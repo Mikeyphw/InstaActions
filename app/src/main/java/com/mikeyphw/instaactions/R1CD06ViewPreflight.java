@@ -75,6 +75,8 @@ final class R1CD06ViewPreflight {
                 || bounds.width()<=0 || bounds.height()<=0)
             return snap(Status.NO_VISIBLE_DECOR,n,started);
         View selectedPager=null;
+        ViewGroup selectedRecycler=null;
+        View selectedPage=null;
         try {
             ArrayDeque<View> q=new ArrayDeque<>();
             q.add(decor);
@@ -120,11 +122,12 @@ final class R1CD06ViewPreflight {
                 if (v!=null && hasType(v.getClass(),RECYCLER) && v instanceof ViewGroup) {
                     n[6]++;
                     ViewGroup recycler=(ViewGroup)v;
+                    selectedRecycler=recycler;
                     for(int k=0;k<recycler.getChildCount();k++) {
                         View page=recycler.getChildAt(k);
                         Rect rect=new Rect();
                         if(page!=null && page.isShown() && page.getGlobalVisibleRect(rect)
-                                && coversCenter(rect,bounds))n[7]++;
+                                && coversCenter(rect,bounds)) { n[7]++;selectedPage=page; }
                     }
                 }
             }
@@ -132,6 +135,10 @@ final class R1CD06ViewPreflight {
             if(n[6]>1)return snap(Status.AMBIGUOUS_RECYCLERS,n,started);
             if(n[7]==0)return snap(Status.NO_CENTERED_PAGE,n,started);
             if(n[7]>1)return snap(Status.AMBIGUOUS_CENTERED_PAGES,n,started);
+            // Snapshot holds only weak Android View references. It is checked
+            // against the actual adapter position again at menu callback time.
+            R1CD06PreMenuReconciliation.remember(activity,selectedPager,
+                    selectedRecycler,selectedPage,R1CD05FabPanel.activeStage());
             return snap(Status.VIEWER_STRUCTURE_FOUND,n,started);
         } catch(Throwable failure) {return snap(Status.PAGER_QUERY_FAILED,n,started);}
     }
