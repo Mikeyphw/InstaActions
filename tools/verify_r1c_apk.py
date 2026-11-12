@@ -17,6 +17,7 @@ def check(apk:Path):
                 b'R1BNavigationPolicy', b'R1CD07Recovery', b'R1CD07GateTrace',
                 b'R1CD07PredicateTrace', b'R1CD07ActualDataTarget',
                 b'R1CD07UxGuide', b'CURRENT STATUS',
+                b'STEP 1 OF 5', b'STEP 5 OF 5',
                 b'INA_D07_REPOST_EXACT_APK_A_B_TRACE',
                 b'ina-d07-repost-ui-selector4', b'ina-d07-verified-d3r-'):
             assert token in blob, f'R1C missing DEX marker {token!r}'

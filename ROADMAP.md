@@ -239,3 +239,20 @@ Instagram hooks. No new upstream discovery. Physical qualification pending.
 - Keep the exact IG455 / Reels TAB / manual account and ITM OFF guard. **A must remain actively recording when recovery is armed**. B remains optional read-only comparison.
 - Status: source overlay prepared. **No new exact-commit hosted CI or Android physical UI acceptance yet**. No D07C qualification, D06 media identity, posts parity or account isolation promoted.
 - Next: run exact-head hosted Android/API102 build; verify portrait/landscape scrolling, contrast, status transitions, D05/D06 expand/collapse and native Repost workflow; then D07C physical acceptance.
+
+
+### D07 UX02 — unambiguous ordered Repost instructions (source prepared; physical NOT RUN)
+
+- Replace UX01's conflicting four-panel order with one five-step sequence in the floating panel **and** companion app: 1 Prepare, 2 Start A, 3 Browse/reopen, 4 Confirm ITM OFF **after** Start A then Enable, 5 Test original native button, OFF, Export.
+- Fix the UX01 contradiction: Start A clears ITM-off acknowledgment, so confirmation must occur *after* Start A and fresh A evidence, never before.
+- Put optional B/Stop A/B comparison and separate D05/D06 diagnostics under one collapsed Advanced area, after the five normal steps.
+- Show a dynamic `STEP n OF 5` next-action prompt and readiness checklist; grey out Enable until existing original guards qualify. Emergency Recovery OFF stays at top regardless of screen scroll.
+- Repost hooks, native result mutation/lease caps, activity/lifecycle safety, exact IG455 SHA checks, D06 media identity and account/tab origin constraints are unchanged; the tab remains a USER assertion, not a verified identity.
+- No Android build or physical acceptance is claimed here. Require exact-new-SHA CI, visual inspection and D07C physical qualification before claiming success. No local Gradle.
+
+### D07 UX02 HF01 — preserve legacy guidance contract
+
+- Repair `InstaEclipse stays ON` wording in Step 1 after the UX02 reorder.
+- Preserve five-step sequence; A/B advanced diagnostics and exact IG455 gates unchanged.
+- Run inherited D05/D06 regression tests, not only new UX02 checks.
+- Source overlay only; device and D07C physical acceptance remain NOT RUN.

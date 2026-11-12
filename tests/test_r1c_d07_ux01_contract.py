@@ -49,8 +49,9 @@ class UX01Contract(unittest.TestCase):
 
     def test_guidance_is_present_and_diagnostics_optional(self):
         p=PANEL.read_text(); home=MAIN.read_text()
-        for phrase in ('CURRENT STATUS', '1 · Prepare', '2 · Collect', '3 · Try',
-                       '4 · Finish', 'Show D05/D06 diagnostic tools',
+        for phrase in ('CURRENT STATUS', 'STEP 1 OF 5 · PREPARE', 'STEP 2 OF 5 · START A',
+                       'STEP 3 OF 5 · BROWSE', 'STEP 4 OF 5 · CONFIRM',
+                       'STEP 5 OF 5 · TEST', 'Show D05/D06 diagnostic tools',
                        'advancedBody.setVisibility(View.GONE)', 'ITM Repost recovery is OFF',
                        'Dedicated Reels tab only', 'Do not press Stop A/B',
                        'Copy D07 safe Repost report', 'Recovery OFF'):
@@ -92,6 +93,6 @@ class UX01Contract(unittest.TestCase):
                 'com.mikeyphw.instaactions.R1CD07UxGuideSmoke'],
                 capture_output=True,text=True,timeout=30)
             self.assertEqual(r.returncode,0,r.stderr)
-            self.assertIn('INA_D07_UX01_GUIDANCE_PASS=12',r.stdout)
+            self.assertIn('INA_D07_UX02_GUIDANCE_PASS=22',r.stdout)
 
 if __name__=='__main__':unittest.main()

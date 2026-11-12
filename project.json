@@ -77,5 +77,9 @@
   "r1c_d07_ux01_source_implemented": true,
   "r1c_d07_ux01_hosted_ci_qualified": false,
   "r1c_d07_ux01_device_acceptance": "NOT_RUN",
-  "r1c_d07_ux01_scope": "PRESENTATION_ONLY_NO_NEW_NATIVE_HOOKS"
+  "r1c_d07_ux01_scope": "PRESENTATION_ONLY_NO_NEW_NATIVE_HOOKS",
+  "r1c_d07_ux02_source_implemented": true,
+  "r1c_d07_ux02_hosted_ci_qualified": false,
+  "r1c_d07_ux02_device_acceptance": "NOT_RUN",
+  "r1c_d07_ux02_scope": "ORDERED_UI_ONLY_NO_NEW_NATIVE_HOOKS"
 }

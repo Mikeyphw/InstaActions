@@ -15,7 +15,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 
 /**
- * D07 UX01 information screen. Installed package versions are informational,
+ * D07 UX02 ordered information screen. Installed package versions are informational,
  * not claims about Vector scope, hook readiness or D07C device acceptance.
  */
 public final class MainActivity extends Activity {
@@ -66,14 +66,18 @@ public final class MainActivity extends Activity {
         add(status, "InstaEclipse: " + installedVersion("ps.reso.instaeclipse"), 14, WHITE, false);
         add(status, "Vector / LSPosed module enabled: NOT VERIFIED from this screen", 13, AMBER, false);
 
-        LinearLayout guide = card("How to try Repost");
-        add(guide, "1 · Enable InstaActions for Instagram in Vector, and leave InstaEclipse enabled. Restart Instagram.", 14, WHITE, false);
-        add(guide, "2 · In Instagram, open the dedicated Reels tab at the bottom. Do not use Feed Reels or ordinary posts.", 14, WHITE, false);
-        add(guide, "3 · Tap the floating IA chip. Choose Start A, close the panel and browse a few Reels on the affected account.", 14, WHITE, false);
-        add(guide, "4 · Reopen IA. When evidence is ready, confirm InstaTaskManager's Repost recovery is OFF; then enable the short Repost recovery.", 14, WHITE, false);
-        add(guide, "5 · Close IA and tap Instagram's ORIGINAL Repost button yourself. Return to IA and press Recovery OFF before switching accounts or tabs.", 14, WHITE, false);
-        add(guide, "6 · Copy the D07 safe report. Use the separate D07C acceptance runner to record what happened on the physical device.", 14, WHITE, false);
-        add(guide, "Keep A recording until recovery is enabled. Stop A/B also switches recovery OFF.", 14, AMBER, true);
+        LinearLayout guide = card("Do these 5 steps IN ORDER");
+        add(guide, "STEP 1/5 · PREPARE", 16, BLUE, true);
+        add(guide, "In Vector/LSPosed enable InstaActions for Instagram. Keep InstaEclipse ON and restart Instagram. Turn InstaTaskManager's separate Repost recovery OFF. On the affected account, open Instagram's dedicated bottom Reels tab. Wait for native hooks.", 14, WHITE, false);
+        add(guide, "STEP 2/5 · START A", 16, BLUE, true);
+        add(guide, "Tap the floating IA chip, then Start A ONCE. This only records native eligibility observations. Do not choose B or Stop A/B.", 14, WHITE, false);
+        add(guide, "STEP 3/5 · BROWSE AND RETURN", 16, BLUE, true);
+        add(guide, "Close IA and swipe through several Reels in the same bottom Reels tab. Reopen IA. If fresh A evidence is still NOT READY, browse more Reels and return. KEEP A RECORDING.", 14, WHITE, false);
+        add(guide, "STEP 4/5 · CONFIRM, THEN ENABLE", 16, BLUE, true);
+        add(guide, "AFTER fresh A evidence is ready: press 4A (manual ITM recovery OFF confirmation), THEN press 4B (Enable). Start A clears earlier confirmations. Recovery is limited to 90 seconds or 64 changed checks.", 14, WHITE, false);
+        add(guide, "STEP 5/5 · TEST, OFF, EXPORT", 16, BLUE, true);
+        add(guide, "Close IA. Tap Instagram's ORIGINAL Repost button yourself. Reopen IA immediately, press Recovery OFF BEFORE switching account or tab, then Copy D07 safe Repost report. Record the actual result in separate D07C physical acceptance.", 14, WHITE, false);
+        add(guide, "If anything fails: press Recovery OFF anyway and copy the report. Optional Account B and D05/D06 diagnostics are NOT required for this trial.", 14, AMBER, true);
 
         LinearLayout safety = card("What the controls actually do");
         add(safety, "Start A / Start B: read-only native result observations. These are manual labels, NOT verified Instagram account identities.", 14, DETAIL, false);

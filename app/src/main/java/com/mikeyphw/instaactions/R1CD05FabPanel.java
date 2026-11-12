@@ -27,7 +27,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 /**
- * D07 UX01. Activity-local, high-contrast user guide for existing native
+ * D07 UX02. Ordered, high-contrast user guide for existing native
  * Repost recovery. No new hooks, content access, Vector permissions or state
  * transitions. Exact-gate and recovery decisions live in D04/D07, not here.
  */
@@ -57,12 +57,15 @@ final class R1CD05FabPanel {
     private ScrollView panel;
     private TextView recoveryStatus;
     private TextView nextStep;
+    private TextView readinessChecklist;
     private TextView captureStatus;
     private TextView guardStatus;
     private TextView advancedStatus;
     private LinearLayout advancedBody;
     private Button advancedToggle;
     private Button primary;
+    private Button enableRecovery;
+    private Button startA;
     private Runnable ticker;
     private boolean detached;
     private boolean advancedVisible;
@@ -279,50 +282,54 @@ final class R1CD05FabPanel {
         scroll.addView(body);
 
         bold(body, "InstaActions", 20, FG);
-        body.addView(label("Repost recovery · D07 experimental", 14, ACCENT));
-        hint(body, "Dedicated Reels tab only. This version has NOT passed physical D07C acceptance.");
-        neutral(body, "Close panel · return to Reels", this::close);
+        body.addView(label("D07 · Repost recovery · guided trial", 14, ACCENT));
+        hint(body, "EXPERIMENTAL · D07C device qualification NOT RUN. Dedicated Reels tab only — select it from Instagram's bottom bar.");
 
-        LinearLayout stateCard = section(body, "CURRENT STATUS", "Recovery changes only one verified native eligibility result. It never presses Repost for you.");
+        LinearLayout stateCard = section(body, "CURRENT STATUS · NEXT STEP", "Follow Steps 1 through 5 in order. Only the original Instagram Repost button performs a Repost.");
         recoveryStatus = label("", 15, SUCCESS);
         recoveryStatus.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         stateCard.addView(recoveryStatus);
-        nextStep = label("", 14, SECONDARY);
+        nextStep = label("", 14, FG);
+        nextStep.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         stateCard.addView(nextStep);
-
-        LinearLayout prep = section(body, "1 · Prepare your Reels tab", "Open the Reels tab from Instagram's bottom navigation on the affected account (manual A). Feed Reels, regular posts and profile Reels are NOT supported.");
-        hint(prep, "InstaEclipse stays ON. InstaTaskManager's Repost recovery must be OFF before enabling this one.");
-        guardStatus = label("", 14, WARNING);
-        prep.addView(guardStatus);
-        neutral(prep, "Confirm ITM Repost recovery is OFF", () -> {
-            itmRecoveryOffAcknowledged=true;
-            toast("Manual confirmation noted; cannot verify another module");refresh();
+        readinessChecklist = label("", 13, SECONDARY);
+        stateCard.addView(readinessChecklist);
+        stopAction(stateCard, "Recovery OFF now · emergency stop", () -> {
+            toast(R1CD07GateTrace.stopExactTrial());
+            itmRecoveryOffAcknowledged=false;refresh();
         });
 
-        LinearLayout evidence = section(body, "2 · Collect native evidence", "Tap Start A, close IA and browse multiple Reels within the dedicated tab. Reopen IA after a few seconds. Keep A recording until recovery is enabled.");
-        mainAction(evidence, "Start A · observe Repost (no changes)", () -> {
+        LinearLayout prep = section(body, "STEP 1 OF 5 · PREPARE", "Before touching Start A, check your setup:");
+        hint(prep, "1. InstaActions enabled for Instagram in Vector/LSPosed; InstaEclipse stays ON. Restart Instagram after changing scope.");
+        hint(prep, "2. Use the affected account. Make sure InstaTaskManager's separate Repost recovery is OFF.");
+        hint(prep, "3. Open the dedicated Reels tab using Instagram's bottom bar. Feed, profile Reels and ordinary posts are not qualified.");
+        hint(prep, "4. Check CURRENT STATUS above. If exact Instagram 455 hooks are not ready, do not proceed.");
+        hint(prep, "Do NOT press the ITM confirmation button yet: Step 2 clears earlier confirmations.");
+
+        LinearLayout startCard = section(body, "STEP 2 OF 5 · START A", "Tap the button ONCE while on the affected account. A is a manual label, not an account-ID check.");
+        startA = mainAction(startCard, "Start A · read-only observation", () -> {
             R1CD07GateTrace.stopExactTrial();
             itmRecoveryOffAcknowledged=false;
             toast(R1CD07GateTrace.begin(0));refresh();
         });
-        captureStatus = label("", 14, SECONDARY);
-        evidence.addView(captureStatus);
-        hint(evidence, "Account A/B are labels you choose; InstaActions does not identify accounts. If observations aren't ready, continue browsing. Do not press Stop A/B before arming.");
-        neutral(evidence, "Optional · Start B read-only comparison", () -> {
-            R1CD07GateTrace.stopExactTrial();
-            itmRecoveryOffAcknowledged=false;
-            toast(R1CD07GateTrace.begin(1));refresh();
-        });
-        hint(evidence, "B is diagnostic only; to try recovery afterward, start A again and collect fresh A evidence.");
-        stopAction(evidence, "Stop A/B observation · recovery OFF", () -> {
-            itmRecoveryOffAcknowledged=false;
-            toast(R1CD07GateTrace.stop());refresh();
-        });
+        hint(startCard, "After Start A, immediately continue to Step 3. Do not select B or Stop A/B.");
 
-        LinearLayout recovery = section(body, "3 · Try the original Repost button", "When the status says evidence is ready, confirm ITM recovery is OFF, then enable. Close IA, use Instagram's normal Repost button yourself and return here.");
-        mainAction(recovery, "Enable native Repost · Reels TAB (90 s)", () -> {
+        LinearLayout browse = section(body, "STEP 3 OF 5 · BROWSE, THEN RETURN", "1. Close this IA panel. 2. Swipe through several Reels IN the dedicated Reels tab. 3. Tap IA to reopen it.");
+        neutral(browse, "Close IA · browse Reels now", this::close);
+        hint(browse, "Wait for fresh A evidence to become ready. If not ready, close IA and browse more Reels, then return. KEEP A RECORDING; do not Stop A/B.");
+        captureStatus = label("", 14, SECONDARY);
+        browse.addView(captureStatus);
+
+        LinearLayout recovery = section(body, "STEP 4 OF 5 · CONFIRM, THEN ENABLE", "Only after fresh A evidence is ready: first confirm the OTHER module is OFF, then enable THIS module.");
+        guardStatus = label("", 14, WARNING);
+        recovery.addView(guardStatus);
+        neutral(recovery, "4A · Confirm ITM Repost recovery is OFF", () -> {
+            itmRecoveryOffAcknowledged=true;
+            toast("Manual confirmation noted; cannot verify another module");refresh();
+        });
+        enableRecovery = mainAction(recovery, "4B · Enable native Repost · 90 s max", () -> {
             if (!itmRecoveryOffAcknowledged) {
-                toast("REFUSED: first confirm ITM Repost recovery OFF");return;
+                toast("REFUSED: do step 4A after Start A, then step 4B");return;
             }
             if (CAPTURE.isActiveWindow()) {
                 toast("REFUSED: stop the advanced D05 capture first");return;
@@ -333,21 +340,34 @@ final class R1CD05FabPanel {
             }
             toast(R1CD07GateTrace.armHF13Recovery());refresh();
         });
-        hint(recovery, "Manually expires after 90 seconds or 64 eligible changes. It must be OFF before switching accounts or tabs; same-Activity switches are not reliably detected.");
+        hint(recovery, "If 4B is unavailable, read CURRENT STATUS and finish Step 3 first. This changes at most 64 eligible results or lasts 90 seconds; it does NOT tap Repost.");
 
-        LinearLayout finish = section(body, "4 · Finish safely and export", "Press OFF even if the native Repost button did not appear. A screenshot or a visible button alone does NOT qualify D07C; check the actual user-initiated action.");
-        stopAction(finish, "Recovery OFF · restore native results", () -> {
+        LinearLayout finish = section(body, "STEP 5 OF 5 · TEST, OFF, EXPORT", "1. Close IA. 2. Tap Instagram's ORIGINAL Repost button on a Reel in the dedicated tab yourself. 3. Reopen IA immediately.");
+        neutral(finish, "Close IA · try the original Repost", this::close);
+        hint(finish, "4. Press Recovery OFF below BEFORE switching account or tab. 5. Copy the safe report. 6. Confirm the real repost separately in D07C; a button alone is not proof.");
+        stopAction(finish, "5A · Recovery OFF · restore native results", () -> {
             toast(R1CD07GateTrace.stopExactTrial());
             itmRecoveryOffAcknowledged=false;refresh();
         });
-        mainAction(finish, "Copy D07 safe Repost report", this::copyD07);
-        hint(finish, "The D07C acceptance runner also asks what you saw on the device. Reports contain aggregated gates, not account or media IDs.");
+        mainAction(finish, "5B · Copy D07 safe Repost report", this::copyD07);
+        hint(finish, "If no native button appears, still switch OFF and export the report. Before any account/tab change, OFF is mandatory; same-Activity switches are not reliably detected.");
 
-        LinearLayout diagnostic = section(body, "Advanced · D05/D06 media diagnostics", "Optional and separate from Repost. These experiments do NOT prove the visible media identity and do not enable other actions.");
+        LinearLayout diagnostic = section(body, "OPTIONAL · B comparison, reset and D05/D06", "Only open this after the normal 5-step trial, or when intentionally restarting. None of these buttons is required to try Repost.");
         advancedToggle = neutral(diagnostic, "Show D05/D06 diagnostic tools", this::toggleAdvanced);
         advancedBody = vertical();
         advancedBody.setVisibility(View.GONE);
         diagnostic.addView(advancedBody);
+        hint(advancedBody, "Optional Start B compares another MANUALLY labeled account. It switches recovery OFF and means you must restart A from Step 2 before trying Repost again.");
+        neutral(advancedBody, "Optional · Start B read-only comparison", () -> {
+            R1CD07GateTrace.stopExactTrial();
+            itmRecoveryOffAcknowledged=false;
+            toast(R1CD07GateTrace.begin(1));refresh();
+        });
+        stopAction(advancedBody, "Reset A/B observations · recovery OFF", () -> {
+            itmRecoveryOffAcknowledged=false;
+            toast(R1CD07GateTrace.stop());refresh();
+        });
+        hint(advancedBody, "D05/D06 media diagnostics are a separate research workflow; they do not prove media identity or enable actions.");
         advancedStatus = label("", 13, SECONDARY);
         advancedBody.addView(advancedStatus);
         hint(advancedBody, "A1: menu on Reel A → Next. A2: same Reel → Next. B1: another Reel → Next. B2: same Reel B → Finish. Each stage lasts up to 60 seconds.");
@@ -422,7 +442,8 @@ final class R1CD05FabPanel {
     private void close() {
         if (panel != null) {
             decor.removeView(panel);
-            panel=null; recoveryStatus=null; nextStep=null; captureStatus=null;
+            panel=null; recoveryStatus=null; nextStep=null; readinessChecklist=null;
+            enableRecovery=null; startA=null; captureStatus=null;
             guardStatus=null; advancedStatus=null; advancedBody=null;
             advancedToggle=null; primary=null; advancedVisible=false;
         }
@@ -482,21 +503,36 @@ final class R1CD05FabPanel {
             recoveryStatus.setTextColor(on ? SUCCESS : observingA || observingB ? ACCENT : WARNING);
         }
         if (nextStep != null) {
-            copyIfChanged(nextStep, "NEXT: " + R1CD07UxGuide.next(on,
+            copyIfChanged(nextStep, R1CD07UxGuide.next(on,
                     R1CD07GateTrace.ready(), InstaActionsEntry.dataGateReady(),
                     R1BContextMonitor.stableScreen()==R1BNavigationPolicy.Screen.REELS,
                     observingA, R1CD07ExactGateTrial.eligibleForHF13Recovery(),
                     itmRecoveryOffAcknowledged));
         }
+        if (readinessChecklist != null) copyIfChanged(readinessChecklist,
+                R1CD07UxGuide.checklist(R1CD07GateTrace.ready(),
+                        InstaActionsEntry.dataGateReady(),
+                        R1BContextMonitor.stableScreen()==R1BNavigationPolicy.Screen.REELS,
+                        observingA, R1CD07ExactGateTrial.eligibleForHF13Recovery(),
+                        itmRecoveryOffAcknowledged));
+        if (enableRecovery != null) enableRecovery.setEnabled(!on
+                && R1CD07GateTrace.ready() && InstaActionsEntry.dataGateReady()
+                && R1BContextMonitor.stableScreen()==R1BNavigationPolicy.Screen.REELS
+                && observingA && R1CD07ExactGateTrial.eligibleForHF13Recovery()
+                && itmRecoveryOffAcknowledged && !CAPTURE.isActiveWindow());
+        if (startA != null) startA.setEnabled(!on && R1CD07GateTrace.ready());
         if (guardStatus != null) copyIfChanged(guardStatus,
                 "ITM recovery OFF: " + (itmRecoveryOffAcknowledged
                 ? "You confirmed for this session (not verified by IA)"
                 : "NOT CONFIRMED · recovery remains guarded"));
         if (captureStatus != null) copyIfChanged(captureStatus,
-                R1CD07GateTrace.feedback() + "\nNative data hook: "
-                + InstaActionsEntry.dataGateStatus());
+                (observingA ? "A IS RECORDING · " : observingB ? "B is recording (optional) · " : "A not recording · ")
+                + (R1CD07ExactGateTrial.eligibleForHF13Recovery()
+                    ? "fresh A evidence ready" : "fresh A evidence not ready")
+                + "\nNative data hook: " + InstaActionsEntry.dataGateStatus());
         if (advancedStatus != null && advancedVisible) copyIfChanged(advancedStatus,
-                "D05 stage: " + stage + " · Reels callbacks: " + CAPTURE.currentCount()
+                "D07 native trace: " + R1CD07GateTrace.feedback()
+                + "\nD05 stage: " + stage + " · Reels callbacks: " + CAPTURE.currentCount()
                 + " · total: " + CAPTURE.total() + "\n" + CAPTURE.prompt()
                 + "\nD04 hook: " + (R1CD04PassiveProbe.isInstalled() ? "installed" : "unverified")
                 + "\nD06 owner: " + CAPTURE.currentOwnership()
