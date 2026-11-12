@@ -73,5 +73,9 @@
   "r1c_d07_reels_tab": "MANUAL_USER_ASSERTION_REQUIRED",
   "r1c_d07_feed_posts": "NOT_QUALIFIED",
   "r1c_d07_repost_native_mutation": "DEFAULT_OFF_MANUAL_LEASE_90S_64_CALLS",
-  "r1c_d07_module_coexistence": "REQUIRES_ITM_REPOST_OFF"
+  "r1c_d07_module_coexistence": "REQUIRES_ITM_REPOST_OFF",
+  "r1c_d07_ux01_source_implemented": true,
+  "r1c_d07_ux01_hosted_ci_qualified": false,
+  "r1c_d07_ux01_device_acceptance": "NOT_RUN",
+  "r1c_d07_ux01_scope": "PRESENTATION_ONLY_NO_NEW_NATIVE_HOOKS"
 }

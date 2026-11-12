@@ -231,3 +231,11 @@ Instagram hooks. No new upstream discovery. Physical qualification pending.
 - **D08:** ordinary posts and Reel-as-post parity separately, not extrapolated from dedicated Reels tab.
 - **D09:** Friends tab and avatar/facepile real data and UI investigation, entirely read-only until device-qualified.
 - **R2–R8:** ALL existing screen-local action, confirmation, privacy, automation restrictions, release gates, and InstaEclipse coexistence requirements retained unchanged.
+
+### D07 UX01 — readable UI and guided Repost workflow (source overlay; NOT device qualified)
+
+- Redesign IA panel with high-contrast status, adaptive scrolling, distinct safety/primary actions and collapsed D05/D06 tools; rewrite companion MainActivity's stale R1B-only onboarding for D07.
+- Add an Android-independent guidance state model and regression tests. No native Repost method hooks, eligibility or activity-lifecycle changes.
+- Keep the exact IG455 / Reels TAB / manual account and ITM OFF guard. **A must remain actively recording when recovery is armed**. B remains optional read-only comparison.
+- Status: source overlay prepared. **No new exact-commit hosted CI or Android physical UI acceptance yet**. No D07C qualification, D06 media identity, posts parity or account isolation promoted.
+- Next: run exact-head hosted Android/API102 build; verify portrait/landscape scrolling, contrast, status transitions, D05/D06 expand/collapse and native Repost workflow; then D07C physical acceptance.
