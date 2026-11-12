@@ -1,6 +1,10 @@
 # InstaActions R1C D06 — InstaEclipse-derived native menu ownership
 
-**Status (HF01): SOURCE_PREPARED / HF01_HOSTED_CI_NOT_RUN / VISIBLE_REEL_IDENTITY_NOT_VERIFIED.**
+**Current status (VB01): SOURCE_PREPARED / VB01_CI_NOT_RUN / VB01_DEVICE_NOT_RUN / VISIBLE_REEL_IDENTITY_NOT_VERIFIED.**
+
+**Historical HF01 status:** CI passed at `28490e7558c4b0ccd15607d8268f9d3e12cd8d32`;
+user-reported FAB A1/A2/B1/B2 shows 4/4 `CONTEXT_DIRECT_MATCH`, with no
+budget or ambiguity failures. These are direct-menu-context matches only.
 
 **PORT01 outcome:** User FAB A1/A2/B1/B2 evidence with 5 Media-typed callbacks,
 all 5 D06 `BUDGET_EXCEEDED`, while D05 reference continuity was stable. PORT01
@@ -65,3 +69,43 @@ Python/Rich ZIP `install` command; leave InstaEclipse enabled, restart Instagram
 repeat IA FAB A1/A2/B1/B2 and paste the safe report. No Vector scope toggle,
 no Termux switching during captures. If any budget remains, its precise
 `OWNER_*_LIMIT` / `CONTEXT_*_LIMIT` field identifies the next structural fix.
+
+
+## VB01 follow-up (new revision; source only, CI/device NOT RUN)
+
+HF01's on-device user report after the independent field-budget repair records
+`CONTEXT_DIRECT_MATCH=1` in A1/A2/B1/B2, without mismatches or limit errors.
+That is menu-context ownership only. Historical PORT01 failure remains in this
+document for provenance. Both HF01 CI workflows passed at
+`28490e7558c4b0ccd15607d8268f9d3e12cd8d32`.
+
+VB01 adds a **separate**, read-only active-view candidate based on
+`ReelsControlsHook.installScrollLock` (ClipsViewPagerImpl's ViewPager2) and
+`ReelDownloadHook.findCarouselIndexFromView` (reject multiple matching visible
+items). It locates exactly one large, centered **vertical** ViewPager2, confirms
+exactly one centered RecyclerView page with adapter index equal to the pager's
+`getCurrentItem()`, then compares the menu argument against the unique exact
+Media-typed field found in visible page-owned Android View objects. It does
+not search arbitrary Instagram controller graphs or inspect Media contents.
+
+The `INA_D06_VISIBLE_PAGE_REPORT_V1` FAB section provides bounded count-only
+verdicts and always includes `D06_ACTIVE_VIEW_BINDING=NOT_QUALIFIED` even if
+all four windows report `VISIBLE_PAGE_DIRECT_MATCH_CANDIDATE`. Lack of a
+direct View Media field is an **inconclusive observation**, not proof the media
+is absent or an instruction to weaken owner/ambiguity constraints.
+
+Keep InstaEclipse ON throughout. For VB01 device capture use IA →
+A1/A2/B1/B2. Test the stable A/A and B/B sequence first, then separately
+rapidly swipe away and back, and verify an ambiguous/preloaded page never
+gets a positive verdict. No UI/network/action mutation. R1C remains unmerged.
+
+
+## D06 DD01 — single-capture deep failure localization (unqualified)
+
+- Derived from VB01 source at exact HF01 head `28490e7558c4b0ccd15607d8268f9d3e12cd8d32`.
+- The IA FAB takes up to **12 bounded content-free pager preflight snapshots per stage**, from the Android main thread. They are independent of menu callback threading and never carry a Media object, identifier, view class name, view text or URL.
+- Each A/B window exports `INA_D06_STRUCTURAL_PREFLIGHT_REPORT_V1` with sample counts, reasons, maxima for visible-view/pager/recycler/page counts, and scan latency. This helps separate "no vertical pager exists" from "callback thread off main" and "Media not held on page views".
+- VB01 synchronous media-match probe now distinguishes scan time, view count, class depth, declared fields and Media-field candidate budget failures. It still refuses ambiguous selection and does not use deferred media objects.
+- **No proof of visible Media** from structural snapshots. All action hooks remain OFF and InstaEclipse remains enabled.
+- Expected device workflow: ONEPASS build/install, force-stop/restart Instagram once, IA A1/A2/B1/B2, copy entire report. No Termux switching during the capture.
+- Negative controls to perform after first report: rapid swipe A→B, scroll past preloaded neighboring Reel, back to A, Instagram orientation change if supported. The report must not confuse ambiguous or stale page evidence with identity.

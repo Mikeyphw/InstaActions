@@ -37,15 +37,15 @@ class D05Contract(unittest.TestCase):
                 self.assertNotIn(forbidden,src)
     def test_versions_and_docs(self):
         b=(ROOT/'app/build.gradle').read_text()
-        self.assertIn('versionCode 16',b)
-        self.assertIn("versionName '0.4.7-r1c-d06-hf01-bounded-owner'",b)
+        self.assertIn('versionCode 19',b)
+        self.assertIn("versionName '0.5.0-r1c-d06-source-first-1'",b)
         p=(ROOT/'project.json').read_text()
         self.assertIn('PASS_REELS_MENU_MEDIA_TYPE_ONLY',p)
         self.assertIn('D04 verified device evidence',(ROOT/'docs/R1C_D05_REFERENCE_CONTINUITY.md').read_text())
         for path in (ROOT/'tests').glob('test_*.py'):
             for line in path.read_text().splitlines():
                 if line.lstrip().startswith('self.assertIn(') and ('versionCode ' in line or "versionName '" in line):
-                    self.assertIn('versionCode 16' if 'versionCode' in line else '0.4.7-r1c-d06-hf01-bounded-owner',line,str(path))
+                    self.assertIn('versionCode 19' if 'versionCode' in line else '0.5.0-r1c-d06-source-first-1',line,str(path))
         verifier=(ROOT/'tools/verify_r1c_apk.py').read_text()
         self.assertIn("b'R1CD05ReferenceContinuity'",verifier)
         self.assertIn("b'INA_R1C_D05_REFERENCE'",verifier)

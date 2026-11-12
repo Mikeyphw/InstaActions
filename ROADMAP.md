@@ -181,3 +181,32 @@ HF01 preserves all passive action guards and InstaEclipse ON, differentiates
 owner vs context and field/depth/Media-candidate budgets, and requires every
 callback in a capture window to be owner-verified before reporting a positive
 four-window menu-ownership result. Device/CI qualification of HF01 is pending.
+
+
+### D06 VB01 — independent visible-page candidate (2026-11-11)
+
+- New diagnostic-only vertical ViewPager2/current-item candidate based on InstaEclipse
+  `ReelsControlsHook` pager source and `ReelDownloadHook` unique-view selection.
+- Menu-owned Media must match a unique exact typed field on *the currently visible
+  page's view tree*, or the result is a typed, content-free refusal.
+- Retain D05 four-stage FAB and D06 HF01 4/4 user-reported context-owner evidence.
+- No automatic InstaEclipse toggles, additional Instagram method hooks,
+  action dispatch, media field getters, IDs, URLs or stored Media objects.
+- Candidate-match results are explicitly **not qualified visible-media identity**.
+  CI and physical device negative cases (rapid swipes, adjacent/preloaded pages,
+  return to Reel A, ambiguous pager) must be collected before promoting D06.
+
+
+## D06 DD01 — single-capture deep failure localization (unqualified)
+
+- Derived from VB01 source at exact HF01 head `28490e7558c4b0ccd15607d8268f9d3e12cd8d32`.
+- The IA FAB takes up to **12 bounded content-free pager preflight snapshots per stage**, from the Android main thread. They are independent of menu callback threading and never carry a Media object, identifier, view class name, view text or URL.
+- Each A/B window exports `INA_D06_STRUCTURAL_PREFLIGHT_REPORT_V1` with sample counts, reasons, maxima for visible-view/pager/recycler/page counts, and scan latency. This helps separate "no vertical pager exists" from "callback thread off main" and "Media not held on page views".
+- VB01 synchronous media-match probe now distinguishes scan time, view count, class depth, declared fields and Media-field candidate budget failures. It still refuses ambiguous selection and does not use deferred media objects.
+- **No proof of visible Media** from structural snapshots. All action hooks remain OFF and InstaEclipse remains enabled.
+- Expected device workflow: ONEPASS build/install, force-stop/restart Instagram once, IA A1/A2/B1/B2, copy entire report. No Termux switching during the capture.
+- Negative controls to perform after first report: rapid swipe A→B, scroll past preloaded neighboring Reel, back to A, Instagram orientation change if supported. The report must not confuse ambiguous or stale page evidence with identity.
+
+## D06 SF01 — upstream source conformance (pending CI/device)
+
+One-pass source-gated IG455 conformance using the exact `ReelDownloadHook` PLAYBACK_CONTROLS/UNSAVE list-builder fingerprint and `ReelsControlsHook` ClipsViewPagerImpl_getViewAtIndex marker, beside DD01. D05/D06 menu ownership qualified only within their original scope; no more repeat four-window test for source-shape confirmation. See `docs/R1C_D06_SOURCE_FIRST_FINDINGS.md`.

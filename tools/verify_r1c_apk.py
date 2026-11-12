@@ -11,7 +11,7 @@ def check(apk:Path):
         blob=b''.join(z.read(n) for n in dexes)
         for token in (b'R1CDiscoveryPolicy', b'R1CDiscoveryController',
                 b'R1CMediaCandidateProbe', b'R1CStaticShapeProbe', b'R1CModernReelsPolicy', b'R1CD04Policy', b'R1CD04PassiveProbe', b'R1CD05ReferenceContinuity', b'R1CD05FabPanel',
-                b'R1CD05FabSession', b'INA_D05_FAB_REPORT_V1', b'R1CD06MenuOwnership', b'INA_R1C_D06_OWNER', b'INA_D06_MENU_OWNER_REPORT_V1', b'INA_R1C_D04_HOOK', b'INA_R1C_D04_EVENT', b'INA_R1C_D05_REFERENCE', b'INA_R1C_DIRECT_REELS', b'INA_R1C_MODEL',
+                b'R1CD05FabSession', b'INA_D05_FAB_REPORT_V1', b'R1CD06MenuOwnership', b'INA_R1C_D06_OWNER', b'R1CD06VisiblePageBinding', b'R1CD06DirectViewMedia', b'INA_R1C_D06_VISIBLE_PAGE', b'INA_D06_VISIBLE_PAGE_REPORT_V1', b'R1CD06ViewPreflight', b'INA_D06_DEEP_DIAGNOSIS_V1', b'INA_D06_STRUCTURAL_PREFLIGHT_REPORT_V1', b'R1CD06UpstreamConformance', b'INA_D06_INSTAECLIPSE_SOURCE_CONFORMANCE_V1', b'ClipsViewPagerImpl_getViewAtIndex', b'PLAYBACK_CONTROLS', b'UNSAVE', b'INA_D06_MENU_OWNER_REPORT_V1', b'INA_R1C_D04_HOOK', b'INA_R1C_D04_EVENT', b'INA_R1C_D05_REFERENCE', b'INA_R1C_DIRECT_REELS', b'INA_R1C_MODEL',
                 b'INA_R1C_ANCHOR', b'INA_R1C_SHAPE', b'INA_R1C_SUMMARY',
                 b'identity_verified=false binding_hooks=off actions=off',
                 b'R1BNavigationPolicy'):

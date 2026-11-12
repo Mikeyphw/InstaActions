@@ -10,6 +10,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.lang.ref.WeakReference;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -51,14 +52,14 @@ final class R1CD04PassiveProbe {
     /** Invalidate ephemeral comparison state whenever a resumed Activity leaves. */
     static void paused() {
         Counter counter = installedCounter;
-        if (counter != null) counter.invalidate();
+        if (counter != null) { counter.invalidate(); counter.clearActivity(); }
     }
 
     interface Installer { void install(Method method, Counter counter) throws Throwable; }
     private R1CD04PassiveProbe() { }
 
     static void onActivityResumed(Activity activity, String targetApk,
-            ClassLoader instagramLoader, Installer installer) {
+            String nativeLibraryDir, ClassLoader instagramLoader, Installer installer) {
         if (activity == null || !ModuleConstants.TARGET_PACKAGE.equals(activity.getPackageName())) return;
         final String version;
         try {
@@ -77,15 +78,21 @@ final class R1CD04PassiveProbe {
             Log.i(TAG, "INA_R1C_D04_GATE status=REFUSED reason=missing_input actions=off");
             return;
         }
-        if (!STARTED.compareAndSet(false, true)) return;
-        Thread worker = new Thread(() -> installVerified(targetApk, instagramLoader, installer),
+        if (!STARTED.compareAndSet(false, true)) {
+            Counter existing = installedCounter;
+            if (existing != null) existing.setActivity(activity);
+            return;
+        }
+        Thread worker = new Thread(() -> installVerified(targetApk, nativeLibraryDir,
+                        instagramLoader, installer, activity),
                 "ina-r1c-d04-passive-install");
         worker.setPriority(Thread.MIN_PRIORITY);
         worker.setDaemon(true);
         worker.start();
     }
 
-    private static void installVerified(String apkPath, ClassLoader loader, Installer installer) {
+    private static void installVerified(String apkPath, String nativeLibraryDir,
+            ClassLoader loader, Installer installer, Activity resumedActivity) {
         try {
             File apk = new File(apkPath);
             if (!apk.isFile() || apk.length() != R1CD04Policy.TARGET_APK_BYTES) {
@@ -126,8 +133,12 @@ final class R1CD04PassiveProbe {
             // APK DEX access_flags=0x12: PRIVATE FINAL *INSTANCE* method, not static.
             // No setAccessible, invoke, getId, media getter or method result reads.
             Counter counter = new Counter(media, target.getDeclaringClass(), target.getParameterTypes()[0]);
+            counter.setActivity(resumedActivity);
             installer.install(target, counter);
             installedCounter = counter;
+            // Correlate two exact InstaEclipse source fingerprints with this
+            // SHA-qualified IG455 APK. Read-only DexKit, independent background thread.
+            R1CD06UpstreamConformance.startAfterExactGate(apkPath, nativeLibraryDir, loader);
             Log.i(TAG, "INA_R1C_D04_HOOK status=INSTALLED"
                     + " signature=exact_ig455 mode=passive_no_mutation actions=off");
         } catch (Throwable failure) {
@@ -160,6 +171,9 @@ final class R1CD04PassiveProbe {
         private final Class<?> media;
         private final Class<?> menuOwnerType;
         private final Class<?> contextType;
+        // Weak Activity reference; the UI tree is read only during main-thread
+        // callbacks and never persisted across Activity pause/destroy.
+        private WeakReference<Activity> activeActivity = new WeakReference<>(null);
         private int events;
         private final R1CD05ReferenceContinuity continuity =
                 new R1CD05ReferenceContinuity();
@@ -168,6 +182,11 @@ final class R1CD04PassiveProbe {
             this.menuOwnerType = ownerType;
             this.contextType = contextType;
         }
+
+        synchronized void setActivity(Activity activity) {
+            activeActivity = new WeakReference<>(activity);
+        }
+        synchronized void clearActivity() { activeActivity.clear(); }
 
         /** Only type/nullness and already-confirmed navigation; never access object fields. */
         synchronized void observe(Object mediaArg, R1BNavigationPolicy.Screen screen,
@@ -195,9 +214,19 @@ final class R1CD04PassiveProbe {
             Log.i(TAG, "INA_R1C_D06_OWNER ordinal=" + events
                     + " result=" + ownership + " visible_media=unverified"
                     + " media_id=excluded actions=off");
-            // Pass enum-only evidence into the activity-local diagnostic panel.
+            // Independent AndroidX vertical ViewPager2 active-page corroboration.
+            // No Media identifiers, model getters, strong references or UI writes.
+            // ReelsControlsHook and ReelDownloadHook in InstaEclipse provide the
+            // viewer pager / ambiguity-rejection source patterns.
+            R1CD06VisiblePageBinding.Verdict visible = R1CD05FabPanel.hasActiveWindow()
+                    ? R1CD06VisiblePageBinding.observe(
+                        activeActivity.get(), mediaArg, media, safeScreen, ownership)
+                    : R1CD06VisiblePageBinding.Verdict.CAPTURE_INACTIVE;
+            Log.i(TAG, "INA_R1C_D06_VISIBLE_PAGE ordinal=" + events
+                    + " result=" + visible + " verified=NO actions=off");
+            // All callback evidence crossing into the FAB is enum/boolean-only.
             R1CD05FabPanel.record(safeScreen, continuityResult,
-                    "MEDIA_TYPED".equals(shape), ownership);
+                    "MEDIA_TYPED".equals(shape), ownership, visible);
             if (events == R1CD04Policy.MAX_RECORDED_EVENTS) {
                 Log.i(TAG, "INA_R1C_D04_LIMIT reached=" + events + " actions=off");
             }

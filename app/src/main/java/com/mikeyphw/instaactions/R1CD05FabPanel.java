@@ -77,11 +77,15 @@ final class R1CD05FabPanel {
         }
     }
 
+    static boolean hasActiveWindow() { return CAPTURE.isActiveWindow(); }
+
     static void record(R1BNavigationPolicy.Screen screen,
             R1CD05ReferenceContinuity.Result result, boolean typed,
-            R1CD06MenuOwnership.Verdict ownership) {
-        // No Android view work on Instagram's hooked callback thread.
-        CAPTURE.observe(screen, result, typed, ownership, SystemClock.elapsedRealtime());
+            R1CD06MenuOwnership.Verdict ownership,
+            R1CD06VisiblePageBinding.Verdict visible) {
+        // All Android view work has already been bounded on the callback main thread;
+        // only enums and counts enter the FAB's report session.
+        CAPTURE.observe(screen, result, typed, ownership, visible, SystemClock.elapsedRealtime());
     }
 
     private int dp(float value) {
@@ -149,6 +153,14 @@ final class R1CD05FabPanel {
         ticker = new Runnable() {
             @Override public void run() {
                 if (detached || current != R1CD05FabPanel.this) return;
+                // Capture a separate bounded, content-free live viewer snapshot.
+                // Even when the menu callback is off-main-thread, the report
+                // still diagnoses the pager/page structure independently.
+                if (CAPTURE.needsPreflight()) {
+                    R1CD06ViewPreflight.Snapshot snapshot =
+                            R1CD06ViewPreflight.inspect(activity);
+                    CAPTURE.notePreflight(snapshot, SystemClock.elapsedRealtime());
+                }
                 refresh();
                 MAIN.postDelayed(this, 1000);
             }
@@ -183,10 +195,11 @@ final class R1CD05FabPanel {
         LinearLayout body = new LinearLayout(activity);
         body.setPadding(dp(12), dp(10), dp(12), dp(10));
         body.setOrientation(LinearLayout.VERTICAL);
-        TextView title = label("InstaActions · D06 Native Menu Ownership", 16);
+        TextView title = label("InstaActions · D06 Visible Page", 16);
         title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         body.addView(title);
-        body.addView(label("Read-only · no action hooks · InstaEclipse stays ON", 11));
+        body.addView(label("Read-only · InstaEclipse stays ON · source-first confirmation", 11));
+        body.addView(label("IE source anchors are checked against the exact IG455 APK once at startup; no menu test required for this step.", 11));
         status = label("", 13);
         body.addView(status);
         primary = button("Start A1", this::primaryAction);
@@ -249,11 +262,14 @@ final class R1CD05FabPanel {
         chip.setContentDescription(active ? "InstaActions capturing " + step.name()
                 + " - " + CAPTURE.currentCount() + " stable Reel callbacks" : "InstaActions diagnostics");
         if (status != null) {
-            status.setText("Hook: " + (R1CD04PassiveProbe.isInstalled() ? "INSTALLED" : "VERIFYING / REFUSED")
+            status.setText("IE upstream: " + R1CD06UpstreamConformance.summary()
+                    + "\nHook: " + (R1CD04PassiveProbe.isInstalled() ? "INSTALLED" : "VERIFYING / REFUSED")
                     + "\nOwner: " + CAPTURE.currentOwnership()
+                    + "\nVisible page: " + CAPTURE.currentVisiblePage()
+                    + "\nViewer preflight: " + CAPTURE.currentPreflight()
                     + "\nStage: " + step + " · stable Reel callbacks: " + CAPTURE.currentCount()
                     + " · total: " + CAPTURE.total() + "\n" + CAPTURE.prompt()
-                    + "\n\nOwner match is not visible-Reel identity.");
+                    + "\n\nPage match is candidate evidence only. Actions OFF.");
         }
         if (primary != null) {
             primary.setText(!active ? "Start A1" : step == R1CD05FabSession.Step.B2

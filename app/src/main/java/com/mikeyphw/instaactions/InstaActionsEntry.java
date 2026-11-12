@@ -93,7 +93,7 @@ public final class InstaActionsEntry extends XposedModule {
                             // D04 installs one passive, exact-build-only method observer.
                             // The interceptor NEVER alters arguments, return values or exceptions.
                             R1CD04PassiveProbe.onActivityResumed((Activity) owner,
-                                    targetApk, instagramLoader, (method, counter) -> {
+                                    targetApk, moduleNativeLibDir, instagramLoader, (method, counter) -> {
                                         hook(method)
                                                 .setId("ina-r1c-d04-reels-passive")
                                                 .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)

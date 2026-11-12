@@ -10,8 +10,8 @@ android {
         applicationId 'com.mikeyphw.instaactions'
         minSdk 28
         targetSdk 36
-        versionCode 16
-        versionName '0.4.7-r1c-d06-hf01-bounded-owner'
+        versionCode 19
+        versionName '0.5.0-r1c-d06-source-first-1'
         testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
 
