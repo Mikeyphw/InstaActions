@@ -264,3 +264,12 @@ Instagram hooks. No new upstream discovery. Physical qualification pending.
 - Recovery path retains Start A recording until after the 90-second native Reels-tab user action. Independent visible A/B flow now offers Stop A (retain counts) → manual account switch → Start B → Stop B (retain counts) → copy combined report. No automatic account identity/selection detection. Reset A/B now actually clears both native-aggregate buckets.
 - User separately confirmed a native Repost button shown for the 90-second interval and a successful original-button Repost within the dedicated Reels tab. Formal D07C acceptance still NOT RUN, and Feed/normal posts/embedded Reels unqualified.
 - `docs/R1C_D08_FEED_REPOST_FRIEND_AVATAR_AUDIT.md` records candidate Feed-specific repost backend/UI path and three avatar/facepile subsystems. These remain source-only targets: no new hook, fake avatar, automatic repost, media identity promotion or extra network calls.
+
+
+## D08A + D08C + X.02ib — read-only source implementation (UNQUALIFIED)
+
+- Preserve the original R0–R8 product vision: user-initiated contextual Feed/Reels/Stories actions, independent InstaEclipse coexistence, exact visible-media binding, native confirmation and no automated engagement. D07 Reels-tab native Repost recovery remains unchanged.
+- **D08A Feed Repost**: optional manual-only UI snapshot buttons for ordinary Feed posts, Feed-opened Reels, and the dedicated Reels-tab reference. Scan up to 512 visible Views or 30ms, compare fixed Repost words only, export count and screen-hint metadata. This cannot establish eligibility or enable Feed Repost.
+- **D08C identity**: enum-only ledger of existing D06 menu ownership, visible-page and weak pre-menu continuity outcomes; explicitly `D08_MEDIA_IDENTITY=NOT_VERIFIED`. Do not turn a pre-menu weak reference into a verified current Media.
+- **X.02ib diagnostic**: within verified IG455 selector-4 and exact D3r key, record A/B original Boolean buckets by ordinal, outer singleton/payload state, receiver code class and coverage. Other keys counted only; never export keys/values. Intervention frames excluded. No causality assumption.
+- Next: exact Feed renderer/eligibility signature with media identity, genuine source lists for Friends avatars, D06 unique active-page independent proof, and physical D08 acceptance on Android 16. No Feed/avatars actions enabled. Source and hosted CI are distinct from device acceptance.

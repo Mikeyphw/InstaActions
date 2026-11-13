@@ -89,5 +89,14 @@
   "r1c_d08_feed_repost_audit": "STATIC_ANCHORS_ONLY_NO_LIVE_FEED_ELIGIBILITY_EVIDENCE",
   "r1c_d08_friend_avatars_audit": "STATIC_RENDERER_CANDIDATES_ONLY_NO_SOURCE_LIST_EVIDENCE",
   "r1c_d08_feed_repost_enabled": false,
-  "r1c_d08_avatar_render_modification_enabled": false
+  "r1c_d08_avatar_render_modification_enabled": false,
+  "r1c_d08a_feed_repost_snapshots_implemented": true,
+  "r1c_d08a_feed_repost_device_acceptance": "NOT_RUN",
+  "r1c_d08c_media_evidence_source_implemented": true,
+  "r1c_d08c_media_identity_verified": false,
+  "r1c_d08c_device_acceptance": "NOT_RUN",
+  "r1c_d08_x02ib_exact_d3r_diagnostics_implemented": true,
+  "r1c_d08_x02ib_causality_confirmed": false,
+  "r1c_d08_hosted_ci_qualified": false,
+  "r1c_d08_device_acceptance": "NOT_RUN"
 }

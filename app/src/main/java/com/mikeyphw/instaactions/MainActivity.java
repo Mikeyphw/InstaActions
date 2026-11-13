@@ -88,6 +88,15 @@ public final class MainActivity extends Activity {
         add(comparison, "5. Press Copy combined A/B report. A process restart loses both in-memory captures.", 14, WHITE, false);
         add(comparison, "These manual labels cannot prove which Instagram account was active. Never use the 90-second Repost recovery during account switching.", 14, AMBER, false);
 
+        LinearLayout d08 = card("D08 · Two separate read-only investigations");
+        add(d08, "X.02ib · Deep A/B eligibility diagnostics", 16, BLUE, true);
+        add(d08, "Start A → browse → Stop A → manually switch → Start B → browse → Stop B → Copy combined A/B report. The new report includes exact X.02ib original TRUE/FALSE/NULL buckets and call order. Recovery must stay OFF.", 14, WHITE, false);
+        add(d08, "D08A · Feed Repost labels (not an override)", 16, BLUE, true);
+        add(d08, "In Instagram open a normal Feed post, a Feed-opened Reel, and the bottom Reels-tab reference separately. For each, open IA and tap its corresponding D08A Snapshot. The labels and origin are observations/manual claims, not proven media eligibility.", 14, WHITE, false);
+        add(d08, "D08C · Active media research", 16, BLUE, true);
+        add(d08, "Run Advanced D05/D06 A1/A2/B1/B2 menu capture; D08C adds a candidate/contradiction ledger to the D07 safe report. Actual visible-media identity remains NOT VERIFIED; no new actions.", 14, DETAIL, false);
+        add(d08, "Friends avatars: source candidates only. No fake faces, disabled-state bypass, or avatar mutation.", 14, AMBER, false);
+
         LinearLayout originalPlan = card("Original InstaActions goals · R0–R8");
         add(originalPlan, "Today: R1C/D07 Repost research with a user-reported successful Reels-tab action. D06 exact active-media identity remains NOT VERIFIED.", 14, WHITE, false);
         add(originalPlan, "Next: R2 contextual action UI and R3 explicit Like/Save/Repost/Download/Playback actions, only where independently qualified.", 14, DETAIL, false);

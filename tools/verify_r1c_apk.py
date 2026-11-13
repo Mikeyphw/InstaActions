@@ -16,7 +16,9 @@ def check(apk:Path):
                 b'identity_verified=false binding_hooks=off actions=off',
                 b'R1BNavigationPolicy', b'R1CD07Recovery', b'R1CD07GateTrace',
                 b'R1CD07PredicateTrace', b'R1CD07ActualDataTarget',
-                b'R1CD07UxGuide', b'R1CD07ComparisonFlow', b'CURRENT STATUS',
+                b'R1CD07UxGuide', b'R1CD07ComparisonFlow', b'R1CD08MediaEvidence',
+                b'R1CD08FeedAudit', b'D08_MEDIA_IDENTITY=NOT_VERIFIED',
+                b'D08A FEED REPOST VISIBLE-LABEL AUDIT', b'D08 X.02ib EXACT CONFIG', b'CURRENT STATUS',
                 b'STEP 1 OF 5', b'STEP 5 OF 5',
                 b'INA_D07_REPOST_EXACT_APK_A_B_TRACE',
                 b'ina-d07-repost-ui-selector4', b'ina-d07-verified-d3r-'):

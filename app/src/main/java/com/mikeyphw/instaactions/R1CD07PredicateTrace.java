@@ -36,6 +36,13 @@ final class R1CD07PredicateTrace {
     private static final int[][][] INPUT_COUNTS = new int[2][3][4];
     private static final int[][] DROPPED_FRAMES = new int[2][3];
     private static final ThreadLocal<Frame> ACTIVE = new ThreadLocal<>();
+    // D08: exact X.02ib.D3r(I):Boolean provenance, not a config-value inventory.
+    // cohort / original outer singleton,payload,other / exact-call ordinal / result.
+    private static final int[][][][] D08_EXACT = new int[2][3][MAX_ORDINAL][OUTCOMES];
+    // cohort / outer state / observed receiver class: X.02ib, other X, other.
+    private static final int[][][] D08_RECEIVER = new int[2][3][3];
+    // cohort / state / other-key calls, missing-exact, changed-intervention, capped.
+    private static final int[][][] D08_COVERAGE = new int[2][3][4];
     private R1CD07PredicateTrace() { }
 
     static final class Frame {
@@ -53,6 +60,11 @@ final class R1CD07PredicateTrace {
         // Intervention-return frames are excluded from ORIGINAL A/B qualification:
         // a successful false->true trial can turn singleton into payload.
         boolean changedByTrial;
+        final int[] d08ExactResults = new int[MAX_ORDINAL];
+        int d08ExactCalls;
+        int d08OtherKeys;
+        int d08Receiver = -1;
+
         Frame(int cohort, Frame parent, int inputPresence, int repostDataPresence) {
             this.cohort=cohort;
             this.recoveryEpoch=R1CD07Recovery.epoch();
@@ -61,6 +73,7 @@ final class R1CD07PredicateTrace {
             this.repostDataPresence=repostDataPresence;
             for(int i=0;i<SOURCES;i++)java.util.Arrays.fill(values[i],-1);
             java.util.Arrays.fill(factoryTypes,-1);
+            java.util.Arrays.fill(d08ExactResults,-1);
         }
     }
 
@@ -90,6 +103,14 @@ final class R1CD07PredicateTrace {
     /** Cheap fast path for the globally hooked MobileConfig getter. No args or data. */
     static boolean inRepostFrame() {return ACTIVE.get()!=null;}
 
+    /** Receiver code type only; never retain the instance or reflect on its fields. */
+    static void noteDataReceiver(Object receiver) {
+        Frame frame=ACTIVE.get();
+        if(frame==null || receiver==null)return;
+        String type=receiver.getClass().getName();
+        frame.d08Receiver="X.02ib".equals(type)?0:type.startsWith("X.")?1:2;
+    }
+
     /** Only two DEX-pinned predicates, and only inside selector 4. Never export keys. */
     static Object noteExactMobile(Object key,Object original) {
         Frame frame=ACTIVE.get();
@@ -105,8 +126,15 @@ final class R1CD07PredicateTrace {
     }
     static Object noteExactData(Object key,Object original) {
         Frame frame=ACTIVE.get();
-        if(frame==null || !(key instanceof Integer))return original;
-        if(((Integer)key).intValue()!=0xdf82522e)return original;
+        if(frame==null)return original;
+        // Never expose or persist other key arguments, only an aggregate count.
+        if(!(key instanceof Integer) || ((Integer)key).intValue()!=0xdf82522e){
+            if(frame.d08OtherKeys<255)frame.d08OtherKeys++;
+            return original;
+        }
+        int exactOrdinal=frame.d08ExactCalls++;
+        if(exactOrdinal<MAX_ORDINAL)
+            frame.d08ExactResults[exactOrdinal]=R1CD07ExactGateTrial.outcome(original);
         if(frame.exactGateOriginals[R1CD07ExactGateTrial.DATA_ELIGIBILITY]<0)
             frame.exactGateOriginals[R1CD07ExactGateTrial.DATA_ELIGIBILITY]=
                 R1CD07ExactGateTrial.outcome(original);
@@ -161,6 +189,17 @@ final class R1CD07PredicateTrace {
             if(FRAME_COUNTS[frame.cohort][state]>=MAX_FRAMES){DROPPED_FRAMES[frame.cohort][state]++;return;}
             FRAME_COUNTS[frame.cohort][state]++;
             INPUT_COUNTS[frame.cohort][state][frame.inputPresence]++;
+            if(frame.d08Receiver>=0)D08_RECEIVER[frame.cohort][state][frame.d08Receiver]++;
+            if(frame.d08OtherKeys>0)D08_COVERAGE[frame.cohort][state][0]+=frame.d08OtherKeys;
+            if(frame.d08ExactCalls==0)D08_COVERAGE[frame.cohort][state][1]++;
+            if(frame.changedByTrial)D08_COVERAGE[frame.cohort][state][2]++;
+            if(frame.d08ExactCalls>MAX_ORDINAL)
+                D08_COVERAGE[frame.cohort][state][3]+=frame.d08ExactCalls-MAX_ORDINAL;
+            if(!frame.changedByTrial)
+                for(int i=0;i<MAX_ORDINAL;i++){
+                    int value=frame.d08ExactResults[i];
+                    if(value>=0)D08_EXACT[frame.cohort][state][i][value]++;
+                }
             for(int i=0;i<MAX_FACTORY_ORDINAL;i++){
                 int category=frame.factoryTypes[i];
                 if(category<0)continue;
@@ -190,6 +229,9 @@ final class R1CD07PredicateTrace {
         for(int a=0;a<2;a++)for(int s=0;s<3;s++){
             FRAME_COUNTS[a][s]=0;
             DROPPED_FRAMES[a][s]=0;
+            java.util.Arrays.fill(D08_RECEIVER[a][s],0);
+            java.util.Arrays.fill(D08_COVERAGE[a][s],0);
+            for(int i=0;i<MAX_ORDINAL;i++)java.util.Arrays.fill(D08_EXACT[a][s][i],0);
             java.util.Arrays.fill(INPUT_COUNTS[a][s],0);
             for(int i=0;i<MAX_FACTORY_ORDINAL;i++){
                 java.util.Arrays.fill(FACTORY_COUNTS[a][s][i],0);
@@ -199,6 +241,40 @@ final class R1CD07PredicateTrace {
                 for(int ordinal=0;ordinal<MAX_ORDINAL;ordinal++)
                     java.util.Arrays.fill(COUNTS[a][s][gate][ordinal],0);
         }
+    }
+
+    static synchronized String d08ExactConfigReport() {
+        StringBuilder out=new StringBuilder("D08 X.02ib EXACT CONFIG A/B (read-only, original results)\n");
+        out.append("Scope: exact selector-4 frame and D3r fixed-int predicate only; unrelated keys counted but NEVER exported.\n");
+        out.append("Receiver class is code-category only; X.02ib and other-X counts do not identify account or config.\n");
+        for(int a=0;a<2;a++)for(int s=0;s<3;s++){
+            int n=FRAME_COUNTS[a][s];
+            if(n==0 && DROPPED_FRAMES[a][s]==0)continue;
+            out.append(a==0?"A":"B").append(' ')
+               .append(s==0?"singleton":s==1?"payload":"other")
+               .append(" frames=").append(n)
+               .append(" receiver_X02ib=").append(D08_RECEIVER[a][s][0])
+               .append(" receiver_other_X=").append(D08_RECEIVER[a][s][1])
+               .append(" receiver_other=").append(D08_RECEIVER[a][s][2])
+               .append(" other_key_calls=").append(D08_COVERAGE[a][s][0])
+               .append(" missing_exact=").append(D08_COVERAGE[a][s][1])
+               .append(" intervention_excluded=").append(D08_COVERAGE[a][s][2])
+               .append(" overflow_calls=").append(D08_COVERAGE[a][s][3])
+               .append(" dropped_frames=").append(DROPPED_FRAMES[a][s]).append('\n');
+            for(int i=0;i<MAX_ORDINAL;i++){
+                int[] count=D08_EXACT[a][s][i];
+                int total=count[0]+count[1]+count[2]+count[3];
+                if(total==0)continue;
+                out.append(" exact D3r ordinal ").append(i+1)
+                   .append(" original_true=").append(count[0])
+                   .append(" original_false=").append(count[1])
+                   .append(" original_null=").append(count[2])
+                   .append(" original_other=").append(count[3]).append('\n');
+            }
+        }
+        out.append("Do not infer causality: correlation across manual labels is not confirmed account eligibility.\n");
+        out.append("No configuration arguments, keys, values, objects, media identifiers or accounts exported.\n");
+        return out.toString();
     }
 
     static synchronized String report(){

@@ -77,6 +77,7 @@ public final class InstaActionsEntry extends XposedModule {
                         if (!R1CD07PredicateTrace.inRepostFrame()) return original;
                         try {
                             R1CD07PredicateTrace.note(R1CD07PredicateTrace.ELIGIBILITY, original);
+                            R1CD07PredicateTrace.noteDataReceiver(chain.getThisObject());
                             return R1CD07PredicateTrace.noteExactData(chain.getArg(0),original);
                         } catch(Throwable ignored) {
                             R1CD07Recovery.onHookFailure();

@@ -234,6 +234,9 @@ final class R1CD04PassiveProbe {
             Log.i(TAG, "INA_R1C_D06_PREMENU ordinal=" + events
                     + " callback_scan=" + visible + " snapshot=" + preMenu
                     + " media_id=excluded verified=NO actions=off");
+            // D08C independent correlation ledger: enum-only; NEVER action qualification.
+            R1CD08MediaEvidence.record(R1CD05FabPanel.hasActiveWindow(),
+                    safeScreen.name(), ownership.name(), visible.name(), preMenu.name());
             // All callback evidence crossing into the FAB is enum/boolean-only.
             R1CD05FabPanel.record(safeScreen, continuityResult,
                     "MEDIA_TYPED".equals(shape), ownership, visible, preMenu);

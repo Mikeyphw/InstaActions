@@ -150,6 +150,9 @@ final class R1CD07GateTrace {
         return "INA_D07_REPOST_EXACT_APK_A_B_TRACE\nHook: "+status()+"\n"+STATE.render()
             + InstaActionsEntry.dataGateStatus() + "\n"
             + R1CD07PredicateTrace.report()
+            + R1CD07PredicateTrace.d08ExactConfigReport()
+            + R1CD08MediaEvidence.report()
+            + R1CD08FeedAudit.report()
             + "HF13 native Repost recovery: " + R1CD07Recovery.status() + "\n"
             + "Reels TAB is a user assertion, not an automatically verified selector. Feed Reel and ordinary post NOT QUALIFIED; D06 media identity NOT VERIFIED.\n"
             + "HF12 legacy trial (regression only): " + R1CD07ExactGateTrial.status() + "\n";

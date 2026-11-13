@@ -395,6 +395,20 @@ final class R1CD05FabPanel {
         mainAction(compare, "B4 · Copy combined A/B report", this::copyD07);
         hint(compare, "The same report contains A and B original native-result counts. A/B labels are selected by YOU, not account identity verification. Never reset or restart Instagram before copying if you need both samples.");
 
+        LinearLayout feed = section(body, "D08A · FEED REPOST READ-ONLY AUDIT",
+                "These are separate manual snapshots, NOT working Feed Repost. Never run while recovery is ON. Open the target post before taking a snapshot.");
+        hint(feed, "1. Go to the Home Feed and open a normal post. Tap the first button. 2. Open a Reel FROM Feed and tap the second. 3. Visit the BOTTOM Reels tab and tap the reference button. Copy D07 safe report afterward.");
+        neutral(feed, "D08A 1 · Snapshot ordinary Feed post", () ->
+                toast(R1CD08FeedAudit.snapshot(activity, panel, chip, 0)));
+        neutral(feed, "D08A 2 · Snapshot Feed-opened Reel", () ->
+                toast(R1CD08FeedAudit.snapshot(activity, panel, chip, 1)));
+        neutral(feed, "D08A 3 · Snapshot dedicated Reels tab", () ->
+                toast(R1CD08FeedAudit.snapshot(activity, panel, chip, 2)));
+        hint(feed, "Only exact visible Repost-label counts are retained. A feed Reel versus Reels tab is YOUR claim, not verified media identity. No Feed override, no auto-Repost.");
+        LinearLayout media = section(body, "D08C · VISIBLE MEDIA IDENTITY",
+                "Still unverified. D05/D06 menu research produces read-only candidate/contradiction counts, never authorizes actions.");
+        hint(media, "To investigate: open Advanced D05/D06 tools below, run the existing A1/A2/B1/B2 menu capture, then copy the D07 safe report. The D08C evidence summary is included automatically.");
+
         LinearLayout diagnostic = section(body, "OPTIONAL · B comparison, reset and D05/D06", "Only open this after the normal 5-step trial, or when intentionally restarting. None of these buttons is required to try Repost.");
         advancedToggle = neutral(diagnostic, "Show D05/D06 diagnostic tools", this::toggleAdvanced);
         advancedBody = vertical();
@@ -507,6 +521,7 @@ final class R1CD05FabPanel {
         if (step == R1CD05FabSession.Step.IDLE || step == R1CD05FabSession.Step.DONE
                 || step == R1CD05FabSession.Step.CANCELLED) {
             R1CD06PreMenuReconciliation.clear();
+            R1CD08MediaEvidence.clear();
             if (!R1CD04PassiveProbe.beginFabCapture(CAPTURE, SystemClock.elapsedRealtime())) {
                 toast("D05 hook not ready, or capture limit reached. Restart Instagram if needed.");
                 return;
