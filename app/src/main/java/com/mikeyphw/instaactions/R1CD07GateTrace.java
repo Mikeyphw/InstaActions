@@ -121,14 +121,21 @@ final class R1CD07GateTrace {
     }
     /** Passive result classification; caller always receives the exact original object. */
     static Object noteUi(Object instance, Object result) {
-        if (!STATE.recording() || uiSelector==null || instance==null) return result;
-        try {if(uiSelector.getInt(instance)==4)STATE.record(4,result);}
+        if (uiSelector==null || instance==null) return result;
+        try {if(uiSelector.getInt(instance)==4){
+            R1CD10PassiveLedger.observe(R1CD10PassiveLedger.Signal.UI_REPOST);
+            if(STATE.recording())STATE.record(4,result);
+        }}
         catch(Throwable ignored) { }
         return result;
     }
     static void noteUfi(Object instance, Object result) {
-        if (!STATE.recording() || ufiSelector==null || instance==null) return;
-        try {int selector=ufiSelector.getInt(instance);if(selector==11 || selector==12)STATE.record(selector,result);}
+        if (ufiSelector==null || instance==null) return;
+        try {int selector=ufiSelector.getInt(instance);if(selector==11 || selector==12){
+            R1CD10PassiveLedger.observe(selector==11?R1CD10PassiveLedger.Signal.UFI_REPOST:
+                    R1CD10PassiveLedger.Signal.UFI_COUNT);
+            if(STATE.recording())STATE.record(selector,result);
+        }}
         catch (Throwable ignored) { }
     }
     static String begin(int index) {

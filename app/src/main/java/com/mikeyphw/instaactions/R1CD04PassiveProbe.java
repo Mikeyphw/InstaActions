@@ -234,6 +234,7 @@ final class R1CD04PassiveProbe {
             Log.i(TAG, "INA_R1C_D06_PREMENU ordinal=" + events
                     + " callback_scan=" + visible + " snapshot=" + preMenu
                     + " media_id=excluded verified=NO actions=off");
+            R1CD10PassiveLedger.observe(R1CD10PassiveLedger.Signal.MEDIA_MENU);
             // D08C independent correlation ledger: enum-only; NEVER action qualification.
             R1CD08MediaEvidence.record(R1CD05FabPanel.hasActiveWindow(),
                     safeScreen.name(), ownership.name(), visible.name(), preMenu.name());

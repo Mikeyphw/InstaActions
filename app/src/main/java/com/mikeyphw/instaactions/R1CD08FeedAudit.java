@@ -73,6 +73,7 @@ final class R1CD08FeedAudit {
         synchronized(R1CD08FeedAudit.class){
             if(SAMPLES[cohort][kind]>=24)return "REFUSED: 24-sample cap reached";
             SAMPLES[cohort][kind]++;
+            R1CD10ComparisonFlow.sample();
             LABELS[cohort][kind]+=count;
             if(!expected)UNCERTAIN[cohort][kind]++;
             if(capped)TRUNCATED[cohort][kind]++;

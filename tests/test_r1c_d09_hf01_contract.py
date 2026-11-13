@@ -69,7 +69,8 @@ class D09Contract(unittest.TestCase):
     def test_jvm_contract_modes_and_105_hf13(self):
         names=['R1CD07Recovery','R1CD07ExactGateTrial','R1CD07PredicateTrace',
                'R1CD07BranchInputs','R1CD07InputPresence','R1CD08MediaEvidence',
-               'R1CD09DiagnosticGate','R1CD09AccountSentinel']
+               'R1CD09DiagnosticGate','R1CD09AccountSentinel',
+               'R1CD10ComparisonFlow','R1CD10PassiveLedger','R1CD10ReportArchive']
         smoke=R/'tests/java/com/mikeyphw/instaactions'
         with tempfile.TemporaryDirectory(prefix='ina-hf01-jvm-') as d:
             cmd=['javac','-encoding','UTF-8','-d',d]+[str(J/(x+'.java')) for x in names]+[

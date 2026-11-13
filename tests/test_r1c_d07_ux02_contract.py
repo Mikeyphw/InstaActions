@@ -19,7 +19,8 @@ class OrderedFlow(unittest.TestCase):
     def test_confirm_after_start_a_and_fresh_evidence(self):
         self.assertLess(P.index('"Start A · read-only observation"'),P.index('"4A · Confirm ITM'))
         self.assertLess(P.index('"4A · Confirm ITM'),P.index('"4B · Enable native Repost'))
-        self.assertIn('itmRecoveryOffAcknowledged=false;',P[P.index('startA = mainAction'):P.index('LinearLayout browse = section')])
+        self.assertIn('runStartA();',P[P.index('startA = mainAction'):P.index('LinearLayout browse = section')])
+        self.assertIn('itmRecoveryOffAcknowledged=false;',P[P.index('private void runStartCohort'):])
         self.assertIn('if (!itmRecoveryOffAcknowledged)',P)
         self.assertIn('R1CD07ExactGateTrial.eligibleForHF13Recovery()',P)
         self.assertIn('enableRecovery.setEnabled(!on',P)

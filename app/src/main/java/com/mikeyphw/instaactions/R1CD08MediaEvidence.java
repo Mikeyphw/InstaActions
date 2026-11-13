@@ -13,6 +13,8 @@ final class R1CD08MediaEvidence {
     private static final int LIMIT=64;
     private static final int[] COUNTS=new int[Verdict.values().length];
     private static int total, capped;
+    private static int manualCohort=-1;
+    private static final int[][] AB_VERDICTS=new int[2][Verdict.values().length];
     private static final java.util.Map<String,Integer> REASONS=new java.util.TreeMap<>();
     private static final int MAX_REASON_CLASSES=32;
     private R1CD08MediaEvidence() { }
@@ -36,12 +38,15 @@ final class R1CD08MediaEvidence {
         if ("NO_VERTICAL_PAGER".equals(visible)) return Verdict.MENU_PAGER_MISSING;
         return Verdict.INCONCLUSIVE;
     }
+    static synchronized void setManualCohort(int cohort){manualCohort=cohort;}
     static synchronized void record(boolean capture,String screen,String owner,
             String visible,String premenu) {
         if (!capture || !R1CD09DiagnosticGate.active(R1CD09DiagnosticGate.Mode.MEDIA))return;
         Verdict verdict=classify(true,screen,owner,visible,premenu);
         if(total>=LIMIT){capped++;return;}
         total++;COUNTS[verdict.ordinal()]++;
+        if(manualCohort>=0 && manualCohort<=1){AB_VERDICTS[manualCohort][verdict.ordinal()]++;
+            R1CD10ComparisonFlow.sample();}
         // Enum names only: no Media, raw callback args, UI strings or IDs.
         String reason="owner="+bounded(owner)+" page="+bounded(visible)+" pre="+bounded(premenu);
         if(REASONS.containsKey(reason))REASONS.put(reason,REASONS.get(reason)+1);
@@ -52,13 +57,17 @@ final class R1CD08MediaEvidence {
         // Must be an uppercase enum token, NOT arbitrary text.
         return value.matches("[A-Z][A-Z0-9_]{0,48}")?value:"UNCLASSIFIED";
     }
-    static synchronized void clear(){total=0;capped=0;java.util.Arrays.fill(COUNTS,0);REASONS.clear();}
+    static synchronized void clear(){total=0;capped=0;manualCohort=-1;java.util.Arrays.fill(COUNTS,0);REASONS.clear();
+        for(int a=0;a<2;a++)java.util.Arrays.fill(AB_VERDICTS[a],0);}
     static synchronized String report(){
         StringBuilder out=new StringBuilder("D08C VISIBLE MEDIA IDENTITY EVIDENCE (read-only)\n");
         out.append("D08_MEDIA_IDENTITY=NOT_VERIFIED actions=OFF total=")
            .append(total).append(" capped_extra=").append(capped).append('\n');
         for(Verdict v:Verdict.values())if(COUNTS[v.ordinal()]>0)
             out.append(" ").append(v.name()).append('=').append(COUNTS[v.ordinal()]).append('\n');
+        for(int a=0;a<2;a++)for(Verdict v:Verdict.values())
+            if(AB_VERDICTS[a][v.ordinal()]>0)out.append(" manual_").append(a==0?"A":"B")
+                .append(" verdict_").append(v.name()).append("=").append(AB_VERDICTS[a][v.ordinal()]).append('\n');
         for(java.util.Map.Entry<String,Integer> e:REASONS.entrySet())
             out.append(" reason ").append(e.getKey()).append(" count=").append(e.getValue()).append('\n');
         out.append("Unique visible Media, stable pager owner and callback identity NOT established; no Media retained.\n");

@@ -82,11 +82,12 @@ final class R1CD05FabPanel {
     private Switch keepRepost;
     private boolean settingPicker;
     private R1CD09DiagnosticGate.Mode selectedMode=R1CD09DiagnosticGate.Mode.REELS;
-    private LinearLayout reelsGroup, compareGroup, feedGroup, mediaGroup, accountGroup;
+    private LinearLayout reelsGroup, compareGroup, feedGroup, mediaGroup, accountGroup, avatarGroup, passiveGroup, comparisonStepGroup;
+    private TextView comparisonStatus;
     private final String[] modeNames={
         "Reels Repost · recovery", "Account A/B · native comparison",
         "Feed Repost · visible labels", "Visible media · D05/D06",
-        "Account change · passive signal"
+        "Account change · passive signal", "Friend avatars · read-only A/B", "Passive overview · auto ON"
     };
     private Runnable ticker;
     private boolean detached;
@@ -116,11 +117,13 @@ final class R1CD05FabPanel {
         if (current != null) current.detach();
         R1CD05FabPanel next = new R1CD05FabPanel(activity, (FrameLayout) root);
         current = next;
+        R1CD10PassiveLedger.observe(R1CD10PassiveLedger.Signal.ACTIVITY_RESUME);
         next.attach();
     }
 
     static void onLeaving(Activity activity) {
         if (current != null && current.activity == activity) {
+            R1CD10PassiveLedger.observe(R1CD10PassiveLedger.Signal.ACTIVITY_LEAVE);
             current.detach();
             current = null;
         }
@@ -303,6 +306,7 @@ final class R1CD05FabPanel {
                         CAPTURE.notePreflight(snapshot, SystemClock.elapsedRealtime());
                 }
                 InstaActionsEntry.requestD07(activity);
+                R1CD10PassiveLedger.observeScreen(R1BContextMonitor.stableScreen().name());
                 if (R1CD07Recovery.isEnabled()
                         && R1BContextMonitor.stableScreen() != R1BNavigationPolicy.Screen.REELS) {
                     R1CD07Recovery.off("Anchored Reels navigation lost; native eligibility restored");
@@ -345,6 +349,9 @@ final class R1CD05FabPanel {
         neutral(select,"Finish current diagnostic · preserve report",this::finishSelectedMode);
         stopAction(select,"Abort current diagnostic · Recovery OFF",this::abortSelectedMode);
         mainAction(select,"Copy this diagnostic's report",this::copySelectedReport);
+        mainAction(select,"Copy ALL diagnostics since Instagram opened",this::copyAllDiagnostics);
+        neutral(select,"Export ALL diagnostics · Android share sheet",this::exportAllDiagnostics);
+        hint(select,"PASSIVE IS AUTO ON: counts from existing hooks collect with no Begin. Copy/Export All includes completed and aborted mode sessions plus passive counts. All history lasts only until the Instagram process exits.");
         stopAction(select,"Recovery OFF · always available",()->{
             toast(R1CD07GateTrace.stopExactTrial());itmRecoveryOffAcknowledged=false;refresh();
         });
@@ -363,11 +370,25 @@ final class R1CD05FabPanel {
         if(R1CD09DiagnosticGate.running() && remembered!=null)selectedMode=remembered;
         settingPicker=true;modePicker.setSelection(selectedMode.ordinal());settingPicker=false;
 
+        // Universal A/B controls go ABOVE the selected feature, never below
+        // its snapshots. In REELS/AB the original feature-specific controls remain.
+        comparisonStepGroup=vertical();body.addView(comparisonStepGroup);
         reelsGroup=vertical();body.addView(reelsGroup);
         compareGroup=vertical();body.addView(compareGroup);
         feedGroup=vertical();body.addView(feedGroup);
         mediaGroup=vertical();body.addView(mediaGroup);
         accountGroup=vertical();body.addView(accountGroup);
+        avatarGroup=vertical();body.addView(avatarGroup);
+        passiveGroup=vertical();body.addView(passiveGroup);
+        LinearLayout compareStepper=section(comparisonStepGroup,"A → B · SAME ORDER FOR EVERY DIAGNOSTIC",
+                "A1 Start A → A2 observe feature → A3 Stop A → switch account manually with recovery OFF → confirm → B1 Start B → B2 observe the SAME feature → B3 Stop B → Finish. Accounts are manual labels, not identities.");
+        comparisonStatus=label("",14,ACCENT);compareStepper.addView(comparisonStatus);
+        mainAction(compareStepper,"A1 · Start A (manual affected)",this::runStartA);
+        neutral(compareStepper,"A3 · Stop A · preserve result",this::runStopA);
+        neutral(compareStepper,"Confirm account switched to B (manual)",this::runConfirmSwitch);
+        mainAction(compareStepper,"B1 · Start B (manual unaffected)",this::runStartB);
+        neutral(compareStepper,"B3 · Stop B · preserve both",this::runStopB);
+        hint(compareStepper,"For native Repost, Start A is Step 2 inside Reels mode; its B handoff is shown after Step 5. In A/B mode the existing buttons below use the same safety sequence. Passive monitoring never requires Begin.");
 
         LinearLayout stateCard = section(reelsGroup, "CURRENT STATUS · NEXT STEP", "Follow the instructions for the SELECTED MODE only. No automated Repost, likes or comments.");
         recoveryStatus = label("", 15, SUCCESS);
@@ -393,9 +414,7 @@ final class R1CD05FabPanel {
         LinearLayout startCard = section(reelsGroup, "STEP 2 OF 5 · START A", "Tap the button ONCE while on the affected account. A is a manual label, not an account-ID check.");
         startA = mainAction(startCard, "Start A · read-only observation", () -> {
             if(!requireMode(R1CD09DiagnosticGate.Mode.REELS))return;
-            R1CD07GateTrace.stopExactTrial();
-            itmRecoveryOffAcknowledged=false;
-            toast(R1CD07GateTrace.begin(0));refresh();
+            runStartA();
         });
         hint(startCard, "Keep A recording for Repost trial. For a separate read-only A/B comparison, Finish/Abort this mode, select A/B in the dropdown, and Begin.");
 
@@ -446,6 +465,12 @@ final class R1CD05FabPanel {
         });
         mainAction(finish, "5B · Copy D07 safe Repost report", this::copySelectedReport);
         hint(finish, "If no native button appears, still switch OFF and export the report. Before any account/tab change, OFF is mandatory; same-Activity switches are not reliably detected.");
+        LinearLayout reelsAB=section(reelsGroup,"OPTIONAL B COMPARISON · AFTER REPOST OFF",
+                "You already Started A in Step 2. After Step 5, press Stop A, manually switch to B with Repost OFF, confirm, Start B, browse Reels, Stop B, Finish. B is read-only; NEVER arm Repost on B.");
+        neutral(reelsAB,"A3 · Stop A (after Repost OFF)",this::runStopA);
+        neutral(reelsAB,"Confirm manual account switch to B",this::runConfirmSwitch);
+        mainAction(reelsAB,"B1 · Start B · read-only",this::runStartB);
+        neutral(reelsAB,"B3 · Stop B · preserve both",this::runStopB);
 
         // Independent diagnostic workflow, deliberately placed AFTER the five-step
         // native recovery path. This is not hidden behind D05/D06 Advanced.
@@ -459,7 +484,7 @@ final class R1CD05FabPanel {
             if(R1CD07GateTrace.recording() || R1CD07GateTrace.cohortEvents(0)>0){
                 toast("REFUSED: A already recorded. Finish/Abort before restarting.");return;
             }
-            toast(R1CD07GateTrace.begin(0));refresh();
+            runStartA();
         });
         stopA = neutral(compare, "A2 · Stop A · KEEP observations", () -> {
             if(!requireMode(R1CD09DiagnosticGate.Mode.AB))return;
@@ -467,10 +492,9 @@ final class R1CD05FabPanel {
                     R1CD07GateTrace.activeIndex(), R1CD07Recovery.isEnabled())) {
                 toast("REFUSED: first Start A, browse Reels, then stop A with recovery OFF");return;
             }
-            itmRecoveryOffAcknowledged=false;
-            toast(R1CD07GateTrace.stop() + "; A samples preserved");
-            R1CD09DiagnosticGate.expectManualABSwitch();refresh();
+            runStopA();
         });
+        neutral(compare,"A3 · Confirm manual account switch to B",this::runConfirmSwitch);
         hint(compare, "B1. Once A is STOPPED, switch Instagram to account B manually. Keep the same Instagram process if possible. A process restart loses both captures.");
         startB = mainAction(compare, "Optional · Start B read-only comparison", () -> {
             if(!requireMode(R1CD09DiagnosticGate.Mode.AB))return;
@@ -479,9 +503,7 @@ final class R1CD05FabPanel {
                     R1CD07Recovery.isEnabled(), R1CD07GateTrace.ready())) {
                 toast("REFUSED: Stop A after observing it, switch manually to B, then Start B; recovery must be OFF");return;
             }
-            R1CD07GateTrace.stopExactTrial();
-            itmRecoveryOffAcknowledged=false;
-            toast(R1CD07GateTrace.begin(1));refresh();
+            runStartB();
         });
         hint(compare, "B2. Browse several Reels on B, reopen IA, then press Stop B. Do not turn Recovery ON during B.");
         stopB = neutral(compare, "B3 · Stop B · KEEP both samples", () -> {
@@ -490,8 +512,7 @@ final class R1CD05FabPanel {
                     R1CD07GateTrace.activeIndex(), R1CD07Recovery.isEnabled())) {
                 toast("REFUSED: Start B before Stop B; recovery must be OFF");return;
             }
-            itmRecoveryOffAcknowledged=false;
-            toast(R1CD07GateTrace.stop() + "; A and B samples preserved");refresh();
+            runStopB();
         });
         mainAction(compare, "B4 · Copy combined A/B report", this::copySelectedReport);
         hint(compare,"Optional reset only after Finish/Abort of A/B. Reset permanently discards both cohorts; Stop A/B does not.");
@@ -507,11 +528,7 @@ final class R1CD05FabPanel {
 
         LinearLayout feed = section(feedGroup, "D08A · FEED REPOST READ-ONLY AUDIT",
                 "These are separate manual snapshots, NOT working Feed Repost. Never run while recovery is ON. Open the target post before taking a snapshot.");
-        hint(feed,"Select which MANUAL account is on screen BEFORE beginning a Feed session. Finish the session before changing accounts; Start again to record the other cohort. Existing cohort totals remain separate.");
-        cohortPicker=new Spinner(activity);
-        cohortPicker.setAdapter(highContrastChoices(
-                new String[]{"Affected account (manual)","Unaffected account (manual)"}));
-        feed.addView(cohortPicker);
+        hint(feed,"A/B now uses the shared stepper. Begin Feed → Start A → capture Feed surfaces → Stop A → manually switch/confirm → Start B → same surfaces → Stop B → Finish. No implicit affected label.");
         hint(feed, "1. Go to the Home Feed and open a normal post. Tap the first button. 2. Open a Reel FROM Feed and tap the second. 3. Visit the BOTTOM Reels tab and tap the reference button. Copy D07 safe report afterward.");
         neutral(feed, "D08A 1 · Snapshot ordinary Feed post", () ->
                 toast(R1CD08FeedAudit.snapshot(activity, panel, chip, 0)));
@@ -522,7 +539,7 @@ final class R1CD05FabPanel {
         hint(feed, "Only exact visible Repost-label counts are retained. A feed Reel versus Reels tab is YOUR claim, not verified media identity. No Feed override, no auto-Repost.");
         LinearLayout media = section(mediaGroup, "D08C · VISIBLE MEDIA IDENTITY",
                 "Still unverified. D05/D06 menu research produces read-only candidate/contradiction counts, never authorizes actions.");
-        hint(media, "Begin this diagnostic first. Finish D05 A1/A2/B1/B2 or Abort before changing diagnostic mode. If a capture is still active, Finish will refuse.");
+        hint(media, "Begin Media, Start A manually, then run the four-stage D05 Reel capture INSIDE account A. Those A1/A2/B1/B2 stage names refer to different REELS, not accounts. Stop A, switch and confirm, Start B, repeat the four-stage capture, Stop B, Finish. Missing page identity stays NOT_VERIFIED.");
         hint(media, "To investigate: open Advanced D05/D06 tools below, run the existing A1/A2/B1/B2 menu capture, then copy the D07 safe report. The D08C evidence summary is included automatically.");
 
         LinearLayout diagnostic = section(mediaGroup, "D05/D06 · ADVANCED MEDIA CAPTURE", "Only D05/D06 source-backed investigation tools. A/B reset and Feed controls belong to their own dropdown modes.");
@@ -545,8 +562,18 @@ final class R1CD05FabPanel {
 
         LinearLayout accounts=section(accountGroup,"ACCOUNT CHANGE · PASSIVE DIAGNOSTIC",
                 "Begin this mode, inspect the signal, optionally switch accounts manually, then Finish. Recovery stays OFF. The verified UserSession callback may not execute on every transition.");
-        hint(accounts,"Only weak reference equality is counted. No usernames, IDs, account names or session fields are inspected. 'No change observed' is NOT proof that the same account stayed active.");
+        hint(accounts,"Use the shared A/B stepper. Observe A, Stop A, manually switch, confirm, Start B, observe, Stop B, Finish. The existing UserSession callback might not run after a switch. Its absence is NOT verification. No usernames, IDs or session fields are inspected.");
         neutral(accounts,"Copy account-change signal report",this::copySelectedReport);
+        LinearLayout avatars=section(avatarGroup,"FRIEND AVATARS · A → B VISUAL CANDIDATES",
+                "Use Begin → shared Start A/B and Stop A/B. On each account, visit the same 3 surfaces, then tap the matching snapshot. Images are NOT identified as friends. Zero counts do not prove feature absence.");
+        neutral(avatars,"Avatar 1 · Friends tab",()->toast(R1CD10AvatarAudit.snapshot(activity,panel,chip,0)));
+        neutral(avatars,"Avatar 2 · Liked-by facepile",()->toast(R1CD10AvatarAudit.snapshot(activity,panel,chip,1)));
+        neutral(avatars,"Avatar 3 · Reposted-by facepile",()->toast(R1CD10AvatarAudit.snapshot(activity,panel,chip,2)));
+        hint(avatars,"No avatar pixels, usernames, identifiers or synthetic images. Only bounded ImageView shape counts and fixed-label hints. Renderer identity remains UNQUALIFIED.");
+        LinearLayout passive=section(passiveGroup,"PASSIVE DIAGNOSTICS · ALREADY RUNNING",
+                "These counters update automatically through existing source-qualified hooks while Instagram is open, even with no active diagnostic. They are never an account/media identity verifier.");
+        neutral(passive,"Copy passive-only report",this::copySelectedReport);
+        hint(passive,"Use Copy ALL or Export ALL above to include passive counters AND every archived active diagnostic from this Instagram process. No raw Android logcat access and no automatic actions.");
 
         neutral(body, "Close panel", this::close);
         panel = scroll;
@@ -558,7 +585,8 @@ final class R1CD05FabPanel {
     }
 
     private String modeNextAction() {
-        if(!R1CD09DiagnosticGate.running())return "NEXT: select a mode, then press Begin.";
+        if(selectedMode==R1CD09DiagnosticGate.Mode.PASSIVE)return "PASSIVE AUTO ON: no Begin required. View counters or Copy/Export ALL.";
+        if(!R1CD09DiagnosticGate.running())return "NEXT: select a mode and Begin. Then Start A, Stop A, confirm manual switch, Start B, Stop B and Finish.";
         switch(selectedMode) {
             case REELS: return "NEXT: Start A, browse Reels, confirm ITM OFF, then 90s Enable OR session toggle. Press OFF before Finish.";
             case AB: {
@@ -569,9 +597,10 @@ final class R1CD05FabPanel {
                         "NEXT: manually switch to B, then Start B." :
                         "NEXT: Finish, Copy A/B report, then select another mode.";
             }
-            case FEED: return "NEXT: take labeled snapshots on selected manual account. Finish before changing account.";
+            case FEED: return "NEXT: compare the same Feed surfaces in A and B; use shared A/B buttons. No automatic account label.";
+            case AVATAR: return "NEXT: snapshot Friends, liked-by and reposted-by on A and B. ImageView shapes are not avatar proof.";
             case MEDIA: return "NEXT: D05 A1→A2→B1→B2; Finish the capture, then Finish diagnostic.";
-            case ACCOUNT: return "NEXT: use Instagram normally, optionally change accounts, then Finish and Copy. No callbacks means UNVERIFIED.";
+            case ACCOUNT: return "NEXT: compare UserSession callback coverage A and B; no callback after switch means UNVERIFIED.";
             default: return "NEXT: Finish or Abort before switching modes.";
         }
     }
@@ -592,17 +621,21 @@ final class R1CD05FabPanel {
         if(R1CD07GateTrace.recording()) {
             toast("REFUSED: stop A/B recording first");return;
         }
+        if(selectedMode==R1CD09DiagnosticGate.Mode.PASSIVE){
+            toast("Passive diagnostics are already ON. No Begin needed.");return;
+        }
         String reply=R1CD09DiagnosticGate.begin(selectedMode);
         if(!R1CD09DiagnosticGate.active(selectedMode)){toast(reply);return;}
         itmRecoveryOffAcknowledged=false;
+        R1CD10ComparisonFlow.begin(selectedMode);
         R1CD07Recovery.off("New diagnostic session");
         if(selectedMode==R1CD09DiagnosticGate.Mode.REELS ||
                 selectedMode==R1CD09DiagnosticGate.Mode.AB) {
             R1CD09AccountSentinel.clear();
             R1CD07GateTrace.clear();
         }
-        if(selectedMode==R1CD09DiagnosticGate.Mode.FEED)
-            R1CD08FeedAudit.beginCohort(cohortPicker==null?0:cohortPicker.getSelectedItemPosition());
+        if(selectedMode==R1CD09DiagnosticGate.Mode.FEED)R1CD08FeedAudit.clear();
+        if(selectedMode==R1CD09DiagnosticGate.Mode.AVATAR)R1CD10AvatarAudit.clear();
         if(selectedMode==R1CD09DiagnosticGate.Mode.MEDIA) {
             R1CD08MediaEvidence.clear();R1CD06PreMenuReconciliation.clear();
         }
@@ -625,7 +658,13 @@ final class R1CD05FabPanel {
                 toast("REFUSED: Stop A/B recording before Finish");return;
             }
         }
-        R1CD08FeedAudit.stopCohort();
+        if(!R1CD10ComparisonFlow.complete()){
+            toast("REFUSED: Stop B to complete A → B; or Abort incomplete diagnostic");return;
+        }
+        R1CD10ReportArchive.capture(selectedMode.name(),"FINISHED",reportForSelectedMode());
+        R1CD10ComparisonFlow.finish();
+        R1CD08FeedAudit.stopCohort();R1CD10AvatarAudit.stop();
+        R1CD08MediaEvidence.setManualCohort(-1);
         toast(R1CD09DiagnosticGate.finish());refresh();
     }
     private void abortSelectedMode() {
@@ -633,7 +672,9 @@ final class R1CD05FabPanel {
         R1CD07Recovery.off("User aborted diagnostic");
         if(R1CD07GateTrace.recording())R1CD07GateTrace.stop();
         CAPTURE.cancel(false);R1CD06PreMenuReconciliation.clear();
-        R1CD08FeedAudit.stopCohort();
+        R1CD10ReportArchive.capture(selectedMode.name(),"ABORTED_PARTIAL_NOT_QUALIFIED",reportForSelectedMode());
+        R1CD10ComparisonFlow.abort();
+        R1CD08FeedAudit.stopCohort();R1CD10AvatarAudit.stop();R1CD08MediaEvidence.setManualCohort(-1);
         itmRecoveryOffAcknowledged=false;
         toast(R1CD09DiagnosticGate.abort("Explicit user Abort; recovered state OFF"));refresh();
     }
@@ -653,24 +694,109 @@ final class R1CD05FabPanel {
         }
         toast(R1CD07GateTrace.armHF13Session());refresh();
     }
-    private void copySelectedReport() {
-        if(R1CD09DiagnosticGate.selected()!=selectedMode){toast("Select a diagnostic first");return;}
+    private String reportForSelectedMode(){
         String data;
-        switch(selectedMode) {
+        switch(selectedMode){
             case REELS: data=R1CD07GateTrace.reportCore();break;
             case AB: data=R1CD07GateTrace.reportCore()+R1CD09AccountSentinel.summary();break;
             case FEED: data=R1CD08FeedAudit.report();break;
             case MEDIA: data=CAPTURE.report()+R1CD08MediaEvidence.report();break;
             case ACCOUNT: data=R1CD09AccountSentinel.summary();break;
-            default:return;
+            case AVATAR: data=R1CD10AvatarAudit.report();break;
+            case PASSIVE: data=R1CD10PassiveLedger.report();break;
+            default:data="UNAVAILABLE";
         }
+        return R1CD09DiagnosticGate.status()+"\n"+R1CD10ComparisonFlow.summary()+
+            "D06_MEDIA_IDENTITY=NOT_VERIFIED\nACTIONS=OFF\n"+
+            "ITM_REPOST_OFF=MANUAL_ASSERTION_NOT_VERIFIED\n"+data;
+    }
+    private void copyText(String title,String data){
         ClipboardManager clip=(ClipboardManager)activity.getSystemService(Context.CLIPBOARD_SERVICE);
         if(clip==null){toast("Clipboard unavailable");return;}
-        clip.setPrimaryClip(ClipData.newPlainText("INA single diagnostic",
-            R1CD09DiagnosticGate.status()+"\n"+
-            "D06_MEDIA_IDENTITY=NOT_VERIFIED\nACTIONS=OFF\n"+
-            "ITM_REPOST_OFF=MANUAL_ASSERTION_NOT_VERIFIED\n"+data));
-        toast("Single-mode content-free report copied");
+        clip.setPrimaryClip(ClipData.newPlainText(title,data));
+        toast("Copied content-free diagnostic text to clipboard");
+    }
+    private void copySelectedReport(){copyText("INA single diagnostic",reportForSelectedMode());}
+    private void copyAllDiagnostics(){
+        copyText("INA ALL diagnostics · current Instagram process",
+            R1CD10ReportArchive.all(selectedMode.name(),
+                R1CD09DiagnosticGate.running()?reportForSelectedMode():""));
+    }
+    private void exportAllDiagnostics(){
+        String data=R1CD10ReportArchive.all(selectedMode.name(),
+            R1CD09DiagnosticGate.running()?reportForSelectedMode():"");
+        Intent send=new Intent(Intent.ACTION_SEND);
+        send.setType("text/plain");
+        send.putExtra(Intent.EXTRA_SUBJECT,"InstaActions ALL diagnostic session report");
+        send.putExtra(Intent.EXTRA_TEXT,data);
+        try{activity.startActivity(Intent.createChooser(send,"Export InstaActions diagnostics"));}
+        catch(RuntimeException error){toast("No Android text export target available; use Copy ALL");}
+    }
+    private void runStartA(){runStartCohort(0);}
+    private void runStartB(){runStartCohort(1);}
+    private void runStartCohort(int index){
+        if(!R1CD09DiagnosticGate.active(selectedMode)){
+            toast("REFUSED: Begin the selected diagnostic first");return;
+        }
+        if(CAPTURE.isActiveWindow()){
+            toast("REFUSED: Finish/Cancel D05 media capture first");return;
+        }
+        if(R1CD07Recovery.isEnabled()){
+            toast("REFUSED: turn Repost OFF before changing account");return;
+        }
+        String state=index==0?R1CD10ComparisonFlow.startA():R1CD10ComparisonFlow.startB();
+        if(state.startsWith("REFUSED")){toast(state);return;}
+        if(selectedMode==R1CD09DiagnosticGate.Mode.REELS ||
+                selectedMode==R1CD09DiagnosticGate.Mode.AB){
+            if(!R1CD07GateTrace.ready()){
+                R1CD10ComparisonFlow.abort();
+                toast("REFUSED: exact Repost hooks not ready. Abort this session.");return;
+            }
+            toast(R1CD07GateTrace.begin(index));
+        }
+        if(selectedMode==R1CD09DiagnosticGate.Mode.FEED)R1CD08FeedAudit.beginCohort(index);
+        if(selectedMode==R1CD09DiagnosticGate.Mode.AVATAR)R1CD10AvatarAudit.begin(index);
+        if(selectedMode==R1CD09DiagnosticGate.Mode.MEDIA)R1CD08MediaEvidence.setManualCohort(index);
+        itmRecoveryOffAcknowledged=false;
+        toast(state);refresh();
+    }
+    private void runStopA(){runStopCohort(0);}
+    private void runStopB(){runStopCohort(1);}
+    private void runStopCohort(int index){
+        if(!R1CD09DiagnosticGate.active(selectedMode)){
+            toast("REFUSED: Begin this diagnostic first");return;
+        }
+        if(CAPTURE.isActiveWindow()){
+            toast("REFUSED: Finish the D05 Reel capture before stopping this account");return;
+        }
+        if(R1CD07Recovery.isEnabled()){
+            toast("REFUSED: Repost recovery OFF before account handoff");return;
+        }
+        if(R1CD10ComparisonFlow.cohort()!=index){
+            toast("REFUSED: wrong A/B phase");return;
+        }
+        if(selectedMode==R1CD09DiagnosticGate.Mode.REELS ||
+                selectedMode==R1CD09DiagnosticGate.Mode.AB){
+            if(R1CD07GateTrace.cohortEvents(index)>0)R1CD10ComparisonFlow.sample();
+            R1CD07GateTrace.stop();
+        }
+        String outcome=index==0?R1CD10ComparisonFlow.stopA():R1CD10ComparisonFlow.stopB();
+        R1CD08FeedAudit.stopCohort();R1CD10AvatarAudit.stop();
+        R1CD08MediaEvidence.setManualCohort(-1);
+        if(index==0){
+            R1CD09DiagnosticGate.expectManualABSwitch();
+            R1CD09AccountSentinel.markManualSwitch();
+        }
+        R1CD10ReportArchive.capture(selectedMode.name(),index==0?"STOP_A":"STOP_B",
+                reportForSelectedMode());
+        itmRecoveryOffAcknowledged=false;
+        toast(outcome);refresh();
+    }
+    private void runConfirmSwitch(){
+        if(!R1CD09DiagnosticGate.active(selectedMode)){
+            toast("REFUSED: Begin this diagnostic first");return;
+        }
+        toast(R1CD10ComparisonFlow.confirmSwitch());refresh();
     }
     private void toggleAdvanced() {
         advancedVisible=!advancedVisible;
@@ -731,6 +857,7 @@ final class R1CD05FabPanel {
             guardStatus=null; advancedStatus=null; advancedBody=null;
             advancedToggle=null; primary=null; advancedVisible=false;
             modePicker=null;cohortPicker=null;modeStatus=null;keepRepost=null;
+            avatarGroup=null;passiveGroup=null;comparisonStepGroup=null;comparisonStatus=null;
             reelsGroup=null;compareGroup=null;feedGroup=null;mediaGroup=null;accountGroup=null;
             compareStartA=null;
         }
@@ -746,7 +873,6 @@ final class R1CD05FabPanel {
         if (step == R1CD05FabSession.Step.IDLE || step == R1CD05FabSession.Step.DONE
                 || step == R1CD05FabSession.Step.CANCELLED) {
             R1CD06PreMenuReconciliation.clear();
-            R1CD08MediaEvidence.clear();
             if (!R1CD04PassiveProbe.beginFabCapture(CAPTURE, SystemClock.elapsedRealtime())) {
                 toast("D05 hook not ready, or capture limit reached. Restart Instagram if needed.");
                 return;
@@ -763,6 +889,8 @@ final class R1CD05FabPanel {
     }
     private void refresh() {
         if (chip == null) return;
+        if(R1CD09DiagnosticGate.state()==R1CD09DiagnosticGate.State.ABORTED &&
+                R1CD07GateTrace.recording())R1CD07GateTrace.stop();
         R1CD05FabSession.Step stage = CAPTURE.step();
         boolean d05 = stage == R1CD05FabSession.Step.A1 || stage == R1CD05FabSession.Step.A2
                 || stage == R1CD05FabSession.Step.B1 || stage == R1CD05FabSession.Step.B2;
@@ -796,11 +924,18 @@ final class R1CD05FabPanel {
                         itmRecoveryOffAcknowledged));
         if(modeStatus!=null)copyIfChanged(modeStatus,
                 R1CD09DiagnosticGate.status()+"\n"+modeNextAction());
+        if(comparisonStatus!=null)copyIfChanged(comparisonStatus,R1CD10ComparisonFlow.summary());
         if(reelsGroup!=null)reelsGroup.setVisibility(selectedMode==R1CD09DiagnosticGate.Mode.REELS?View.VISIBLE:View.GONE);
         if(compareGroup!=null)compareGroup.setVisibility(selectedMode==R1CD09DiagnosticGate.Mode.AB?View.VISIBLE:View.GONE);
         if(feedGroup!=null)feedGroup.setVisibility(selectedMode==R1CD09DiagnosticGate.Mode.FEED?View.VISIBLE:View.GONE);
         if(mediaGroup!=null)mediaGroup.setVisibility(selectedMode==R1CD09DiagnosticGate.Mode.MEDIA?View.VISIBLE:View.GONE);
         if(accountGroup!=null)accountGroup.setVisibility(selectedMode==R1CD09DiagnosticGate.Mode.ACCOUNT?View.VISIBLE:View.GONE);
+        if(avatarGroup!=null)avatarGroup.setVisibility(selectedMode==R1CD09DiagnosticGate.Mode.AVATAR?View.VISIBLE:View.GONE);
+        if(passiveGroup!=null)passiveGroup.setVisibility(selectedMode==R1CD09DiagnosticGate.Mode.PASSIVE?View.VISIBLE:View.GONE);
+        if(comparisonStepGroup!=null)comparisonStepGroup.setVisibility(
+                selectedMode!=R1CD09DiagnosticGate.Mode.PASSIVE &&
+                selectedMode!=R1CD09DiagnosticGate.Mode.REELS &&
+                selectedMode!=R1CD09DiagnosticGate.Mode.AB?View.VISIBLE:View.GONE);
         if(keepRepost!=null)keepRepost.setEnabled(R1CD07Recovery.isSessionMode() ||
                 (!on && R1CD09DiagnosticGate.active(R1CD09DiagnosticGate.Mode.REELS)
                 && observingA && itmRecoveryOffAcknowledged &&
@@ -809,7 +944,7 @@ final class R1CD05FabPanel {
         if(keepRepost!=null && keepRepost.isChecked()!=R1CD07Recovery.isSessionMode()) {
             settingPicker=true;keepRepost.setChecked(R1CD07Recovery.isSessionMode());settingPicker=false;
         }
-        if(cohortPicker!=null)cohortPicker.setEnabled(!R1CD09DiagnosticGate.running());
+        // Cohort is chosen only by explicit Start A/B; never silently defaults to affected.
         if(compareStartA!=null)compareStartA.setEnabled(R1CD09DiagnosticGate.active(R1CD09DiagnosticGate.Mode.AB)
                 && !R1CD07GateTrace.recording() && R1CD07GateTrace.cohortEvents(0)==0
                 && !on && R1CD07GateTrace.ready());
@@ -874,8 +1009,14 @@ final class R1CD05FabPanel {
     }
     private void detach() {
         R1CD07Recovery.onActivityExit();
-        if(R1CD09DiagnosticGate.active(R1CD09DiagnosticGate.Mode.REELS))
+        // Activity changes are not proof of account switching. Preserve diagnostic
+        // session across ordinary Instagram Activity transitions, but disarm recovery.
+        if(R1CD09DiagnosticGate.running() &&
+                R1CD09DiagnosticGate.active(R1CD09DiagnosticGate.Mode.REELS)){
+            R1CD10ReportArchive.capture("REELS","ACTIVITY_EXIT_PARTIAL",reportForSelectedMode());
+            R1CD10ComparisonFlow.abort();
             R1CD09DiagnosticGate.abort("Activity left foreground");
+        }
         itmRecoveryOffAcknowledged=false;
         detached=true;
         if(ticker!=null) MAIN.removeCallbacks(ticker);

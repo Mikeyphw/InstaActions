@@ -285,3 +285,14 @@ Instagram hooks. No new upstream discovery. Physical qualification pending.
 - Exact D3r runtime receiver and method declaring-class categories separately counted; never infer X.02ib cause.
 - Exact known UserSession callback may not run on every account change; weak reference changes indicate possible transitions but do not establish identity. Do not export usernames, IDs, keys or contents.
 - Gradle/build only hosted GitHub Actions. No auto-merge, no device qualification from CI alone, manual physical acceptance required.
+
+
+## D10 HF02 — universal A/B diagnostics, passive overview, process export (SOURCE-ONLY)
+
+- **Original R0–R8 objective unchanged:** contextual, explicitly invoked Feed/Reels/Stories quick actions (like/save/share/repost/download/comments), separate media-identity qualification, coexistence with InstaEclipse and safety by default.
+- Each **active diagnostic** (Reels recovery research, native A/B, Feed snapshots, Friends/liked-by/reposted-by avatar renderer hints, D05/D06 media identity and account-change callback coverage) follows Begin → Start manual affected A → Stop A → manual switch/OFF acknowledgement → Start manual unaffected B → Stop B → Finish. Do not mix active diagnostic modes. Old D05 A1/A2/B1/B2 are four *media samples within each account*, not user accounts.
+- **Passive overview** runs automatically using existing hooks and navigational hints, not a fresh hook or polling of private Instagram fields. Passivity means counters and coarse events, never actual media or account identity.
+- **Copy ALL / Export ALL** gather session-ending and session-abort summaries, current mode and capped passive counters since the current Instagram process opened; they are *not Android logcat* and do not survive process death. Export uses Android text sharing, not file-provider access or uploading.
+- **Avatar mode** counts ImageView shape candidates and exact generic label hints under a 512-view/30-ms scan initiated by the user; cannot prove faces, sources, names or friend-avatar feature eligibility. Nothing is drawn, generated or overridden.
+- **No new native action hooks**, Feed Repost remains OFF, D06 identity remains NOT_VERIFIED, `X.02ib` original returns remain unmodified, native 90-s/64 and foreground max-4096 Reels Repost safety limits unchanged.
+- Hosted Android compile and actual device acceptance are separate gates, NOT_RUN until demonstrated.

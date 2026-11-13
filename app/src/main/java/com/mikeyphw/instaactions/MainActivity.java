@@ -65,9 +65,9 @@ public final class MainActivity extends Activity {
         add(root, "User-confirmed: Reels-tab Repost appeared for 90 seconds and worked. Formal D07C acceptance is still pending.", 14, AMBER, false);
 
         LinearLayout pickerGuide=card("NEW · One diagnostic at a time");
-        add(pickerGuide, "Open IA → select diagnostic dropdown → Begin.", 15, WHITE, true);
-        add(pickerGuide, "Select Reels recovery, Account A/B, Feed Repost, Visible media, or Account change. Only the chosen tools appear. Finish preserves that report; Abort disarms and ends it. Switching while active is refused.",14,DETAIL,false);
-        add(pickerGuide, "For A/B: Begin → Start A → browse → Stop A → switch manually → Start B → browse → Stop B → Finish → Copy. Account labels are still manual, not verified identity.",14,WHITE,false);
+        add(pickerGuide, "Open IA → choose a diagnostic. Passive overview runs automatically; active modes require Begin.", 15, WHITE, true);
+        add(pickerGuide, "Select Reels recovery, Account A/B, Feed Repost, Visible media, Account change, or Friend avatars. Only the chosen tools appear. Finish preserves that report; Abort disarms and ends it. Switching while active is refused.",14,DETAIL,false);
+        add(pickerGuide, "For EVERY active feature: Begin → Start A → observe → Stop A → switch manually with recovery OFF → confirm switch → Start B → repeat the SAME observations → Stop B → Finish → Copy/Export ALL. Account labels are still manual, not verified identity.",14,WHITE,false);
         add(pickerGuide, "Reels recovery offers 90s trial or Keep Repost available (foreground session only). This is NOT saved across restarts or account changes; emergency OFF remains visible.",14,AMBER,false);
         add(pickerGuide, "Account-change diagnostic observes weak UserSession references only; missing callbacks mean NOT VERIFIED, not same account.",14,DETAIL,false);
 
@@ -82,7 +82,8 @@ public final class MainActivity extends Activity {
         add(diagnosticPicker,"Choose a diagnostic below. This is guidance only; the interactive Begin / Finish / Abort controls live inside Instagram's IA panel.",14,DETAIL,false);
         Spinner selector=new Spinner(this);
         String[] choices={"Reels Repost", "A/B native comparison", "Feed Repost read-only",
-                          "D05/D06 visible-media evidence", "Account-change signal"};
+                          "D05/D06 visible-media evidence", "Account-change signal",
+                          "Friend-avatar shapes A/B", "Passive overview · auto ON"};
         ArrayAdapter<String> chooserAdapter=new ArrayAdapter<String>(this,
                 android.R.layout.simple_spinner_item,choices) {
             @Override public View getView(int position,View convertView,ViewGroup parent) {
@@ -131,12 +132,12 @@ public final class MainActivity extends Activity {
         LinearLayout d08 = card("D08A · Feed Repost · read-only snapshots");
         add(d08, "D08A · Feed Repost labels (not an override)", 16, BLUE, true);
         add(d08, "In Instagram open a normal Feed post, a Feed-opened Reel, and the bottom Reels-tab reference separately. For each, open IA and tap its corresponding D08A Snapshot. The labels and origin are observations/manual claims, not proven media eligibility.", 14, WHITE, false);
-        add(d08, "Choose affected/unaffected MANUAL cohort first, then Begin and take snapshots. Finish before switching accounts. Captures remain labeled by manual cohort; no Feed Repost action is enabled.",14,AMBER,false);
+        add(d08, "Begin Feed → Start A (manual affected) → take three snapshots → Stop A → switch and confirm → Start B (manual unaffected) → repeat snapshots → Stop B → Finish. No implicit cohort defaults and no Feed Repost action.",14,AMBER,false);
         LinearLayout mediaGuide=card("D08C · Visible-media research (D05/D06)");
-        add(mediaGuide, "Begin this mode; run Advanced D05/D06 A1→A2→B1→B2 menu capture, Finish capture, Finish diagnostic and Copy. Each inconclusive result is broken down by owner/page/pre-menu enum evidence.",14,WHITE,false);
+        add(mediaGuide, "Begin Media, Start account A, complete D05 four-stage Reel capture (A1/A2/B1/B2 are REELS, not accounts), Stop account A, switch/confirm, Start account B and repeat four-stage capture. Stop B, Finish. No action enabled. Each inconclusive result is broken down by owner/page/pre-menu enum evidence.",14,WHITE,false);
         add(mediaGuide, "Exact visible-media identity remains NOT VERIFIED. Friends avatars: source candidates only; no fake faces, disabled-state bypass, or avatar mutation.",14,AMBER,false);
         LinearLayout accountGuide=card("D09 · Account-change signal");
-        add(accountGuide, "Begin account-change diagnostic, browse or switch manually, Finish and Copy. The native source-verified callback counts weak UserSession reference transitions only.",14,WHITE,false);
+        add(accountGuide, "Begin account-change diagnostic → Start A → observe → Stop A → switch manually/confirm → Start B → observe → Stop B → Finish. Export All preserves other reports too. The native source-verified callback counts weak UserSession reference transitions only.",14,WHITE,false);
         add(accountGuide, "No callback does NOT prove same account. Changed reference is a signal, not verified account identity. Keep Repost OFF during investigation.",14,AMBER,false);
         final LinearLayout[] visibleGuides={guide,comparison,d08,mediaGuide,accountGuide};
         for(int i=1;i<visibleGuides.length;i++)visibleGuides[i].setVisibility(View.GONE);
@@ -148,6 +149,10 @@ public final class MainActivity extends Activity {
             @Override public void onNothingSelected(AdapterView<?> parent){}
         });
 
+        LinearLayout passiveGuide=card("Passive diagnostics and ALL reports");
+        add(passiveGuide,"Passive is ON automatically in the Instagram process: existing Repost, UFI, media-menu, session and screen-hint callbacks increment bounded anonymous counters without a manual Begin or any new hook.",14,WHITE,false);
+        add(passiveGuide,"Copy ALL and Export ALL are always visible in IA. They include completed and aborted mode summaries, current-mode report and passive counters since Instagram opened. Export All shares text through Android; it is not unrestricted logcat, and the archive disappears after Instagram exits.",14,DETAIL,false);
+        add(passiveGuide,"Avatar mode: Start A → capture Friends tab, liked-by and reposted-by VIEW candidates → Stop A → switch/confirm → repeat B → Stop B → Finish. Neither generic ImageViews nor labels prove friend identities.",14,AMBER,false);
         LinearLayout originalPlan = card("Original InstaActions goals · R0–R8");
         add(originalPlan, "Today: R1C/D07 Repost research with a user-reported successful Reels-tab action. D06 exact active-media identity remains NOT VERIFIED.", 14, WHITE, false);
         add(originalPlan, "Next: R2 contextual action UI and R3 explicit Like/Save/Repost/Download/Playback actions, only where independently qualified.", 14, DETAIL, false);

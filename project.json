@@ -109,5 +109,18 @@
   "r1c_d09_device_acceptance": "NOT_RUN",
   "r1c_d09_hosted_ci_qualified": false,
   "r1c_d07_reels_native_repost_user_confirmed": true,
-  "r1c_d07_reels_native_repost_90_second_user_confirmed": true
+  "r1c_d07_reels_native_repost_90_second_user_confirmed": true,
+  "r1c_d10_a_b_all_active_diagnostics_source": true,
+  "r1c_d10_avatars_readonly_view_shape_source": true,
+  "r1c_d10_passive_existing_callbacks_source": true,
+  "r1c_d10_all_export_process_volatile_source": true,
+  "r1c_d10_passive_diagnostics_mode": "AUTO_ON_NO_NEW_HOOKS",
+  "r1c_d10_account_identity_verified": false,
+  "r1c_d10_avatar_identity_verified": false,
+  "r1c_d10_feed_repost_qualified": false,
+  "r1c_d10_media_identity_verified": false,
+  "r1c_d10_hosted_ci_qualified": false,
+  "r1c_d10_device_acceptance": "NOT_RUN",
+  "r1c_d10_retention": "INSTAGRAM_PROCESS_MEMORY_ONLY_BOUNDED_TEXT_SHARE",
+  "r1c_d10_feature_scope": "A_B_DIAGNOSTICS_AVATARS_FEED_MEDIA_ACCOUNT_REELS_PASSIVE_ALL_EXPORT"
 }
