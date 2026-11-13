@@ -56,12 +56,13 @@ public final class MainActivity extends Activity {
         setContentView(scroll);
 
         add(root, "InstaActions", 25, WHITE, true);
+        add(root, "Personal Instagram quick actions · Feed / Reels / Stories", 16, BLUE, true);
         add(root, "D07 · Native Repost recovery", 16, BLUE, true);
-        add(root, "Experimental. Not yet qualified on this Android device.", 14, AMBER, false);
+        add(root, "User-confirmed: Reels-tab Repost appeared for 90 seconds and worked. Formal D07C acceptance is still pending.", 14, AMBER, false);
 
         LinearLayout status = card("What is ready?");
         add(status, "D07 SOURCE PRESENT · DEVICE TEST PENDING", 14, GREEN, true);
-        add(status, "Device acceptance: NOT RUN. A successful build does not prove the button appeared or that your Repost went through.", 14, DETAIL, false);
+        add(status, "Device acceptance: NOT RUN (formal D07C). Separately, the user reported a successful native Repost on the dedicated Reels tab; feed posts remain unqualified.", 14, DETAIL, false);
         add(status, "Instagram: " + installedVersion(ModuleConstants.TARGET_PACKAGE), 14, WHITE, false);
         add(status, "InstaEclipse: " + installedVersion("ps.reso.instaeclipse"), 14, WHITE, false);
         add(status, "Vector / LSPosed module enabled: NOT VERIFIED from this screen", 13, AMBER, false);
@@ -79,6 +80,20 @@ public final class MainActivity extends Activity {
         add(guide, "Close IA. Tap Instagram's ORIGINAL Repost button yourself. Reopen IA immediately, press Recovery OFF BEFORE switching account or tab, then Copy D07 safe Repost report. Record the actual result in separate D07C physical acceptance.", 14, WHITE, false);
         add(guide, "If anything fails: press Recovery OFF anyway and copy the report. Optional Account B and D05/D06 diagnostics are NOT required for this trial.", 14, AMBER, true);
 
+        LinearLayout comparison = card("Optional: compare A and B (separate workflow)");
+        add(comparison, "1. Start A, browse the dedicated Reels tab and reopen IA.", 14, WHITE, false);
+        add(comparison, "2. Press A2: Stop A (preserves original results). Recovery must be OFF.", 14, WHITE, false);
+        add(comparison, "3. Switch Instagram accounts MANUALLY, keeping Instagram running if possible.", 14, WHITE, false);
+        add(comparison, "4. Press Start B, browse Reels, then press Stop B.", 14, WHITE, false);
+        add(comparison, "5. Press Copy combined A/B report. A process restart loses both in-memory captures.", 14, WHITE, false);
+        add(comparison, "These manual labels cannot prove which Instagram account was active. Never use the 90-second Repost recovery during account switching.", 14, AMBER, false);
+
+        LinearLayout originalPlan = card("Original InstaActions goals · R0–R8");
+        add(originalPlan, "Today: R1C/D07 Repost research with a user-reported successful Reels-tab action. D06 exact active-media identity remains NOT VERIFIED.", 14, WHITE, false);
+        add(originalPlan, "Next: R2 contextual action UI and R3 explicit Like/Save/Repost/Download/Playback actions, only where independently qualified.", 14, DETAIL, false);
+        add(originalPlan, "Later: R4 native sharing, R5 preview-and-confirm single comment, R6 retries and cancellation, R7 Android 16 CI/device proof, R8 release.", 14, DETAIL, false);
+        add(originalPlan, "Do not duplicate InstaEclipse features or dispatch unqualified Feed/Story actions. Friend avatars and Feed Repost remain separate D08 investigations.", 14, AMBER, false);
+
         LinearLayout safety = card("What the controls actually do");
         add(safety, "Start A / Start B: read-only native result observations. These are manual labels, NOT verified Instagram account identities.", 14, DETAIL, false);
         add(safety, "Enable: at most 90 seconds or 64 eligible changes to one verified native Boolean result. OFF is the default.", 14, DETAIL, false);
@@ -87,7 +102,7 @@ public final class MainActivity extends Activity {
         add(safety, "Same-Activity account changes cannot be reliably detected. Turn OFF manually before changing accounts.", 14, AMBER, false);
 
         LinearLayout limits = card("Supported surfaces and privacy");
-        add(limits, "Dedicated Reels tab: previous HF12 success in InstaTaskManager; InstaActions transfer still needs device validation.", 14, WHITE, false);
+        add(limits, "Dedicated Reels tab: user-reported InstaActions native Repost success; formal D07C checks still pending.", 14, WHITE, false);
         add(limits, "Reels in Feed, profiles, and ordinary posts: NOT QUALIFIED.", 14, AMBER, false);
         add(limits, "Reports summarize native return types/counts, not account names, media IDs or captions. No automatic Repost actions.", 14, DETAIL, false);
     }

@@ -123,6 +123,9 @@ final class R1CD07TraceSummary {
         return a.observed>=3 && b.observed>=3 && a.falseValues==a.observed
                 && b.trueValues==b.observed && a.dropped==0 && b.dropped==0;
     }
+    synchronized int eventsFor(int cohort) {
+        return cohort < 0 || cohort > 1 ? 0 : events(cohort);
+    }
     synchronized boolean recording() {return active>=0;}
     synchronized void record(int selector, Object result) {
         if (active < 0) return;

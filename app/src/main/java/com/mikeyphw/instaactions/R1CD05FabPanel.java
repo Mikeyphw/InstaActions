@@ -61,11 +61,15 @@ final class R1CD05FabPanel {
     private TextView captureStatus;
     private TextView guardStatus;
     private TextView advancedStatus;
+    private TextView abStatus;
     private LinearLayout advancedBody;
     private Button advancedToggle;
     private Button primary;
     private Button enableRecovery;
     private Button startA;
+    private Button stopA;
+    private Button startB;
+    private Button stopB;
     private Runnable ticker;
     private boolean detached;
     private boolean advancedVisible;
@@ -284,6 +288,7 @@ final class R1CD05FabPanel {
         bold(body, "InstaActions", 20, FG);
         body.addView(label("D07 · Repost recovery · guided trial", 14, ACCENT));
         hint(body, "EXPERIMENTAL · D07C device qualification NOT RUN. Dedicated Reels tab only — select it from Instagram's bottom bar.");
+        hint(body, "DEVICE OBSERVATION: user reported original Repost button visible for 90 seconds and an actual successful Repost in the dedicated Reels tab. Formal D07C evidence review remains pending.");
 
         LinearLayout stateCard = section(body, "CURRENT STATUS · NEXT STEP", "Follow Steps 1 through 5 in order. Only the original Instagram Repost button performs a Repost.");
         recoveryStatus = label("", 15, SUCCESS);
@@ -312,7 +317,7 @@ final class R1CD05FabPanel {
             itmRecoveryOffAcknowledged=false;
             toast(R1CD07GateTrace.begin(0));refresh();
         });
-        hint(startCard, "After Start A, immediately continue to Step 3. Do not select B or Stop A/B.");
+        hint(startCard, "For Repost recovery, continue to Step 3 and KEEP A RECORDING. For a separate A/B comparison, use the visible comparison section after Step 5.");
 
         LinearLayout browse = section(body, "STEP 3 OF 5 · BROWSE, THEN RETURN", "1. Close this IA panel. 2. Swipe through several Reels IN the dedicated Reels tab. 3. Tap IA to reopen it.");
         neutral(browse, "Close IA · browse Reels now", this::close);
@@ -352,20 +357,53 @@ final class R1CD05FabPanel {
         mainAction(finish, "5B · Copy D07 safe Repost report", this::copyD07);
         hint(finish, "If no native button appears, still switch OFF and export the report. Before any account/tab change, OFF is mandatory; same-Activity switches are not reliably detected.");
 
+        // Independent diagnostic workflow, deliberately placed AFTER the five-step
+        // native recovery path. This is not hidden behind D05/D06 Advanced.
+        LinearLayout compare = section(body, "OPTIONAL · COMPARE ACCOUNT A → ACCOUNT B",
+                "Use this only for read-only A/B investigation. Recovery must be OFF before changing accounts. This is NOT required for the 90-second Repost trial.");
+        abStatus = label("", 14, ACCENT);
+        compare.addView(abStatus);
+        hint(compare, "A1. Start A above; close IA and browse Reels on manually selected account A.");
+        stopA = neutral(compare, "A2 · Stop A · KEEP observations", () -> {
+            if (!R1CD07ComparisonFlow.canStopA(R1CD07GateTrace.recording(),
+                    R1CD07GateTrace.activeIndex(), R1CD07Recovery.isEnabled())) {
+                toast("REFUSED: first Start A, browse Reels, then stop A with recovery OFF");return;
+            }
+            itmRecoveryOffAcknowledged=false;
+            toast(R1CD07GateTrace.stop() + "; A samples preserved");refresh();
+        });
+        hint(compare, "B1. Once A is STOPPED, switch Instagram to account B manually. Keep the same Instagram process if possible. A process restart loses both captures.");
+        startB = mainAction(compare, "Optional · Start B read-only comparison", () -> {
+            if (!R1CD07ComparisonFlow.canStartB(R1CD07GateTrace.recording(),
+                    R1CD07GateTrace.activeIndex(), R1CD07GateTrace.cohortEvents(0),
+                    R1CD07Recovery.isEnabled(), R1CD07GateTrace.ready())) {
+                toast("REFUSED: Stop A after observing it, switch manually to B, then Start B; recovery must be OFF");return;
+            }
+            R1CD07GateTrace.stopExactTrial();
+            itmRecoveryOffAcknowledged=false;
+            toast(R1CD07GateTrace.begin(1));refresh();
+        });
+        hint(compare, "B2. Browse several Reels on B, reopen IA, then press Stop B. Do not turn Recovery ON during B.");
+        stopB = neutral(compare, "B3 · Stop B · KEEP both samples", () -> {
+            if (!R1CD07ComparisonFlow.canStopB(R1CD07GateTrace.recording(),
+                    R1CD07GateTrace.activeIndex(), R1CD07Recovery.isEnabled())) {
+                toast("REFUSED: Start B before Stop B; recovery must be OFF");return;
+            }
+            itmRecoveryOffAcknowledged=false;
+            toast(R1CD07GateTrace.stop() + "; A and B samples preserved");refresh();
+        });
+        mainAction(compare, "B4 · Copy combined A/B report", this::copyD07);
+        hint(compare, "The same report contains A and B original native-result counts. A/B labels are selected by YOU, not account identity verification. Never reset or restart Instagram before copying if you need both samples.");
+
         LinearLayout diagnostic = section(body, "OPTIONAL · B comparison, reset and D05/D06", "Only open this after the normal 5-step trial, or when intentionally restarting. None of these buttons is required to try Repost.");
         advancedToggle = neutral(diagnostic, "Show D05/D06 diagnostic tools", this::toggleAdvanced);
         advancedBody = vertical();
         advancedBody.setVisibility(View.GONE);
         diagnostic.addView(advancedBody);
-        hint(advancedBody, "Optional Start B compares another MANUALLY labeled account. It switches recovery OFF and means you must restart A from Step 2 before trying Repost again.");
-        neutral(advancedBody, "Optional · Start B read-only comparison", () -> {
-            R1CD07GateTrace.stopExactTrial();
-            itmRecoveryOffAcknowledged=false;
-            toast(R1CD07GateTrace.begin(1));refresh();
-        });
+        hint(advancedBody, "The A → B comparison controls are visible above. The RESET control below permanently clears BOTH captured label cohorts; Stop A and Stop B preserve the counters.");
         stopAction(advancedBody, "Reset A/B observations · recovery OFF", () -> {
             itmRecoveryOffAcknowledged=false;
-            toast(R1CD07GateTrace.stop());refresh();
+            toast(R1CD07GateTrace.clear());refresh();
         });
         hint(advancedBody, "D05/D06 media diagnostics are a separate research workflow; they do not prove media identity or enable actions.");
         advancedStatus = label("", 13, SECONDARY);
@@ -443,7 +481,8 @@ final class R1CD05FabPanel {
         if (panel != null) {
             decor.removeView(panel);
             panel=null; recoveryStatus=null; nextStep=null; readinessChecklist=null;
-            enableRecovery=null; startA=null; captureStatus=null;
+            enableRecovery=null; startA=null; stopA=null; startB=null; stopB=null;
+            abStatus=null; captureStatus=null;
             guardStatus=null; advancedStatus=null; advancedBody=null;
             advancedToggle=null; primary=null; advancedVisible=false;
         }
@@ -520,7 +559,18 @@ final class R1CD05FabPanel {
                 && R1BContextMonitor.stableScreen()==R1BNavigationPolicy.Screen.REELS
                 && observingA && R1CD07ExactGateTrial.eligibleForHF13Recovery()
                 && itmRecoveryOffAcknowledged && !CAPTURE.isActiveWindow());
-        if (startA != null) startA.setEnabled(!on && R1CD07GateTrace.ready());
+        if (startA != null) startA.setEnabled(!on && !observingB && R1CD07GateTrace.ready());
+        if (stopA != null) stopA.setEnabled(R1CD07ComparisonFlow.canStopA(
+                R1CD07GateTrace.recording(), R1CD07GateTrace.activeIndex(), on));
+        if (startB != null) startB.setEnabled(R1CD07ComparisonFlow.canStartB(
+                R1CD07GateTrace.recording(), R1CD07GateTrace.activeIndex(),
+                R1CD07GateTrace.cohortEvents(0), on, R1CD07GateTrace.ready()));
+        if (stopB != null) stopB.setEnabled(R1CD07ComparisonFlow.canStopB(
+                R1CD07GateTrace.recording(), R1CD07GateTrace.activeIndex(), on));
+        if (abStatus != null) copyIfChanged(abStatus,
+                R1CD07ComparisonFlow.progress(R1CD07GateTrace.recording(),
+                        R1CD07GateTrace.activeIndex(), R1CD07GateTrace.cohortEvents(0),
+                        R1CD07GateTrace.cohortEvents(1), on));
         if (guardStatus != null) copyIfChanged(guardStatus,
                 "ITM recovery OFF: " + (itmRecoveryOffAcknowledged
                 ? "You confirmed for this session (not verified by IA)"

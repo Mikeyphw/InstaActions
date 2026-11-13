@@ -256,3 +256,11 @@ Instagram hooks. No new upstream discovery. Physical qualification pending.
 - Preserve five-step sequence; A/B advanced diagnostics and exact IG455 gates unchanged.
 - Run inherited D05/D06 regression tests, not only new UX02 checks.
 - Source overlay only; device and D07C physical acceptance remain NOT RUN.
+
+
+## D07 UX03 — visible A/B capture handoff and D08 research audit (unqualified)
+
+- Preserve the original personal/explicit R0–R8 quick-action product objective (Feed/Reels/Stories), not a Repost-only scope. R2–R8 features remain planned under independent media-identity/action gates.
+- Recovery path retains Start A recording until after the 90-second native Reels-tab user action. Independent visible A/B flow now offers Stop A (retain counts) → manual account switch → Start B → Stop B (retain counts) → copy combined report. No automatic account identity/selection detection. Reset A/B now actually clears both native-aggregate buckets.
+- User separately confirmed a native Repost button shown for the 90-second interval and a successful original-button Repost within the dedicated Reels tab. Formal D07C acceptance still NOT RUN, and Feed/normal posts/embedded Reels unqualified.
+- `docs/R1C_D08_FEED_REPOST_FRIEND_AVATAR_AUDIT.md` records candidate Feed-specific repost backend/UI path and three avatar/facepile subsystems. These remain source-only targets: no new hook, fake avatar, automatic repost, media identity promotion or extra network calls.

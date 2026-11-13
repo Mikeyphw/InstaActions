@@ -81,5 +81,13 @@
   "r1c_d07_ux02_source_implemented": true,
   "r1c_d07_ux02_hosted_ci_qualified": false,
   "r1c_d07_ux02_device_acceptance": "NOT_RUN",
-  "r1c_d07_ux02_scope": "ORDERED_UI_ONLY_NO_NEW_NATIVE_HOOKS"
+  "r1c_d07_ux02_scope": "ORDERED_UI_ONLY_NO_NEW_NATIVE_HOOKS",
+  "r1c_d07_ux03_ab_controls_source_implemented": true,
+  "r1c_d07_ux03_hosted_ci_qualified": false,
+  "r1c_d07_ux03_device_acceptance": "NOT_RUN",
+  "r1c_d07_reels_tab_user_report": "REPOST_BUTTON_90S_AND_NATIVE_REPOST_SUCCESS_USER_CONFIRMED",
+  "r1c_d08_feed_repost_audit": "STATIC_ANCHORS_ONLY_NO_LIVE_FEED_ELIGIBILITY_EVIDENCE",
+  "r1c_d08_friend_avatars_audit": "STATIC_RENDERER_CANDIDATES_ONLY_NO_SOURCE_LIST_EVIDENCE",
+  "r1c_d08_feed_repost_enabled": false,
+  "r1c_d08_avatar_render_modification_enabled": false
 }

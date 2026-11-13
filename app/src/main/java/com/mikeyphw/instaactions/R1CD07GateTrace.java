@@ -45,6 +45,7 @@ final class R1CD07GateTrace {
     static boolean ready() {return ready;}
     static int activeIndex() {return STATE.activeIndex();}
     static boolean recording() {return STATE.recording();}
+    static int cohortEvents(int index) {return STATE.eventsFor(index);}
     static String feedback() {
         if (!ready) return "P04 · " + installStatus;
         String capture=STATE.feedback();
@@ -144,7 +145,7 @@ final class R1CD07GateTrace {
         InstaActionsEntry.dataGateReady());}
     static String stopExactTrial() {R1CD07Recovery.off("User pressed Recovery OFF");
         R1CD07ExactGateTrial.disarm();return "HF13 native Repost UI recovery OFF (future calls native)";}
-    static String clear() {R1CD07Recovery.off("Clear A/B");STATE.clear();R1CD07PredicateTrace.clear();return "P04 capture cleared; HF13 OFF";}
+    static String clear() {R1CD07Recovery.off("Clear A/B");R1CD07ExactGateTrial.reset();STATE.clear();R1CD07PredicateTrace.clear();return "A/B observations cleared; recovery OFF";}
     static String report() {
         return "INA_D07_REPOST_EXACT_APK_A_B_TRACE\nHook: "+status()+"\n"+STATE.render()
             + InstaActionsEntry.dataGateStatus() + "\n"
