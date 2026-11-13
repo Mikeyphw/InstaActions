@@ -1,6 +1,8 @@
 package com.mikeyphw.instaactions;
 
 import android.app.Activity;
+import android.app.Instrumentation;
+import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.util.Log;
 import java.lang.reflect.Method;
@@ -266,10 +268,13 @@ public final class InstaActionsEntry extends XposedModule {
                             diagnostic("INA_DIAG_FIRST_ACTIVITY_RESUMED actions=off");
                         }
                         try {
+                            R1CD12AndroidBridge.install((Activity) owner);
                             R1ProbeController.onActivityResumed((Activity) owner,
                                     targetApk, moduleNativeLibDir);
                         } finally {
                             R1BContextMonitor.resumed((Activity) owner);
+                            try {R1CD13AndroidSampler.resumed((Activity) owner);}
+                            catch(Throwable ignored) { /* Optional passive sampler must never block R1C. */ }
                             // Independent, read-only metadata inventory. Not a media binding.
                             R1CDiscoveryController.onActivityResumed((Activity) owner,
                                     targetApk, moduleNativeLibDir, instagramLoader);
@@ -277,6 +282,9 @@ public final class InstaActionsEntry extends XposedModule {
                             // The interceptor NEVER alters arguments, return values or exceptions.
                             R1CD04PassiveProbe.onActivityResumed((Activity) owner,
                                     targetApk, moduleNativeLibDir, instagramLoader, (method, counter) -> {
+                                        // D14: source fields are pinned to exact IG455 DEX;
+                                        // reuse the D04 pass-through observer, no extra hook.
+                                        R1CD14NativeOriginProbe.prepare(instagramLoader);
                                         hook(method)
                                                 .setId("ina-r1c-d04-reels-passive")
                                                 .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
@@ -287,6 +295,11 @@ public final class InstaActionsEntry extends XposedModule {
                                                         // The original exception propagates unchanged.
                                                         // A probe failure must never escape this finally.
                                                         try {
+                                                            // D14 failures must not suppress the existing D04 counter.
+                                                            try { R1CD14NativeOriginProbe.observe(
+                                                                    observation.getThisObject(),
+                                                                    R1BContextMonitor.stableScreen().name()); }
+                                                            catch(Throwable ignored) { }
                                                             counter.observe(observation.getArg(1),
                                                                     R1BContextMonitor.stableScreen(),
                                                                     observation.getThisObject(),
@@ -316,7 +329,9 @@ public final class InstaActionsEntry extends XposedModule {
                     try {
                         Object owner = chain.getThisObject();
                         if (owner instanceof Activity) {
-                            try { R1BContextMonitor.paused((Activity) owner); }
+                            try { R1BContextMonitor.paused((Activity) owner);
+                                try {R1CD13AndroidSampler.paused((Activity) owner);}
+                                catch(Throwable ignored) { /* Optional passive sampler. */ } }
                             finally {
                                 R1CD04PassiveProbe.paused();
                                 try { R1CD05FabPanel.onLeaving((Activity) owner); }
@@ -330,6 +345,53 @@ public final class InstaActionsEntry extends XposedModule {
                     return result;
                 });
             }
+            // D12: independent Android framework new-intent dispatch signal.
+            // Hook the *Instrumentation* dispatch (also reaches Activity overrides),
+            // not a guessed Instagram account getter. Never inspect Intent extras,
+            // action, data, caller, or associated account information.
+            int d12IntentHooks=0;
+            boolean d12Two=false,d12Three=false;
+            try {
+                for(Method dispatch:Instrumentation.class.getDeclaredMethods()) {
+                    if(!"callActivityOnNewIntent".equals(dispatch.getName()) ||
+                       dispatch.getReturnType()!=void.class)continue;
+                    Class<?>[] types=dispatch.getParameterTypes();
+                    if((types.length!=2 && types.length!=3) ||
+                       types[0]!=Activity.class || types[1]!=Intent.class)continue;
+                    if(types.length==3 && !"android.app.ComponentCaller".equals(types[2].getName()))
+                        continue;
+                    final int arguments=types.length;
+                    try {
+                        hook(dispatch).setId("ina-d12-android-new-intent-"+arguments)
+                            .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+                            .intercept(chain -> {
+                                Object original=chain.proceed(); // dispatch EXACTLY once
+                                try {
+                                    Object owner=chain.getArg(0);
+                                    if(owner instanceof Activity &&
+                                       ModuleConstants.TARGET_PACKAGE.equals(((Activity)owner).getPackageName())) {
+                                            R1CD12AccountLifecycle.newIntentDelivered();
+                                            R1CD13AutoSurface.invalidatedByNewIntent();
+                                        }
+                                }catch(Throwable ignored){ /* never affect Instagram */ }
+                                return original;
+                            });
+                        d12IntentHooks++;
+                        if(arguments==2)d12Two=true;
+                        else d12Three=true;
+                    } catch(Throwable unavailableOverload) {
+                        diagnostic("INA_D12_NEW_INTENT_OVERLOAD_UNAVAILABLE arguments="+arguments);
+                    }
+                }
+            } catch(Throwable notAvailable) {
+                diagnostic("INA_D12_NEW_INTENT_HOOK_REFUSED reason=framework_binding_failed");
+            }
+            R1CD12AccountLifecycle.setIntentHookStatus(
+                d12Two && d12Three?"READY_2_AND_3_ARGUMENT_OVERLOADS":
+                d12Two?"READY_2_ARGUMENT_ONLY":
+                d12Three?"READY_3_ARGUMENT_ONLY":"UNAVAILABLE_FAIL_CLOSED");
+            diagnostic("INA_D12_NEW_INTENT_DISPATCH_HOOKS count="+d12IntentHooks+
+                " independent_of_repost=true account_identity=not_verified");
             diagnostic("INA_DIAG_HOOKS_INSTALLED lifecycle=resume_pause_destroy actions=off");
             Log.i("INA_R1B", "INA_R1B_LIFECYCLE_READY hooks=resume_pause_destroy"
                     + " action_hooks=0");

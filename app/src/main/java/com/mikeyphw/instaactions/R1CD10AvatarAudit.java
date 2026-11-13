@@ -60,12 +60,15 @@ final class R1CD10AvatarAudit {
             }
         }catch(Throwable e){return "REFUSED: avatar UI inspection failed";}
         synchronized(R1CD10AvatarAudit.class){
-            if(cohort!=active)return "REFUSED: manual cohort changed during scan";
+            if(cohort!=active || R1CD10ComparisonFlow.cohort()!=active ||
+                    !R1CD09DiagnosticGate.active(R1CD09DiagnosticGate.Mode.AVATAR))
+                return "REFUSED: Avatar cohort/mode changed during scan; no observation stored";
             if(samples[active][surface]>=20)return "REFUSED: cap reached";
             samples[active][surface]++;images[active][surface]+=all;
             squareCandidates[active][surface]+=square;labelHints[active][surface]+=hints;
             if(cap)truncated[active][surface]++;
         }
+        R1CD10ComparisonFlow.recordFeature(surface,false); // full-decor scan, no trusted facepile owner
         R1CD10ComparisonFlow.sample();
         return "Avatar "+SURFACES[surface]+" manual="+(active==0?"A":"B")+
             " images="+all+" square_image_candidates="+square+" label_hints="+hints+
@@ -79,6 +82,8 @@ final class R1CD10AvatarAudit {
             .append(" small_square_candidate=").append(squareCandidates[a][i])
             .append(" exact_label_hints=").append(labelHints[a][i])
             .append(" scan_truncated=").append(truncated[a][i]).append('\n');
+        b.append("SCAN_SCOPE=ENTIRE_VISIBLE_DECOR surface_owner=NOT_FOUND; ")
+         .append("same ImageViews may be counted in all three snapshots.\n");
         b.append("These are broad VIEW candidates, not verified friend facepiles. NO image pixels or account data retained.\n");
         return b.toString();
     }

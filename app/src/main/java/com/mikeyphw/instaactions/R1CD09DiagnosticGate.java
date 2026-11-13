@@ -2,7 +2,7 @@ package com.mikeyphw.instaactions;
 
 /** One active diagnostic, one explicit lifecycle. No Android/Instagram object is retained. */
 final class R1CD09DiagnosticGate {
-    enum Mode { REELS, AB, FEED, MEDIA, ACCOUNT, AVATAR, PASSIVE }
+    enum Mode { REELS, AB, FEED, MEDIA, ACCOUNT, AVATAR, PASSIVE, AUTO }
     enum State { IDLE, RUNNING, FINISHED, ABORTED }
     private static Mode mode;
     private static State state=State.IDLE;

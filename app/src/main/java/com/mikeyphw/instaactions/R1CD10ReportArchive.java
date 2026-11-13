@@ -8,12 +8,12 @@ import java.util.ArrayDeque;
 final class R1CD10ReportArchive {
     private static final int MAX_RECORDS=28, MAX_TOTAL_CHARS=180_000, MAX_RECORD_CHARS=16_000;
     private static final ArrayDeque<String> records=new ArrayDeque<>();
-    private static int chars, saved, dropped;
+    private static int chars, saved, dropped, clipped;
     private R1CD10ReportArchive() { }
     static synchronized void capture(String mode,String phase,String evidence) {
         String data=evidence==null?"":evidence;
-        if(data.length()>MAX_RECORD_CHARS)data=data.substring(0,MAX_RECORD_CHARS)+
-                "\nTRUNCATED_RECORD_LIMIT\n";
+        if(data.length()>MAX_RECORD_CHARS){clipped++;
+            data=data.substring(0,MAX_RECORD_CHARS)+"\nTRUNCATED_RECORD_LIMIT\n";}
         String v="\n--- ARCHIVED #"+(++saved)+" mode="+mode+" phase="+phase+" ---\n"+data+"\n";
         while(!records.isEmpty()&&(records.size()>=MAX_RECORDS || chars+v.length()>MAX_TOTAL_CHARS)) {
             chars-=records.removeFirst().length();dropped++;
@@ -26,9 +26,14 @@ final class R1CD10ReportArchive {
         out.append("This includes module-collected bounded reports, NOT full Android logcat. ")
            .append("No persistence across process restarts.\n")
            .append("ARCHIVE entries=").append(records.size()).append(" lost_oldest=").append(dropped)
-           .append(" chars_stored=").append(chars).append(" total_created=").append(saved).append("\n")
+           .append(" chars_stored=").append(chars).append(" total_created=").append(saved)
+           .append(" clipped_records=").append(clipped).append("\n")
+           .append(dropped>0 || clipped>0
+              ? "ARCHIVE_INCOMPLETE: OLDEST RECORDS EVICTED OR RECORDS TRUNCATED. COPY ALL IS NOT LOSSLESS.\n"
+              : "ARCHIVE_COMPLETE_WITHIN_PROCESS_BOUNDS (only captured summaries, NOT logcat).\n")
            .append("D06_MEDIA_IDENTITY=NOT_VERIFIED ACTIONS=OFF\n")
-           .append(R1CD10PassiveLedger.report());
+           .append(R1CD10PassiveLedger.report())
+           .append(R1CD12AccountLifecycle.report());
         for(String v:records)out.append(v);
         if(currentReport!=null && !currentReport.isEmpty()) {
             out.append("\n--- LIVE diagnostic ").append(currentMode).append(" (unarchived) ---\n")

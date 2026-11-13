@@ -45,7 +45,10 @@ final class R1CD08MediaEvidence {
         Verdict verdict=classify(true,screen,owner,visible,premenu);
         if(total>=LIMIT){capped++;return;}
         total++;COUNTS[verdict.ordinal()]++;
-        if(manualCohort>=0 && manualCohort<=1){AB_VERDICTS[manualCohort][verdict.ordinal()]++;
+        if(manualCohort>=0 && manualCohort<=1 &&
+                R1CD10ComparisonFlow.cohort()==manualCohort){
+            AB_VERDICTS[manualCohort][verdict.ordinal()]++;
+            R1CD10ComparisonFlow.recordFeature(0,verdict==Verdict.VISIBLE_PAGE_CANDIDATE);
             R1CD10ComparisonFlow.sample();}
         // Enum names only: no Media, raw callback args, UI strings or IDs.
         String reason="owner="+bounded(owner)+" page="+bounded(visible)+" pre="+bounded(premenu);

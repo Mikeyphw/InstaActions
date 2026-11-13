@@ -25,7 +25,8 @@ class D10UniversalContract(unittest.TestCase):
         self.assertIn('R1CD09AccountSentinel.markManualSwitch()',p)
         self.assertIn('reportForSelectedMode()',p)
         self.assertIn('"ABORTED_PARTIAL_NOT_QUALIFIED"',p)
-        self.assertIn('"FINISHED"',p)
+        self.assertIn('"FINISHED_"+quality',p)
+        self.assertIn('R1CD10ComparisonFlow.quality()',p)
     def test_passive_uses_only_existing_hooks(self):
         f=(J/'R1CD10PassiveLedger.java').read_text();g=(J/'R1CD07GateTrace.java').read_text()
         c=(J/'R1CD04PassiveProbe.java').read_text();a=(J/'R1CD09AccountSentinel.java').read_text()
@@ -73,7 +74,7 @@ class D10UniversalContract(unittest.TestCase):
         names=['R1CD07Recovery','R1CD07ExactGateTrial','R1CD07PredicateTrace',
                'R1CD07BranchInputs','R1CD07InputPresence','R1CD08MediaEvidence',
                'R1CD09DiagnosticGate','R1CD09AccountSentinel',
-               'R1CD10ComparisonFlow','R1CD10PassiveLedger','R1CD10ReportArchive']
+               'R1CD10ComparisonFlow','R1CD10PassiveLedger','R1CD10ReportArchive','R1CD12AccountLifecycle']
         smokes=['R1CD10UniversalSmoke','R1CD09SessionAndModesSmoke',
                 'R1CD08ReadOnlySmoke','R1CD07RecoverySmoke']
         with tempfile.TemporaryDirectory(prefix='ina-d10-jvm-') as tmp:

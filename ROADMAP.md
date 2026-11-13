@@ -296,3 +296,57 @@ Instagram hooks. No new upstream discovery. Physical qualification pending.
 - **Avatar mode** counts ImageView shape candidates and exact generic label hints under a 512-view/30-ms scan initiated by the user; cannot prove faces, sources, names or friend-avatar feature eligibility. Nothing is drawn, generated or overridden.
 - **No new native action hooks**, Feed Repost remains OFF, D06 identity remains NOT_VERIFIED, `X.02ib` original returns remain unmodified, native 90-s/64 and foreground max-4096 Reels Repost safety limits unchanged.
 - Hosted Android compile and actual device acceptance are separate gates, NOT_RUN until demonstrated.
+
+## D11 HF03 — harden diagnostic evidence quality (SOURCE-ONLY; device NOT RUN)
+
+- P0: distinguish generic callback counts from true feature-specific, manual A/B evidence. `FEATURE_EVIDENCE` and `FEATURE_COVERAGE` report per-surface completeness; a finished zero-snapshot Feed investigation is explicitly incomplete, never inferred eligible. Keep last completion quality for Copy Selected.
+- P0: mark avatar counts as whole-Activity shape candidates, not independently identified Friends, liked-by or reposted-by renderers; no owner/content identity claim.
+- P1: explicitly mark Feed label scan's whole-decor provenance, mismatch/truncation and missing A/B snapshots; Feed actions remain OFF.
+- P1: bounded ordinal-only `UserSession` reference transition timeline before/after the manual switch marker; no account ID/username or unobserved switch claims.
+- P1: `Copy ALL`/`Export ALL` now declares incomplete archival capture whenever record count/char limits evict or truncate entries. Still no raw logcat or disk persistence.
+- The **original R0–R8 context-aware quick-actions product remains the objective**; exact media identity and friend-avatar source binding are independent future gates. D07 proven Reels recovery logic and safety guards unchanged.
+- GitHub-hosted Android compile and actual physical acceptance are pending; CI and offline tests alone do not qualify these diagnostics.
+
+
+## D12 — Independent Android lifecycle / account-switch correlation (SOURCE ONLY)
+
+This consolidated overlay includes D11 hardening and D12. Uses Android
+Application.ActivityLifecycleCallbacks and *Instrumentation.callActivityOnNewIntent*
+2-argument (API 1) and 3-argument (API 35) overloads. Observes only dispatch,
+not Intent details. The original UserSession reference is preserved as an
+independent native callback signal. A bounded process timeline records manual
+A/B marker and before/after counts, with no identifiers. New-Intent while Repost
+is enabled forces OFF, never auto-on. Android lifecycle events and new-intent
+delivery are NOT proof of account switching; same-Activity switches might not
+produce either event. No source-verified Instagram active-account provider was
+identified in the available IG455 source, so none is guessed.
+
+D12 hosted CI and physical acceptance remain pending; complete R0–R8 objectives
+are unchanged. InstaEclipse must stay ON.
+
+
+## D13 — passive automatic surface discovery (source implementation, NOT device qualified)
+
+D11 HF03 hardened diagnostics and D12 HF04 Android lifecycle/account correlation are
+folded directly into this single D10-parent overlay. A new read-only D13 sampler uses
+existing R1B stable-screen observations (HOME_FEED, REELS, STORY) and Instagram-owned
+visible navigation-tab selection hints (feed_tab/clips_tab). The sampler records bounded
+transitions automatically, including when no A/B diagnostic is running. Users can select
+AUTO in the dropdown to repeat a controlled A→B navigation comparison without tapping
+feature-specific snapshots. It does not hook guessed Instagram methods or auto-repost.
+
+A Feed-opened Reel is only a candidate if the Feed tab remains selected. A recent
+Home→Reels transition with hidden tabs is origin-unresolved, **never verified**.
+Account switching is inferred only as an *opaque session-reference signal* together
+with Android lifecycle and manually marked A→B boundaries; it is not verified account
+identity and never enables Repost. D06 exact media binding, Feed Repost and avatar owners
+remain NOT QUALIFIED. D13 physical acceptance and hosted CI are NOT RUN at source stage.
+
+
+### D14 HF06 — InstaEclipse 0.8.2 / IG455 exact-APK native source correlation
+
+- Both APKs examined: InstaEclipse 0.8.2 SHA256 `b1308bdf4edc2956671fe5a0ec04972ba77a25edd51e144072b9b157755d2dc5` built from `ee1c81cadfbcd9fbbee4d01568ee5ca4b2653fbc`, and IG455 SHA256 `fb6ca8c21d909d95892e67339746b8fe43f409a9dea11f87d9ab0cee8e97c5b6`.
+- IG455 `X.07EF.A05(X.03jS,Media):ArrayList` in `classes5.dex` references both `PLAYBACK_CONTROLS` and `UNSAVE`, matching InstaEclipse modern options-builder selection predicates; this establishes matching field-use **for this method**, not unique DexKit result ordering across all classes.
+- The method reads `X.07EF.A08:ClipsViewerConfig` and `ClipsViewerConfig.A00:ClipsViewerSource`; D14 passively classifies enum *code categories* in the original D04 observer, with no second hook or option-list writes.
+- `CLIPS_TAB`, `FEED_TIMELINE`, `REEL_FEED_TIMELINE` categories are native source *hints observed when the menu builder fires*, not a continuous screen detector or verified entry route. Account identity and selected visible Media remain unverified.
+- Preserve D11 HF03 + D12 HF04 + D13 automatic view hints, original 90s/64 and foreground/4096 Repost safeguards, and ALL R0–R8 objectives. See `docs/R1C_D14_HF06_INSTAECLIPSE_IG455_AUDIT.md`.

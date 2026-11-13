@@ -69,7 +69,7 @@ public final class MainActivity extends Activity {
         add(pickerGuide, "Select Reels recovery, Account A/B, Feed Repost, Visible media, Account change, or Friend avatars. Only the chosen tools appear. Finish preserves that report; Abort disarms and ends it. Switching while active is refused.",14,DETAIL,false);
         add(pickerGuide, "For EVERY active feature: Begin → Start A → observe → Stop A → switch manually with recovery OFF → confirm switch → Start B → repeat the SAME observations → Stop B → Finish → Copy/Export ALL. Account labels are still manual, not verified identity.",14,WHITE,false);
         add(pickerGuide, "Reels recovery offers 90s trial or Keep Repost available (foreground session only). This is NOT saved across restarts or account changes; emergency OFF remains visible.",14,AMBER,false);
-        add(pickerGuide, "Account-change diagnostic observes weak UserSession references only; missing callbacks mean NOT VERIFIED, not same account.",14,DETAIL,false);
+        add(pickerGuide, "Account-change diagnostic now combines the existing opaque UserSession reference signal with independent Android Activity lifecycle and new-intent dispatch events. Neither proves account identity; missing callbacks mean NOT VERIFIED.",14,DETAIL,false);
 
         LinearLayout status = card("What is ready?");
         add(status, "D07 SOURCE PRESENT · DEVICE TEST PENDING", 14, GREEN, true);

@@ -17,6 +17,7 @@ final class R1CD10PassiveLedger {
     static synchronized void observeScreen(String screen){
         if(screen==null || screen.equals(lastScreen))return;
         lastScreen=screen;
+        R1CD12AccountLifecycle.screenHint(screen);
         observe("REELS".equals(screen)?Signal.REELS_HINT:
             "HOME_FEED".equals(screen)?Signal.FEED_HINT:Signal.OTHER_HINT);
     }

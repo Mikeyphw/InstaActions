@@ -46,7 +46,7 @@ class D08ReadOnlyContract(unittest.TestCase):
     def test_pure_java_d08_and_inherited_d07(self):
         names=['R1CD07Recovery','R1CD07ExactGateTrial','R1CD07PredicateTrace',
                'R1CD07BranchInputs','R1CD07InputPresence','R1CD08MediaEvidence','R1CD09DiagnosticGate',
-               'R1CD10ComparisonFlow','R1CD10PassiveLedger','R1CD10ReportArchive']
+               'R1CD10ComparisonFlow','R1CD10PassiveLedger','R1CD10ReportArchive','R1CD12AccountLifecycle']
         smoke=R/'tests/java/com/mikeyphw/instaactions/R1CD08ReadOnlySmoke.java'
         inherited=R/'tests/java/com/mikeyphw/instaactions/R1CD07RecoverySmoke.java'
         with tempfile.TemporaryDirectory(prefix='ina-d08-jvm-') as tmp:

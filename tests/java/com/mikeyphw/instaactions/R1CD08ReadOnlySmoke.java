@@ -28,6 +28,12 @@ public final class R1CD08ReadOnlySmoke {
                 "VISIBLE_PAGE_DIRECT_MATCH_CANDIDATE","PREMENU_MEDIA_MATCH_CANDIDATE")
                 == R1CD08MediaEvidence.Verdict.NOT_REELS,"wrong surface refuses");
         R1CD09DiagnosticGate.begin(R1CD09DiagnosticGate.Mode.MEDIA);
+        // D10 diagnostic routing refuses anonymous passive observations as
+        // active cohort evidence; establish an explicit MEDIA capture first.
+        R1CD09DiagnosticGate.begin(R1CD09DiagnosticGate.Mode.MEDIA);
+        R1CD10ComparisonFlow.begin(R1CD09DiagnosticGate.Mode.MEDIA);
+        R1CD10ComparisonFlow.startA();
+        R1CD08MediaEvidence.setManualCohort(0);
         R1CD08MediaEvidence.record(true,"REELS","OWNER_DIRECT_MATCH",
                 "NO_VERTICAL_PAGER","PREMENU_MEDIA_MATCH_CANDIDATE");
         ok(R1CD08MediaEvidence.report().contains("PREMENU_WEAK_CANDIDATE=1"),"counts classified");

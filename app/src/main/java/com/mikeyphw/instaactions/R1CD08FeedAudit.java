@@ -71,8 +71,12 @@ final class R1CD08FeedAudit {
             }
         } catch(Throwable failed) {return "REFUSED: UI scan failed; no observation stored";}
         synchronized(R1CD08FeedAudit.class){
+            if(activeCohort!=cohort || R1CD10ComparisonFlow.cohort()!=cohort ||
+                    !R1CD09DiagnosticGate.active(R1CD09DiagnosticGate.Mode.FEED))
+                return "REFUSED: Feed cohort/mode changed during scan; no observation stored";
             if(SAMPLES[cohort][kind]>=24)return "REFUSED: 24-sample cap reached";
             SAMPLES[cohort][kind]++;
+            R1CD10ComparisonFlow.recordFeature(kind,expected && !capped);
             R1CD10ComparisonFlow.sample();
             LABELS[cohort][kind]+=count;
             if(!expected)UNCERTAIN[cohort][kind]++;
@@ -112,6 +116,8 @@ final class R1CD08FeedAudit {
                 .append(" screen_mismatch=").append(UNCERTAIN[a][i])
                 .append(" scan_truncated=").append(TRUNCATED[a][i]).append('\n');
         }
+        out.append("SCAN_SCOPE=ENTIRE_VISIBLE_DECOR; SCREEN_HINT_IS_NOT_POST_OWNER. ")
+           .append("Counts cannot establish eligibility, absence or exact button ownership.\n");
         out.append("Feed Repost and Feed-opened Reels NOT QUALIFIED; no eligibility hook, native action or identifiers.\n");
         return out.toString();
     }
