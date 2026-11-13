@@ -7,7 +7,7 @@ public final class R1CD08ReadOnlySmoke {
     private static void frame(int cohort, Object key, Object original) {
         R1CD07PredicateTrace.Frame f=R1CD07PredicateTrace.enter(cohort,
                 R1CD07InputPresence.NESTED_PRESENT,R1CD07BranchInputs.PRESENT);
-        R1CD07PredicateTrace.noteDataReceiver(new Object());
+        R1CD07PredicateTrace.noteDataReceiver(new Object(), Object.class);
         R1CD07PredicateTrace.noteExactData(key,original);
         R1CD07PredicateTrace.leave(f,new Object()); // other result, synthetic fixture
     }
@@ -27,6 +27,7 @@ public final class R1CD08ReadOnlySmoke {
         ok(R1CD08MediaEvidence.classify(true,"HOME_FEED","OWNER_DIRECT_MATCH",
                 "VISIBLE_PAGE_DIRECT_MATCH_CANDIDATE","PREMENU_MEDIA_MATCH_CANDIDATE")
                 == R1CD08MediaEvidence.Verdict.NOT_REELS,"wrong surface refuses");
+        R1CD09DiagnosticGate.begin(R1CD09DiagnosticGate.Mode.MEDIA);
         R1CD08MediaEvidence.record(true,"REELS","OWNER_DIRECT_MATCH",
                 "NO_VERTICAL_PAGER","PREMENU_MEDIA_MATCH_CANDIDATE");
         ok(R1CD08MediaEvidence.report().contains("PREMENU_WEAK_CANDIDATE=1"),"counts classified");

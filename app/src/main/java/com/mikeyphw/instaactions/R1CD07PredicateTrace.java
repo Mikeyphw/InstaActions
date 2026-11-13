@@ -41,6 +41,7 @@ final class R1CD07PredicateTrace {
     private static final int[][][][] D08_EXACT = new int[2][3][MAX_ORDINAL][OUTCOMES];
     // cohort / outer state / observed receiver class: X.02ib, other X, other.
     private static final int[][][] D08_RECEIVER = new int[2][3][3];
+    private static final int[][][] D09_DECLARING_CLASS = new int[2][3][3];
     // cohort / state / other-key calls, missing-exact, changed-intervention, capped.
     private static final int[][][] D08_COVERAGE = new int[2][3][4];
     private R1CD07PredicateTrace() { }
@@ -64,6 +65,7 @@ final class R1CD07PredicateTrace {
         int d08ExactCalls;
         int d08OtherKeys;
         int d08Receiver = -1;
+        int d09DeclaringClass = -1;
 
         Frame(int cohort, Frame parent, int inputPresence, int repostDataPresence) {
             this.cohort=cohort;
@@ -104,11 +106,14 @@ final class R1CD07PredicateTrace {
     static boolean inRepostFrame() {return ACTIVE.get()!=null;}
 
     /** Receiver code type only; never retain the instance or reflect on its fields. */
-    static void noteDataReceiver(Object receiver) {
+    static void noteDataReceiver(Object receiver, Class<?> declaringClass) {
         Frame frame=ACTIVE.get();
-        if(frame==null || receiver==null)return;
-        String type=receiver.getClass().getName();
-        frame.d08Receiver="X.02ib".equals(type)?0:type.startsWith("X.")?1:2;
+        if(frame==null)return;
+        if(receiver!=null)frame.d08Receiver=classifyClassName(receiver.getClass().getName());
+        if(declaringClass!=null)frame.d09DeclaringClass=classifyClassName(declaringClass.getName());
+    }
+    static int classifyClassName(String name) {
+        return "X.02ib".equals(name)?0:name!=null && name.startsWith("X.")?1:2;
     }
 
     /** Only two DEX-pinned predicates, and only inside selector 4. Never export keys. */
@@ -190,6 +195,8 @@ final class R1CD07PredicateTrace {
             FRAME_COUNTS[frame.cohort][state]++;
             INPUT_COUNTS[frame.cohort][state][frame.inputPresence]++;
             if(frame.d08Receiver>=0)D08_RECEIVER[frame.cohort][state][frame.d08Receiver]++;
+            if(frame.d09DeclaringClass>=0)
+                D09_DECLARING_CLASS[frame.cohort][state][frame.d09DeclaringClass]++;
             if(frame.d08OtherKeys>0)D08_COVERAGE[frame.cohort][state][0]+=frame.d08OtherKeys;
             if(frame.d08ExactCalls==0)D08_COVERAGE[frame.cohort][state][1]++;
             if(frame.changedByTrial)D08_COVERAGE[frame.cohort][state][2]++;
@@ -230,6 +237,7 @@ final class R1CD07PredicateTrace {
             FRAME_COUNTS[a][s]=0;
             DROPPED_FRAMES[a][s]=0;
             java.util.Arrays.fill(D08_RECEIVER[a][s],0);
+            java.util.Arrays.fill(D09_DECLARING_CLASS[a][s],0);
             java.util.Arrays.fill(D08_COVERAGE[a][s],0);
             for(int i=0;i<MAX_ORDINAL;i++)java.util.Arrays.fill(D08_EXACT[a][s][i],0);
             java.util.Arrays.fill(INPUT_COUNTS[a][s],0);
@@ -246,7 +254,7 @@ final class R1CD07PredicateTrace {
     static synchronized String d08ExactConfigReport() {
         StringBuilder out=new StringBuilder("D08 X.02ib EXACT CONFIG A/B (read-only, original results)\n");
         out.append("Scope: exact selector-4 frame and D3r fixed-int predicate only; unrelated keys counted but NEVER exported.\n");
-        out.append("Receiver class is code-category only; X.02ib and other-X counts do not identify account or config.\n");
+        out.append("Runtime receiver and declaring class are SEPARATE code categories; neither is account or config identity.\n");
         for(int a=0;a<2;a++)for(int s=0;s<3;s++){
             int n=FRAME_COUNTS[a][s];
             if(n==0 && DROPPED_FRAMES[a][s]==0)continue;
@@ -256,6 +264,9 @@ final class R1CD07PredicateTrace {
                .append(" receiver_X02ib=").append(D08_RECEIVER[a][s][0])
                .append(" receiver_other_X=").append(D08_RECEIVER[a][s][1])
                .append(" receiver_other=").append(D08_RECEIVER[a][s][2])
+               .append(" declaring_X02ib=").append(D09_DECLARING_CLASS[a][s][0])
+               .append(" declaring_other_X=").append(D09_DECLARING_CLASS[a][s][1])
+               .append(" declaring_other=").append(D09_DECLARING_CLASS[a][s][2])
                .append(" other_key_calls=").append(D08_COVERAGE[a][s][0])
                .append(" missing_exact=").append(D08_COVERAGE[a][s][1])
                .append(" intervention_excluded=").append(D08_COVERAGE[a][s][2])
@@ -272,7 +283,7 @@ final class R1CD07PredicateTrace {
                    .append(" original_other=").append(count[3]).append('\n');
             }
         }
-        out.append("Do not infer causality: correlation across manual labels is not confirmed account eligibility.\n");
+        out.append("Runtime receiver and declaring-class names may differ from static X.02ib; do not infer causality.\n");
         out.append("No configuration arguments, keys, values, objects, media identifiers or accounts exported.\n");
         return out.toString();
     }

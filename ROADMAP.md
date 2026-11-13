@@ -273,3 +273,15 @@ Instagram hooks. No new upstream discovery. Physical qualification pending.
 - **D08C identity**: enum-only ledger of existing D06 menu ownership, visible-page and weak pre-menu continuity outcomes; explicitly `D08_MEDIA_IDENTITY=NOT_VERIFIED`. Do not turn a pre-menu weak reference into a verified current Media.
 - **X.02ib diagnostic**: within verified IG455 selector-4 and exact D3r key, record A/B original Boolean buckets by ordinal, outer singleton/payload state, receiver code class and coverage. Other keys counted only; never export keys/values. Intervention frames excluded. No causality assumption.
 - Next: exact Feed renderer/eligibility signature with media identity, genuine source lists for Friends avatars, D06 unique active-page independent proof, and physical D08 acceptance on Android 16. No Feed/avatars actions enabled. Source and hosted CI are distinct from device acceptance.
+
+
+## D08 HF01 / UX04 · one diagnostic at a time and session-bound Repost [SOURCE ONLY]
+
+- Preserve original R0–R8 scope. Reels-tab Repost is user-confirmed 90-second success; formal D07C remains pending.
+- Foreground-session Repost opt-in uses original exact D3r false-only guard, no 90-second expiry, bounded 4096 changes, manual OFF, mandatory activity/tab auto OFF, no account persistence or auto-click. A native eligibility change or observed UserSession reference transition disarms; undetected switches are possible.
+- Diagnostic dropdown: Reels trial, A/B, Feed, D05/D06 visible-media, account-change. Begin/Finish/Abort session boundary; refuse switching active diagnostics. Separate reports by mode.
+- Feed Repost snapshots have separate manual affected/unaffected cohorts and session counts. No Feed hook or actual media identity gate.
+- D08C enum-only reason matrix displays owner/visible/pre-menu inconclusiveness; still not verified.
+- Exact D3r runtime receiver and method declaring-class categories separately counted; never infer X.02ib cause.
+- Exact known UserSession callback may not run on every account change; weak reference changes indicate possible transitions but do not establish identity. Do not export usernames, IDs, keys or contents.
+- Gradle/build only hosted GitHub Actions. No auto-merge, no device qualification from CI alone, manual physical acceptance required.

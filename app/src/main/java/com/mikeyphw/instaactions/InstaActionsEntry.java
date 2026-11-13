@@ -77,7 +77,8 @@ public final class InstaActionsEntry extends XposedModule {
                         if (!R1CD07PredicateTrace.inRepostFrame()) return original;
                         try {
                             R1CD07PredicateTrace.note(R1CD07PredicateTrace.ELIGIBILITY, original);
-                            R1CD07PredicateTrace.noteDataReceiver(chain.getThisObject());
+                            R1CD07PredicateTrace.noteDataReceiver(chain.getThisObject(),
+                                    method.getDeclaringClass());
                             return R1CD07PredicateTrace.noteExactData(chain.getArg(0),original);
                         } catch(Throwable ignored) {
                             R1CD07Recovery.onHookFailure();
@@ -178,7 +179,10 @@ public final class InstaActionsEntry extends XposedModule {
                 .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
                 .intercept(chain -> {
                     Object original=chain.proceed();
-                    try {R1CD07PredicateTrace.note(R1CD07PredicateTrace.SESSION_CHECK,original);}
+                    try {
+                        R1CD09AccountSentinel.observe(chain.getArg(0));
+                        R1CD07PredicateTrace.note(R1CD07PredicateTrace.SESSION_CHECK,original);
+                    }
                     catch(Throwable ignored) { }
                     return original;
                 });

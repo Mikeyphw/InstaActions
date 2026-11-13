@@ -8,6 +8,10 @@ import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
+import android.view.View;
+import android.widget.Spinner;
+import android.widget.ArrayAdapter;
+import android.widget.AdapterView;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.widget.LinearLayout;
@@ -60,12 +64,47 @@ public final class MainActivity extends Activity {
         add(root, "D07 · Native Repost recovery", 16, BLUE, true);
         add(root, "User-confirmed: Reels-tab Repost appeared for 90 seconds and worked. Formal D07C acceptance is still pending.", 14, AMBER, false);
 
+        LinearLayout pickerGuide=card("NEW · One diagnostic at a time");
+        add(pickerGuide, "Open IA → select diagnostic dropdown → Begin.", 15, WHITE, true);
+        add(pickerGuide, "Select Reels recovery, Account A/B, Feed Repost, Visible media, or Account change. Only the chosen tools appear. Finish preserves that report; Abort disarms and ends it. Switching while active is refused.",14,DETAIL,false);
+        add(pickerGuide, "For A/B: Begin → Start A → browse → Stop A → switch manually → Start B → browse → Stop B → Finish → Copy. Account labels are still manual, not verified identity.",14,WHITE,false);
+        add(pickerGuide, "Reels recovery offers 90s trial or Keep Repost available (foreground session only). This is NOT saved across restarts or account changes; emergency OFF remains visible.",14,AMBER,false);
+        add(pickerGuide, "Account-change diagnostic observes weak UserSession references only; missing callbacks mean NOT VERIFIED, not same account.",14,DETAIL,false);
+
         LinearLayout status = card("What is ready?");
         add(status, "D07 SOURCE PRESENT · DEVICE TEST PENDING", 14, GREEN, true);
         add(status, "Device acceptance: NOT RUN (formal D07C). Separately, the user reported a successful native Repost on the dedicated Reels tab; feed posts remain unqualified.", 14, DETAIL, false);
         add(status, "Instagram: " + installedVersion(ModuleConstants.TARGET_PACKAGE), 14, WHITE, false);
         add(status, "InstaEclipse: " + installedVersion("ps.reso.instaeclipse"), 14, WHITE, false);
         add(status, "Vector / LSPosed module enabled: NOT VERIFIED from this screen", 13, AMBER, false);
+
+        LinearLayout diagnosticPicker=card("Read one workflow at a time");
+        add(diagnosticPicker,"Choose a diagnostic below. This is guidance only; the interactive Begin / Finish / Abort controls live inside Instagram's IA panel.",14,DETAIL,false);
+        Spinner selector=new Spinner(this);
+        String[] choices={"Reels Repost", "A/B native comparison", "Feed Repost read-only",
+                          "D05/D06 visible-media evidence", "Account-change signal"};
+        ArrayAdapter<String> chooserAdapter=new ArrayAdapter<String>(this,
+                android.R.layout.simple_spinner_item,choices) {
+            @Override public View getView(int position,View convertView,ViewGroup parent) {
+                View v=super.getView(position,convertView,parent);
+                if(v instanceof TextView) {
+                    ((TextView)v).setTextColor(WHITE);
+                    v.setBackgroundColor(CARD);v.setPadding(dp(10),dp(12),dp(10),dp(12));
+                }
+                return v;
+            }
+            @Override public View getDropDownView(int position,View convertView,ViewGroup parent){
+                View v=super.getDropDownView(position,convertView,parent);
+                if(v instanceof TextView) {
+                    ((TextView)v).setTextColor(WHITE);
+                    v.setBackgroundColor(0xff2a3a4e);
+                    v.setPadding(dp(12),dp(14),dp(12),dp(14));
+                }
+                return v;
+            }
+        };
+        chooserAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        selector.setAdapter(chooserAdapter);diagnosticPicker.addView(selector);
 
         LinearLayout guide = card("Do these 5 steps IN ORDER");
         add(guide, "STEP 1/5 · PREPARE", 16, BLUE, true);
@@ -88,14 +127,26 @@ public final class MainActivity extends Activity {
         add(comparison, "5. Press Copy combined A/B report. A process restart loses both in-memory captures.", 14, WHITE, false);
         add(comparison, "These manual labels cannot prove which Instagram account was active. Never use the 90-second Repost recovery during account switching.", 14, AMBER, false);
 
-        LinearLayout d08 = card("D08 · Two separate read-only investigations");
-        add(d08, "X.02ib · Deep A/B eligibility diagnostics", 16, BLUE, true);
-        add(d08, "Start A → browse → Stop A → manually switch → Start B → browse → Stop B → Copy combined A/B report. The new report includes exact X.02ib original TRUE/FALSE/NULL buckets and call order. Recovery must stay OFF.", 14, WHITE, false);
+        add(comparison, "X.02ib and D3r diagnostics: the A/B comparison records native TRUE/FALSE/NULL, ordinal and runtime declaring-class categories. It does not prove why accounts differ.",14,DETAIL,false);
+        LinearLayout d08 = card("D08A · Feed Repost · read-only snapshots");
         add(d08, "D08A · Feed Repost labels (not an override)", 16, BLUE, true);
         add(d08, "In Instagram open a normal Feed post, a Feed-opened Reel, and the bottom Reels-tab reference separately. For each, open IA and tap its corresponding D08A Snapshot. The labels and origin are observations/manual claims, not proven media eligibility.", 14, WHITE, false);
-        add(d08, "D08C · Active media research", 16, BLUE, true);
-        add(d08, "Run Advanced D05/D06 A1/A2/B1/B2 menu capture; D08C adds a candidate/contradiction ledger to the D07 safe report. Actual visible-media identity remains NOT VERIFIED; no new actions.", 14, DETAIL, false);
-        add(d08, "Friends avatars: source candidates only. No fake faces, disabled-state bypass, or avatar mutation.", 14, AMBER, false);
+        add(d08, "Choose affected/unaffected MANUAL cohort first, then Begin and take snapshots. Finish before switching accounts. Captures remain labeled by manual cohort; no Feed Repost action is enabled.",14,AMBER,false);
+        LinearLayout mediaGuide=card("D08C · Visible-media research (D05/D06)");
+        add(mediaGuide, "Begin this mode; run Advanced D05/D06 A1→A2→B1→B2 menu capture, Finish capture, Finish diagnostic and Copy. Each inconclusive result is broken down by owner/page/pre-menu enum evidence.",14,WHITE,false);
+        add(mediaGuide, "Exact visible-media identity remains NOT VERIFIED. Friends avatars: source candidates only; no fake faces, disabled-state bypass, or avatar mutation.",14,AMBER,false);
+        LinearLayout accountGuide=card("D09 · Account-change signal");
+        add(accountGuide, "Begin account-change diagnostic, browse or switch manually, Finish and Copy. The native source-verified callback counts weak UserSession reference transitions only.",14,WHITE,false);
+        add(accountGuide, "No callback does NOT prove same account. Changed reference is a signal, not verified account identity. Keep Repost OFF during investigation.",14,AMBER,false);
+        final LinearLayout[] visibleGuides={guide,comparison,d08,mediaGuide,accountGuide};
+        for(int i=1;i<visibleGuides.length;i++)visibleGuides[i].setVisibility(View.GONE);
+        selector.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){
+            @Override public void onItemSelected(AdapterView<?> parent,View view,int index,long id){
+                for(int i=0;i<visibleGuides.length;i++)
+                    visibleGuides[i].setVisibility(i==index?View.VISIBLE:View.GONE);
+            }
+            @Override public void onNothingSelected(AdapterView<?> parent){}
+        });
 
         LinearLayout originalPlan = card("Original InstaActions goals · R0–R8");
         add(originalPlan, "Today: R1C/D07 Repost research with a user-reported successful Reels-tab action. D06 exact active-media identity remains NOT VERIFIED.", 14, WHITE, false);
@@ -105,10 +156,10 @@ public final class MainActivity extends Activity {
 
         LinearLayout safety = card("What the controls actually do");
         add(safety, "Start A / Start B: read-only native result observations. These are manual labels, NOT verified Instagram account identities.", 14, DETAIL, false);
-        add(safety, "Enable: at most 90 seconds or 64 eligible changes to one verified native Boolean result. OFF is the default.", 14, DETAIL, false);
+        add(safety, "Enable: usual 90-second/64-change trial, or optional foreground-session toggle with 4096-call cap. Neither is automatic Repost. OFF is the default.", 14, DETAIL, false);
         add(safety, "Recovery OFF: restores original values for subsequent native calls. It does not undo a Repost already performed in Instagram.", 14, DETAIL, false);
         add(safety, "Advanced D05/D06: optional diagnostics only; media identity remains unverified and unrelated actions remain disabled.", 14, DETAIL, false);
-        add(safety, "Same-Activity account changes cannot be reliably detected. Turn OFF manually before changing accounts.", 14, AMBER, false);
+        add(safety, "UserSession weak-reference changes may be observed, but same-Activity account changes cannot be reliably detected. Turn OFF manually before changing accounts.", 14, AMBER, false);
 
         LinearLayout limits = card("Supported surfaces and privacy");
         add(limits, "Dedicated Reels tab: user-reported InstaActions native Repost success; formal D07C checks still pending.", 14, WHITE, false);

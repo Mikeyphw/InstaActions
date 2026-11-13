@@ -143,20 +143,23 @@ final class R1CD07GateTrace {
     static String armExactTrial() {return "REFUSED: HF12 is now regression-only; use HF13 recovery control";}
     static String armHF13Recovery() {return R1CD07Recovery.arm(STATE.activeIndex(),ready,
         InstaActionsEntry.dataGateReady());}
+    static String armHF13Session() {return R1CD07Recovery.armSession(STATE.activeIndex(),ready,
+        InstaActionsEntry.dataGateReady());}
     static String stopExactTrial() {R1CD07Recovery.off("User pressed Recovery OFF");
         R1CD07ExactGateTrial.disarm();return "HF13 native Repost UI recovery OFF (future calls native)";}
     static String clear() {R1CD07Recovery.off("Clear A/B");R1CD07ExactGateTrial.reset();STATE.clear();R1CD07PredicateTrace.clear();return "A/B observations cleared; recovery OFF";}
-    static String report() {
+    static String reportCore() {
         return "INA_D07_REPOST_EXACT_APK_A_B_TRACE\nHook: "+status()+"\n"+STATE.render()
             + InstaActionsEntry.dataGateStatus() + "\n"
             + R1CD07PredicateTrace.report()
             + R1CD07PredicateTrace.d08ExactConfigReport()
-            + R1CD08MediaEvidence.report()
-            + R1CD08FeedAudit.report()
             + "HF13 native Repost recovery: " + R1CD07Recovery.status() + "\n"
             + "Reels TAB is a user assertion, not an automatically verified selector. Feed Reel and ordinary post NOT QUALIFIED; D06 media identity NOT VERIFIED.\n"
             + "HF12 legacy trial (regression only): " + R1CD07ExactGateTrial.status() + "\n";
     }
+
+    static String report(){return reportCore()+R1CD08MediaEvidence.report()+R1CD08FeedAudit.report()
+            + R1CD09AccountSentinel.summary();}
 
     static String countVisibleLabels(Activity activity,View excludedPanel,View excludedChip) {
         if (!ready || !STATE.recording()) return "REFUSED: begin A or B and wait for hooks";

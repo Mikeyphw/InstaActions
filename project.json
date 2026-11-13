@@ -98,5 +98,16 @@
   "r1c_d08_x02ib_exact_d3r_diagnostics_implemented": true,
   "r1c_d08_x02ib_causality_confirmed": false,
   "r1c_d08_hosted_ci_qualified": false,
-  "r1c_d08_device_acceptance": "NOT_RUN"
+  "r1c_d08_device_acceptance": "NOT_RUN",
+  "r1c_d09_source_implemented": true,
+  "r1c_d09_one_diagnostic_at_a_time": true,
+  "r1c_d09_session_toggle_scope": "FOREGROUND_ONLY_NO_PERSISTENCE_MAX_4096_CHANGED_CALLS",
+  "r1c_d09_account_signal_source": "SOURCE_VERIFIED_X02XY_A04_WEAK_USERSESSION_REFERENCE_ONLY",
+  "r1c_d09_account_identity_verified": false,
+  "r1c_d09_feed_repost_qualified": false,
+  "r1c_d09_media_identity_verified": false,
+  "r1c_d09_device_acceptance": "NOT_RUN",
+  "r1c_d09_hosted_ci_qualified": false,
+  "r1c_d07_reels_native_repost_user_confirmed": true,
+  "r1c_d07_reels_native_repost_90_second_user_confirmed": true
 }

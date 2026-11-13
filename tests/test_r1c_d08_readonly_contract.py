@@ -9,7 +9,7 @@ class D08ReadOnlyContract(unittest.TestCase):
                   'noteDataReceiver(', 'frame.changedByTrial', 'd08OtherKeys', 'missing_exact=',
                   'original_false=', 'original_null=', 'intervention_excluded=', 'other_key_calls='):
             self.assertIn(x,t)
-        self.assertIn('R1CD07PredicateTrace.noteDataReceiver(chain.getThisObject())',e)
+        self.assertIn('R1CD07PredicateTrace.noteDataReceiver(chain.getThisObject(),',e)
         self.assertIn('Object original = chain.proceed()',e)
         self.assertIn('return R1CD07PredicateTrace.noteExactData(chain.getArg(0),original)',e)
         self.assertEqual(e.count('ina-d07-verified-d3r-'),1)
@@ -45,7 +45,7 @@ class D08ReadOnlyContract(unittest.TestCase):
     @unittest.skipUnless(shutil.which('javac') and shutil.which('java'),'JDK unavailable')
     def test_pure_java_d08_and_inherited_d07(self):
         names=['R1CD07Recovery','R1CD07ExactGateTrial','R1CD07PredicateTrace',
-               'R1CD07BranchInputs','R1CD07InputPresence','R1CD08MediaEvidence']
+               'R1CD07BranchInputs','R1CD07InputPresence','R1CD08MediaEvidence','R1CD09DiagnosticGate']
         smoke=R/'tests/java/com/mikeyphw/instaactions/R1CD08ReadOnlySmoke.java'
         inherited=R/'tests/java/com/mikeyphw/instaactions/R1CD07RecoverySmoke.java'
         with tempfile.TemporaryDirectory(prefix='ina-d08-jvm-') as tmp:

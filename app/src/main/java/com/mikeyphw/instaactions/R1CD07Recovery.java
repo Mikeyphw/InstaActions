@@ -11,10 +11,12 @@ package com.mikeyphw.instaactions;
  */
 final class R1CD07Recovery {
     static final int LIMIT = 64;
+    static final int SESSION_LIMIT = 4096; // bounded same-foreground diagnostic mode
     static final long LEASE_NS = 90_000_000_000L; // explicit re-arm for longer sessions
     interface Clock { long now(); }
     private static Clock clock = System::nanoTime;
     private static boolean enabled;
+    private static boolean sessionMode;
     private static long expires, epoch=1, leaseEpoch;
     private static int altered, attempts;
     private static String lastReason="Default OFF; Reels tab only (manual confirmation)";
@@ -22,12 +24,13 @@ final class R1CD07Recovery {
     private R1CD07Recovery() { }
     static synchronized long epoch() {return epoch;}
     static synchronized boolean isEnabled() {
-        if (enabled && (clock.now() - expires >= 0 || altered>=LIMIT))
+        if (enabled && ((!sessionMode && clock.now() - expires >= 0) ||
+                altered >= (sessionMode ? SESSION_LIMIT : LIMIT)))
             off("Lease expired or call limit reached");
         return enabled;
     }
     static synchronized void off(String why) {
-        enabled=false; expires=0; leaseEpoch=0;
+        enabled=false; sessionMode=false; expires=0; leaseEpoch=0;
         epoch++; // invalidates already-running frames across disable/account change
         lastReason=why;
     }
@@ -36,6 +39,13 @@ final class R1CD07Recovery {
     static synchronized void onHookFailure() {off("Exact native data hook unavailable");}
 
     static synchronized String arm(int cohort, boolean verifiedApk, boolean dataHookReady) {
+        return armMode(cohort, verifiedApk, dataHookReady, false);
+    }
+    static synchronized String armSession(int cohort, boolean verifiedApk, boolean dataHookReady) {
+        return armMode(cohort, verifiedApk, dataHookReady, true);
+    }
+    private static synchronized String armMode(int cohort, boolean verifiedApk,
+            boolean dataHookReady, boolean keepDuringForeground) {
         off("Re-arm requested");
         if (!verifiedApk) return refusal("Exact Instagram APK/hooks not verified");
         if (!dataHookReady) return refusal("Native D3r hook not confirmed active");
@@ -47,11 +57,14 @@ final class R1CD07Recovery {
         R1CD07ExactGateTrial.disarm();
         altered=0;attempts=0;
         leaseEpoch=epoch;
-        expires=clock.now()+LEASE_NS;
+        sessionMode=keepDuringForeground;
+        expires=keepDuringForeground ? 0 : clock.now()+LEASE_NS;
         enabled=true;
         lastReason="Manual A, Reels TAB only; no verified account identity binding";
         return "ENABLED HF13: native Repost UI only; manual A / Reels tab, " +
-                "90 s or 64 changed calls; OFF before account switch. No automatic repost.";
+                (sessionMode ? "foreground-session (no 90s timer), 4096-call safety cap" :
+                    "90 s or 64 changed calls") +
+                "; OFF before account switch or leaving Instagram. No automatic repost.";
     }
     private static String refusal(String why) {lastReason=why;return "REFUSED HF13: "+why+"; unchanged";}
 
@@ -59,6 +72,12 @@ final class R1CD07Recovery {
     static synchronized Object maybeOverride(long entryEpoch, int cohort, int dataPresence,
                                              boolean nested, Object original) {
         if (!isEnabled()) return original;
+        // Long foreground sessions fail closed if the *native* exact data
+        // predicate diverges; could mean changed content, account or rollout.
+        if(sessionMode && !Boolean.FALSE.equals(original)) {
+            off("Native D3r original result changed; account/context change SUSPECTED");
+            return original;
+        }
         if (entryEpoch!=leaseEpoch || nested || cohort!=0 ||
             dataPresence!=R1CD07BranchInputs.PRESENT || !Boolean.FALSE.equals(original))
             return original;
@@ -70,17 +89,20 @@ final class R1CD07Recovery {
         }
         altered++;
         // Final permitted result still changed; next call returns native value.
-        if (altered>=LIMIT) {
+        if (altered >= (sessionMode ? SESSION_LIMIT : LIMIT)) {
             enabled=false;leaseEpoch=0;expires=0;epoch++;
-            lastReason="64-change guard reached; re-arm manually on Reels tab";
+            lastReason="changed-call safety guard reached; re-arm manually on Reels tab";
+            sessionMode=false;
         }
         return Boolean.TRUE;
     }
+    static synchronized boolean isSessionMode(){return isEnabled() && sessionMode;}
     static synchronized String status() {
         boolean on=isEnabled();
-        long left=on?Math.max(0,(expires-clock.now())/1_000_000_000L):0;
-        return (on?"ENABLED (manual A · Reels-tab claim; "+left+"s left)":"OFF")+
-            " · altered="+altered+"/"+LIMIT+" · attempts="+attempts+
+        long left=on && !sessionMode?Math.max(0,(expires-clock.now())/1_000_000_000L):0;
+        return (on?(sessionMode?"SESSION ON (foreground only; no 90s timer)":
+                "ENABLED (manual A · Reels-tab claim; "+left+"s left)"):"OFF")+
+            " · altered="+altered+"/"+(sessionMode?SESSION_LIMIT:LIMIT)+" · attempts="+attempts+
             " · " + lastReason;
     }
     // Package-only synthetic testing, never used in production paths.

@@ -17,14 +17,26 @@ import java.util.Locale;
 final class R1CD08FeedAudit {
     private static final int MAX_VIEWS=512;
     private static final long MAX_MS=30L;
-    private static final int[] SAMPLES=new int[3];
-    private static final int[] LABELS=new int[3];
-    private static final int[] UNCERTAIN=new int[3];
-    private static final int[] TRUNCATED=new int[3];
+    private static final int[][] SAMPLES=new int[2][3];
+    private static final int[][] LABELS=new int[2][3];
+    private static final int[][] UNCERTAIN=new int[2][3];
+    private static final int[][] TRUNCATED=new int[2][3];
+    private static final int[] SESSION_COUNT=new int[2];
+    private static int activeCohort=-1;
     private static final String[] NAMES={"ordinary_feed_post","feed_opened_reel","dedicated_reels_tab"};
     private R1CD08FeedAudit() { }
 
+    static synchronized void beginCohort(int cohort) {
+        if(cohort<0 || cohort>1)throw new IllegalArgumentException("manual cohort");
+        activeCohort=cohort;SESSION_COUNT[cohort]++;
+    }
+    static synchronized void stopCohort(){activeCohort=-1;}
     static String snapshot(Activity activity, View panel, View chip, int kind) {
+        if(!R1CD09DiagnosticGate.active(R1CD09DiagnosticGate.Mode.FEED))
+            return "REFUSED: start Feed diagnostic first";
+        int cohort;
+        synchronized(R1CD08FeedAudit.class){cohort=activeCohort;}
+        if(cohort<0)return "REFUSED: select manual affected/unaffected cohort";
         if(kind<0 || kind>=NAMES.length)return "REFUSED: unknown surface";
         if(R1CD07Recovery.isEnabled())return "REFUSED: turn Recovery OFF first";
         if(!R1CD04PassiveProbe.isInstalled())return "REFUSED: exact IG455 D04 attestation missing";
@@ -59,13 +71,13 @@ final class R1CD08FeedAudit {
             }
         } catch(Throwable failed) {return "REFUSED: UI scan failed; no observation stored";}
         synchronized(R1CD08FeedAudit.class){
-            if(SAMPLES[kind]>=24)return "REFUSED: 24-sample cap reached";
-            SAMPLES[kind]++;
-            LABELS[kind]+=count;
-            if(!expected)UNCERTAIN[kind]++;
-            if(capped)TRUNCATED[kind]++;
+            if(SAMPLES[cohort][kind]>=24)return "REFUSED: 24-sample cap reached";
+            SAMPLES[cohort][kind]++;
+            LABELS[cohort][kind]+=count;
+            if(!expected)UNCERTAIN[cohort][kind]++;
+            if(capped)TRUNCATED[cohort][kind]++;
         }
-        return "D08A " + NAMES[kind] + ": native visible Repost labels=" + count
+        return "D08A manual cohort " + (cohort==0?"AFFECTED":"UNAFFECTED") + " · " + NAMES[kind] + ": native visible Repost labels=" + count
                 + " · screen hint=" + screen
                 + (expected?" · manual surface claim":" · MISMATCH/UNKNOWN")
                 + (capped?" · SCAN TRUNCATED":"")
@@ -79,18 +91,26 @@ final class R1CD08FeedAudit {
                 || "republicar".equals(v);
     }
     static synchronized void clear(){
-        java.util.Arrays.fill(SAMPLES,0);
-        java.util.Arrays.fill(LABELS,0);
-        java.util.Arrays.fill(UNCERTAIN,0);
-        java.util.Arrays.fill(TRUNCATED,0);
+        activeCohort=-1;
+        for(int a=0;a<2;a++){
+            java.util.Arrays.fill(SAMPLES[a],0);
+            java.util.Arrays.fill(LABELS[a],0);
+            java.util.Arrays.fill(UNCERTAIN[a],0);
+            java.util.Arrays.fill(TRUNCATED[a],0);
+            SESSION_COUNT[a]=0;
+        }
     }
     static synchronized String report() {
         StringBuilder out=new StringBuilder("D08A FEED REPOST VISIBLE-LABEL AUDIT (manual surfaces)\n");
-        for(int i=0;i<NAMES.length;i++)out.append(' ').append(NAMES[i])
-                .append(" snapshots=").append(SAMPLES[i])
-                .append(" repost_labels=").append(LABELS[i])
-                .append(" screen_mismatch=").append(UNCERTAIN[i])
-                .append(" scan_truncated=").append(TRUNCATED[i]).append('\n');
+        for(int a=0;a<2;a++) {
+            out.append(a==0?" MANUAL_AFFECTED":" MANUAL_UNAFFECTED")
+                .append(" sessions=").append(SESSION_COUNT[a]).append('\n');
+            for(int i=0;i<NAMES.length;i++)out.append(' ').append(NAMES[i])
+                .append(" snapshots=").append(SAMPLES[a][i])
+                .append(" repost_labels=").append(LABELS[a][i])
+                .append(" screen_mismatch=").append(UNCERTAIN[a][i])
+                .append(" scan_truncated=").append(TRUNCATED[a][i]).append('\n');
+        }
         out.append("Feed Repost and Feed-opened Reels NOT QUALIFIED; no eligibility hook, native action or identifiers.\n");
         return out.toString();
     }

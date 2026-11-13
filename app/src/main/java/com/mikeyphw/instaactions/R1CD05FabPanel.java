@@ -20,6 +20,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.widget.Button;
+import android.widget.Spinner;
+import android.widget.ArrayAdapter;
+import android.widget.AdapterView;
+import android.widget.CompoundButton;
+import android.widget.Switch;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
@@ -70,6 +75,19 @@ final class R1CD05FabPanel {
     private Button stopA;
     private Button startB;
     private Button stopB;
+    private Button compareStartA;
+    private Spinner modePicker;
+    private Spinner cohortPicker;
+    private TextView modeStatus;
+    private Switch keepRepost;
+    private boolean settingPicker;
+    private R1CD09DiagnosticGate.Mode selectedMode=R1CD09DiagnosticGate.Mode.REELS;
+    private LinearLayout reelsGroup, compareGroup, feedGroup, mediaGroup, accountGroup;
+    private final String[] modeNames={
+        "Reels Repost · recovery", "Account A/B · native comparison",
+        "Feed Repost · visible labels", "Visible media · D05/D06",
+        "Account change · passive signal"
+    };
     private Runnable ticker;
     private boolean detached;
     private boolean advancedVisible;
@@ -200,6 +218,33 @@ final class R1CD05FabPanel {
         return action(parent, title, DANGER_BG, FG, callback);
     }
 
+    private ArrayAdapter<String> highContrastChoices(String[] choices) {
+        ArrayAdapter<String> adapter=new ArrayAdapter<String>(activity,
+                android.R.layout.simple_spinner_item,choices) {
+            @Override public View getView(int position,View convertView,ViewGroup parent) {
+                View view=super.getView(position,convertView,parent);
+                if(view instanceof TextView) {
+                    ((TextView)view).setTextColor(FG);
+                    ((TextView)view).setTextSize(15);
+                    view.setBackgroundColor(CARD);view.setPadding(dp(12),dp(12),dp(12),dp(12));
+                }
+                return view;
+            }
+            @Override public View getDropDownView(int position,View convertView,ViewGroup parent) {
+                View view=super.getDropDownView(position,convertView,parent);
+                if(view instanceof TextView) {
+                    ((TextView)view).setTextColor(FG);
+                    ((TextView)view).setTextSize(15);
+                    view.setBackgroundColor(SECONDARY_BG);
+                    view.setPadding(dp(12),dp(14),dp(12),dp(14));
+                }
+                return view;
+            }
+        };
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        return adapter;
+    }
+
     private void attach() {
         chip = label("IA", 14, FG);
         chip.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
@@ -287,10 +332,44 @@ final class R1CD05FabPanel {
 
         bold(body, "InstaActions", 20, FG);
         body.addView(label("D07 · Repost recovery · guided trial", 14, ACCENT));
-        hint(body, "EXPERIMENTAL · D07C device qualification NOT RUN. Dedicated Reels tab only — select it from Instagram's bottom bar.");
-        hint(body, "DEVICE OBSERVATION: user reported original Repost button visible for 90 seconds and an actual successful Repost in the dedicated Reels tab. Formal D07C evidence review remains pending.");
+        hint(body, "Dedicated Reels tab only for Repost recovery. Reels-tab Repost is user-confirmed working. Feed/avatars/media identity remain UNQUALIFIED. Choose one diagnostic below, then Begin.");
+        hint(body, "RECOVERY: user-confirmed native Reels-tab Repost for 90 seconds; formal D07C signoff still pending. New foreground-session toggle is NOT qualified and is never saved across activities.");
 
-        LinearLayout stateCard = section(body, "CURRENT STATUS · NEXT STEP", "Follow Steps 1 through 5 in order. Only the original Instagram Repost button performs a Repost.");
+        LinearLayout select = section(body, "CHOOSE ONE DIAGNOSTIC", "Select a mode below. Only one can run at once. Finish preserves its results; Abort stops it. You must end the current diagnostic before switching.");
+        modePicker = new Spinner(activity);
+        ArrayAdapter<String> modes=highContrastChoices(modeNames);
+        modePicker.setAdapter(modes);
+        select.addView(modePicker);
+        modeStatus=label("",14,ACCENT);select.addView(modeStatus);
+        mainAction(select,"Begin selected diagnostic",this::beginSelectedMode);
+        neutral(select,"Finish current diagnostic · preserve report",this::finishSelectedMode);
+        stopAction(select,"Abort current diagnostic · Recovery OFF",this::abortSelectedMode);
+        mainAction(select,"Copy this diagnostic's report",this::copySelectedReport);
+        stopAction(select,"Recovery OFF · always available",()->{
+            toast(R1CD07GateTrace.stopExactTrial());itmRecoveryOffAcknowledged=false;refresh();
+        });
+        modePicker.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){
+            @Override public void onItemSelected(AdapterView<?> parent,View view,int position,long id){
+                if(settingPicker)return;
+                if(R1CD09DiagnosticGate.running() && position!=selectedMode.ordinal()){
+                    settingPicker=true;modePicker.setSelection(selectedMode.ordinal());settingPicker=false;
+                    toast("REFUSED: Finish or Abort the current diagnostic before changing modes");return;
+                }
+                selectedMode=R1CD09DiagnosticGate.Mode.values()[position];refresh();
+            }
+            @Override public void onNothingSelected(AdapterView<?> parent){}
+        });
+        R1CD09DiagnosticGate.Mode remembered=R1CD09DiagnosticGate.selected();
+        if(R1CD09DiagnosticGate.running() && remembered!=null)selectedMode=remembered;
+        settingPicker=true;modePicker.setSelection(selectedMode.ordinal());settingPicker=false;
+
+        reelsGroup=vertical();body.addView(reelsGroup);
+        compareGroup=vertical();body.addView(compareGroup);
+        feedGroup=vertical();body.addView(feedGroup);
+        mediaGroup=vertical();body.addView(mediaGroup);
+        accountGroup=vertical();body.addView(accountGroup);
+
+        LinearLayout stateCard = section(reelsGroup, "CURRENT STATUS · NEXT STEP", "Follow the instructions for the SELECTED MODE only. No automated Repost, likes or comments.");
         recoveryStatus = label("", 15, SUCCESS);
         recoveryStatus.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
         stateCard.addView(recoveryStatus);
@@ -304,35 +383,38 @@ final class R1CD05FabPanel {
             itmRecoveryOffAcknowledged=false;refresh();
         });
 
-        LinearLayout prep = section(body, "STEP 1 OF 5 · PREPARE", "Before touching Start A, check your setup:");
+        LinearLayout prep = section(reelsGroup, "STEP 1 OF 5 · PREPARE", "Before touching Start A, check your setup:");
         hint(prep, "1. InstaActions enabled for Instagram in Vector/LSPosed; InstaEclipse stays ON. Restart Instagram after changing scope.");
         hint(prep, "2. Use the affected account. Make sure InstaTaskManager's separate Repost recovery is OFF.");
         hint(prep, "3. Open the dedicated Reels tab using Instagram's bottom bar. Feed, profile Reels and ordinary posts are not qualified.");
         hint(prep, "4. Check CURRENT STATUS above. If exact Instagram 455 hooks are not ready, do not proceed.");
         hint(prep, "Do NOT press the ITM confirmation button yet: Step 2 clears earlier confirmations.");
 
-        LinearLayout startCard = section(body, "STEP 2 OF 5 · START A", "Tap the button ONCE while on the affected account. A is a manual label, not an account-ID check.");
+        LinearLayout startCard = section(reelsGroup, "STEP 2 OF 5 · START A", "Tap the button ONCE while on the affected account. A is a manual label, not an account-ID check.");
         startA = mainAction(startCard, "Start A · read-only observation", () -> {
+            if(!requireMode(R1CD09DiagnosticGate.Mode.REELS))return;
             R1CD07GateTrace.stopExactTrial();
             itmRecoveryOffAcknowledged=false;
             toast(R1CD07GateTrace.begin(0));refresh();
         });
-        hint(startCard, "For Repost recovery, continue to Step 3 and KEEP A RECORDING. For a separate A/B comparison, use the visible comparison section after Step 5.");
+        hint(startCard, "Keep A recording for Repost trial. For a separate read-only A/B comparison, Finish/Abort this mode, select A/B in the dropdown, and Begin.");
 
-        LinearLayout browse = section(body, "STEP 3 OF 5 · BROWSE, THEN RETURN", "1. Close this IA panel. 2. Swipe through several Reels IN the dedicated Reels tab. 3. Tap IA to reopen it.");
+        LinearLayout browse = section(reelsGroup, "STEP 3 OF 5 · BROWSE, THEN RETURN", "1. Close this IA panel. 2. Swipe through several Reels IN the dedicated Reels tab. 3. Tap IA to reopen it.");
         neutral(browse, "Close IA · browse Reels now", this::close);
         hint(browse, "Wait for fresh A evidence to become ready. If not ready, close IA and browse more Reels, then return. KEEP A RECORDING; do not Stop A/B.");
         captureStatus = label("", 14, SECONDARY);
         browse.addView(captureStatus);
 
-        LinearLayout recovery = section(body, "STEP 4 OF 5 · CONFIRM, THEN ENABLE", "Only after fresh A evidence is ready: first confirm the OTHER module is OFF, then enable THIS module.");
+        LinearLayout recovery = section(reelsGroup, "STEP 4 OF 5 · CONFIRM, THEN ENABLE", "Only after fresh A evidence is ready: first confirm the OTHER module is OFF, then enable THIS module.");
         guardStatus = label("", 14, WARNING);
         recovery.addView(guardStatus);
         neutral(recovery, "4A · Confirm ITM Repost recovery is OFF", () -> {
+            if(!requireMode(R1CD09DiagnosticGate.Mode.REELS))return;
             itmRecoveryOffAcknowledged=true;
             toast("Manual confirmation noted; cannot verify another module");refresh();
         });
         enableRecovery = mainAction(recovery, "4B · Enable native Repost · 90 s max", () -> {
+            if(!requireMode(R1CD09DiagnosticGate.Mode.REELS))return;
             if (!itmRecoveryOffAcknowledged) {
                 toast("REFUSED: do step 4A after Start A, then step 4B");return;
             }
@@ -345,35 +427,53 @@ final class R1CD05FabPanel {
             }
             toast(R1CD07GateTrace.armHF13Recovery());refresh();
         });
+        keepRepost=new Switch(activity);
+        keepRepost.setText("Keep Repost available · foreground session (no 90s timer)");
+        keepRepost.setTextColor(FG);
+        keepRepost.setTextSize(14);
+        keepRepost.setPadding(dp(10),dp(10),dp(10),dp(10));
+        recovery.addView(keepRepost);
+        keepRepost.setOnCheckedChangeListener(this::toggleSessionRepost);
+        hint(recovery,"SESSION TOGGLE: bounded to 4,096 exact calls, while Instagram's Reels Activity remains foreground. It is NOT permanently saved, is NOT account-bound, and must be turned OFF before changing accounts or tabs. If UserSession changes are observed, it disarms automatically; absent observations cannot prove account stability.");
         hint(recovery, "If 4B is unavailable, read CURRENT STATUS and finish Step 3 first. This changes at most 64 eligible results or lasts 90 seconds; it does NOT tap Repost.");
 
-        LinearLayout finish = section(body, "STEP 5 OF 5 · TEST, OFF, EXPORT", "1. Close IA. 2. Tap Instagram's ORIGINAL Repost button on a Reel in the dedicated tab yourself. 3. Reopen IA immediately.");
+        LinearLayout finish = section(reelsGroup, "STEP 5 OF 5 · TEST, OFF, EXPORT", "1. Close IA. 2. Tap Instagram's ORIGINAL Repost button on a Reel in the dedicated tab yourself. 3. Reopen IA immediately.");
         neutral(finish, "Close IA · try the original Repost", this::close);
         hint(finish, "4. Press Recovery OFF below BEFORE switching account or tab. 5. Copy the safe report. 6. Confirm the real repost separately in D07C; a button alone is not proof.");
         stopAction(finish, "5A · Recovery OFF · restore native results", () -> {
             toast(R1CD07GateTrace.stopExactTrial());
             itmRecoveryOffAcknowledged=false;refresh();
         });
-        mainAction(finish, "5B · Copy D07 safe Repost report", this::copyD07);
+        mainAction(finish, "5B · Copy D07 safe Repost report", this::copySelectedReport);
         hint(finish, "If no native button appears, still switch OFF and export the report. Before any account/tab change, OFF is mandatory; same-Activity switches are not reliably detected.");
 
         // Independent diagnostic workflow, deliberately placed AFTER the five-step
         // native recovery path. This is not hidden behind D05/D06 Advanced.
-        LinearLayout compare = section(body, "OPTIONAL · COMPARE ACCOUNT A → ACCOUNT B",
+        LinearLayout compare = section(compareGroup, "OPTIONAL · COMPARE ACCOUNT A → ACCOUNT B",
                 "Use this only for read-only A/B investigation. Recovery must be OFF before changing accounts. This is NOT required for the 90-second Repost trial.");
         abStatus = label("", 14, ACCENT);
         compare.addView(abStatus);
-        hint(compare, "A1. Start A above; close IA and browse Reels on manually selected account A.");
+        hint(compare, "A1. Press Start A below, browse Reels on the manually selected affected account, then press Stop A. Recovery must stay OFF.");
+        compareStartA=mainAction(compare,"A1 · Start A · read-only",()->{
+            if(!requireMode(R1CD09DiagnosticGate.Mode.AB))return;
+            if(R1CD07GateTrace.recording() || R1CD07GateTrace.cohortEvents(0)>0){
+                toast("REFUSED: A already recorded. Finish/Abort before restarting.");return;
+            }
+            toast(R1CD07GateTrace.begin(0));refresh();
+        });
         stopA = neutral(compare, "A2 · Stop A · KEEP observations", () -> {
+            if(!requireMode(R1CD09DiagnosticGate.Mode.AB))return;
             if (!R1CD07ComparisonFlow.canStopA(R1CD07GateTrace.recording(),
                     R1CD07GateTrace.activeIndex(), R1CD07Recovery.isEnabled())) {
                 toast("REFUSED: first Start A, browse Reels, then stop A with recovery OFF");return;
             }
             itmRecoveryOffAcknowledged=false;
-            toast(R1CD07GateTrace.stop() + "; A samples preserved");refresh();
+            toast(R1CD07GateTrace.stop() + "; A samples preserved");
+            R1CD09DiagnosticGate.expectManualABSwitch();refresh();
         });
         hint(compare, "B1. Once A is STOPPED, switch Instagram to account B manually. Keep the same Instagram process if possible. A process restart loses both captures.");
         startB = mainAction(compare, "Optional · Start B read-only comparison", () -> {
+            if(!requireMode(R1CD09DiagnosticGate.Mode.AB))return;
             if (!R1CD07ComparisonFlow.canStartB(R1CD07GateTrace.recording(),
                     R1CD07GateTrace.activeIndex(), R1CD07GateTrace.cohortEvents(0),
                     R1CD07Recovery.isEnabled(), R1CD07GateTrace.ready())) {
@@ -385,6 +485,7 @@ final class R1CD05FabPanel {
         });
         hint(compare, "B2. Browse several Reels on B, reopen IA, then press Stop B. Do not turn Recovery ON during B.");
         stopB = neutral(compare, "B3 · Stop B · KEEP both samples", () -> {
+            if(!requireMode(R1CD09DiagnosticGate.Mode.AB))return;
             if (!R1CD07ComparisonFlow.canStopB(R1CD07GateTrace.recording(),
                     R1CD07GateTrace.activeIndex(), R1CD07Recovery.isEnabled())) {
                 toast("REFUSED: Start B before Stop B; recovery must be OFF");return;
@@ -392,11 +493,25 @@ final class R1CD05FabPanel {
             itmRecoveryOffAcknowledged=false;
             toast(R1CD07GateTrace.stop() + "; A and B samples preserved");refresh();
         });
-        mainAction(compare, "B4 · Copy combined A/B report", this::copyD07);
+        mainAction(compare, "B4 · Copy combined A/B report", this::copySelectedReport);
+        hint(compare,"Optional reset only after Finish/Abort of A/B. Reset permanently discards both cohorts; Stop A/B does not.");
+        stopAction(compare, "Reset A/B observations · recovery OFF", () -> {
+            if(R1CD09DiagnosticGate.running() ||
+                    R1CD09DiagnosticGate.selected()!=R1CD09DiagnosticGate.Mode.AB){
+                toast("REFUSED: Finish or Abort A/B first");return;
+            }
+            itmRecoveryOffAcknowledged=false;
+            toast(R1CD07GateTrace.clear());refresh();
+        });
         hint(compare, "The same report contains A and B original native-result counts. A/B labels are selected by YOU, not account identity verification. Never reset or restart Instagram before copying if you need both samples.");
 
-        LinearLayout feed = section(body, "D08A · FEED REPOST READ-ONLY AUDIT",
+        LinearLayout feed = section(feedGroup, "D08A · FEED REPOST READ-ONLY AUDIT",
                 "These are separate manual snapshots, NOT working Feed Repost. Never run while recovery is ON. Open the target post before taking a snapshot.");
+        hint(feed,"Select which MANUAL account is on screen BEFORE beginning a Feed session. Finish the session before changing accounts; Start again to record the other cohort. Existing cohort totals remain separate.");
+        cohortPicker=new Spinner(activity);
+        cohortPicker.setAdapter(highContrastChoices(
+                new String[]{"Affected account (manual)","Unaffected account (manual)"}));
+        feed.addView(cohortPicker);
         hint(feed, "1. Go to the Home Feed and open a normal post. Tap the first button. 2. Open a Reel FROM Feed and tap the second. 3. Visit the BOTTOM Reels tab and tap the reference button. Copy D07 safe report afterward.");
         neutral(feed, "D08A 1 · Snapshot ordinary Feed post", () ->
                 toast(R1CD08FeedAudit.snapshot(activity, panel, chip, 0)));
@@ -405,20 +520,16 @@ final class R1CD05FabPanel {
         neutral(feed, "D08A 3 · Snapshot dedicated Reels tab", () ->
                 toast(R1CD08FeedAudit.snapshot(activity, panel, chip, 2)));
         hint(feed, "Only exact visible Repost-label counts are retained. A feed Reel versus Reels tab is YOUR claim, not verified media identity. No Feed override, no auto-Repost.");
-        LinearLayout media = section(body, "D08C · VISIBLE MEDIA IDENTITY",
+        LinearLayout media = section(mediaGroup, "D08C · VISIBLE MEDIA IDENTITY",
                 "Still unverified. D05/D06 menu research produces read-only candidate/contradiction counts, never authorizes actions.");
+        hint(media, "Begin this diagnostic first. Finish D05 A1/A2/B1/B2 or Abort before changing diagnostic mode. If a capture is still active, Finish will refuse.");
         hint(media, "To investigate: open Advanced D05/D06 tools below, run the existing A1/A2/B1/B2 menu capture, then copy the D07 safe report. The D08C evidence summary is included automatically.");
 
-        LinearLayout diagnostic = section(body, "OPTIONAL · B comparison, reset and D05/D06", "Only open this after the normal 5-step trial, or when intentionally restarting. None of these buttons is required to try Repost.");
+        LinearLayout diagnostic = section(mediaGroup, "D05/D06 · ADVANCED MEDIA CAPTURE", "Only D05/D06 source-backed investigation tools. A/B reset and Feed controls belong to their own dropdown modes.");
         advancedToggle = neutral(diagnostic, "Show D05/D06 diagnostic tools", this::toggleAdvanced);
         advancedBody = vertical();
         advancedBody.setVisibility(View.GONE);
         diagnostic.addView(advancedBody);
-        hint(advancedBody, "The A → B comparison controls are visible above. The RESET control below permanently clears BOTH captured label cohorts; Stop A and Stop B preserve the counters.");
-        stopAction(advancedBody, "Reset A/B observations · recovery OFF", () -> {
-            itmRecoveryOffAcknowledged=false;
-            toast(R1CD07GateTrace.clear());refresh();
-        });
         hint(advancedBody, "D05/D06 media diagnostics are a separate research workflow; they do not prove media identity or enable actions.");
         advancedStatus = label("", 13, SECONDARY);
         advancedBody.addView(advancedStatus);
@@ -432,6 +543,11 @@ final class R1CD05FabPanel {
         neutral(advancedBody, "Share safe report", this::share);
         hint(advancedBody, "D06_MEDIA_IDENTITY=NOT_VERIFIED · ACTIONS=OFF. Keep InstaEclipse enabled for this diagnostic.");
 
+        LinearLayout accounts=section(accountGroup,"ACCOUNT CHANGE · PASSIVE DIAGNOSTIC",
+                "Begin this mode, inspect the signal, optionally switch accounts manually, then Finish. Recovery stays OFF. The verified UserSession callback may not execute on every transition.");
+        hint(accounts,"Only weak reference equality is counted. No usernames, IDs, account names or session fields are inspected. 'No change observed' is NOT proof that the same account stayed active.");
+        neutral(accounts,"Copy account-change signal report",this::copySelectedReport);
+
         neutral(body, "Close panel", this::close);
         panel = scroll;
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(0, 0,
@@ -441,6 +557,121 @@ final class R1CD05FabPanel {
         refresh();
     }
 
+    private String modeNextAction() {
+        if(!R1CD09DiagnosticGate.running())return "NEXT: select a mode, then press Begin.";
+        switch(selectedMode) {
+            case REELS: return "NEXT: Start A, browse Reels, confirm ITM OFF, then 90s Enable OR session toggle. Press OFF before Finish.";
+            case AB: {
+                if(R1CD07GateTrace.recording())return R1CD07GateTrace.activeIndex()==0 ?
+                        "NEXT: browse A, then Stop A." : "NEXT: browse B, then Stop B.";
+                return R1CD07GateTrace.cohortEvents(0)==0 ?
+                        "NEXT: Start A." : R1CD07GateTrace.cohortEvents(1)==0 ?
+                        "NEXT: manually switch to B, then Start B." :
+                        "NEXT: Finish, Copy A/B report, then select another mode.";
+            }
+            case FEED: return "NEXT: take labeled snapshots on selected manual account. Finish before changing account.";
+            case MEDIA: return "NEXT: D05 A1→A2→B1→B2; Finish the capture, then Finish diagnostic.";
+            case ACCOUNT: return "NEXT: use Instagram normally, optionally change accounts, then Finish and Copy. No callbacks means UNVERIFIED.";
+            default: return "NEXT: Finish or Abort before switching modes.";
+        }
+    }
+    private boolean requireMode(R1CD09DiagnosticGate.Mode expected) {
+        if(!R1CD09DiagnosticGate.active(expected)) {
+            toast("REFUSED: choose "+expected+" in dropdown and Begin first; Finish or Abort other modes");
+            return false;
+        }
+        return true;
+    }
+    private void beginSelectedMode() {
+        if(R1CD09DiagnosticGate.running()) {
+            toast("REFUSED: Finish or Abort current diagnostic first");return;
+        }
+        if(CAPTURE.isActiveWindow()) {
+            toast("REFUSED: cancel active D05 capture first");return;
+        }
+        if(R1CD07GateTrace.recording()) {
+            toast("REFUSED: stop A/B recording first");return;
+        }
+        String reply=R1CD09DiagnosticGate.begin(selectedMode);
+        if(!R1CD09DiagnosticGate.active(selectedMode)){toast(reply);return;}
+        itmRecoveryOffAcknowledged=false;
+        R1CD07Recovery.off("New diagnostic session");
+        if(selectedMode==R1CD09DiagnosticGate.Mode.REELS ||
+                selectedMode==R1CD09DiagnosticGate.Mode.AB) {
+            R1CD09AccountSentinel.clear();
+            R1CD07GateTrace.clear();
+        }
+        if(selectedMode==R1CD09DiagnosticGate.Mode.FEED)
+            R1CD08FeedAudit.beginCohort(cohortPicker==null?0:cohortPicker.getSelectedItemPosition());
+        if(selectedMode==R1CD09DiagnosticGate.Mode.MEDIA) {
+            R1CD08MediaEvidence.clear();R1CD06PreMenuReconciliation.clear();
+        }
+        if(selectedMode==R1CD09DiagnosticGate.Mode.ACCOUNT)R1CD09AccountSentinel.clear();
+        toast(reply);refresh();
+    }
+    private void finishSelectedMode() {
+        if(!R1CD09DiagnosticGate.running()){toast("REFUSED: no active diagnostic");return;}
+        if(R1CD07Recovery.isEnabled()){
+            toast("REFUSED: press Recovery OFF first");return;
+        }
+        if(CAPTURE.isActiveWindow()){
+            toast("REFUSED: Finish D05 A1/A2/B1/B2 first, or Abort");return;
+        }
+        if(R1CD07GateTrace.recording()){
+            if(selectedMode==R1CD09DiagnosticGate.Mode.REELS &&
+                    R1CD07GateTrace.activeIndex()==0){
+                R1CD07GateTrace.stop(); // explicit Finish safely ends Reels A
+            } else {
+                toast("REFUSED: Stop A/B recording before Finish");return;
+            }
+        }
+        R1CD08FeedAudit.stopCohort();
+        toast(R1CD09DiagnosticGate.finish());refresh();
+    }
+    private void abortSelectedMode() {
+        if(!R1CD09DiagnosticGate.running()){toast("REFUSED: no active diagnostic");return;}
+        R1CD07Recovery.off("User aborted diagnostic");
+        if(R1CD07GateTrace.recording())R1CD07GateTrace.stop();
+        CAPTURE.cancel(false);R1CD06PreMenuReconciliation.clear();
+        R1CD08FeedAudit.stopCohort();
+        itmRecoveryOffAcknowledged=false;
+        toast(R1CD09DiagnosticGate.abort("Explicit user Abort; recovered state OFF"));refresh();
+    }
+    private void toggleSessionRepost(CompoundButton control, boolean enabled) {
+        if(settingPicker)return;
+        if(!enabled){
+            if(R1CD07Recovery.isSessionMode())R1CD07GateTrace.stopExactTrial();
+            itmRecoveryOffAcknowledged=false;refresh();return;
+        }
+        if(!requireMode(R1CD09DiagnosticGate.Mode.REELS) ||
+                !itmRecoveryOffAcknowledged || CAPTURE.isActiveWindow() ||
+                !R1CD07GateTrace.recording() || R1CD07GateTrace.activeIndex()!=0 ||
+                R1BContextMonitor.stableScreen()!=R1BNavigationPolicy.Screen.REELS ||
+                !R1CD07ExactGateTrial.eligibleForHF13Recovery()) {
+            settingPicker=true;control.setChecked(false);settingPicker=false;
+            toast("REFUSED: finish Reels Steps 1-4, confirm ITM OFF and fresh A evidence first");return;
+        }
+        toast(R1CD07GateTrace.armHF13Session());refresh();
+    }
+    private void copySelectedReport() {
+        if(R1CD09DiagnosticGate.selected()!=selectedMode){toast("Select a diagnostic first");return;}
+        String data;
+        switch(selectedMode) {
+            case REELS: data=R1CD07GateTrace.reportCore();break;
+            case AB: data=R1CD07GateTrace.reportCore()+R1CD09AccountSentinel.summary();break;
+            case FEED: data=R1CD08FeedAudit.report();break;
+            case MEDIA: data=CAPTURE.report()+R1CD08MediaEvidence.report();break;
+            case ACCOUNT: data=R1CD09AccountSentinel.summary();break;
+            default:return;
+        }
+        ClipboardManager clip=(ClipboardManager)activity.getSystemService(Context.CLIPBOARD_SERVICE);
+        if(clip==null){toast("Clipboard unavailable");return;}
+        clip.setPrimaryClip(ClipData.newPlainText("INA single diagnostic",
+            R1CD09DiagnosticGate.status()+"\n"+
+            "D06_MEDIA_IDENTITY=NOT_VERIFIED\nACTIONS=OFF\n"+
+            "ITM_REPOST_OFF=MANUAL_ASSERTION_NOT_VERIFIED\n"+data));
+        toast("Single-mode content-free report copied");
+    }
     private void toggleAdvanced() {
         advancedVisible=!advancedVisible;
         if (advancedBody != null) advancedBody.setVisibility(advancedVisible ? View.VISIBLE : View.GONE);
@@ -499,22 +730,16 @@ final class R1CD05FabPanel {
             abStatus=null; captureStatus=null;
             guardStatus=null; advancedStatus=null; advancedBody=null;
             advancedToggle=null; primary=null; advancedVisible=false;
+            modePicker=null;cohortPicker=null;modeStatus=null;keepRepost=null;
+            reelsGroup=null;compareGroup=null;feedGroup=null;mediaGroup=null;accountGroup=null;
+            compareStartA=null;
         }
     }
     private void toast(String text) {
         Toast.makeText(activity.getApplicationContext(), text, Toast.LENGTH_LONG).show();
     }
-    private void copyD07() {
-        ClipboardManager manager=(ClipboardManager)
-                activity.getSystemService(Context.CLIPBOARD_SERVICE);
-        if(manager==null){toast("Clipboard unavailable");return;}
-        manager.setPrimaryClip(ClipData.newPlainText("INA D07 safe Repost report",
-                R1CD07GateTrace.report() +
-                "D06_MEDIA_IDENTITY=NOT_VERIFIED\nACTIONS=OFF\n"
-                + "ITM_REPOST_OFF=MANUAL_ASSERTION_NOT_VERIFIED\n"));
-        toast("D07 content-free report copied");
-    }
     private void primaryAction() {
+        if(!requireMode(R1CD09DiagnosticGate.Mode.MEDIA))return;
         R1CD07Recovery.onCaptureTransition();
         itmRecoveryOffAcknowledged=false;
         R1CD05FabSession.Step step = CAPTURE.step();
@@ -569,18 +794,37 @@ final class R1CD05FabPanel {
                         R1BContextMonitor.stableScreen()==R1BNavigationPolicy.Screen.REELS,
                         observingA, R1CD07ExactGateTrial.eligibleForHF13Recovery(),
                         itmRecoveryOffAcknowledged));
-        if (enableRecovery != null) enableRecovery.setEnabled(!on
+        if(modeStatus!=null)copyIfChanged(modeStatus,
+                R1CD09DiagnosticGate.status()+"\n"+modeNextAction());
+        if(reelsGroup!=null)reelsGroup.setVisibility(selectedMode==R1CD09DiagnosticGate.Mode.REELS?View.VISIBLE:View.GONE);
+        if(compareGroup!=null)compareGroup.setVisibility(selectedMode==R1CD09DiagnosticGate.Mode.AB?View.VISIBLE:View.GONE);
+        if(feedGroup!=null)feedGroup.setVisibility(selectedMode==R1CD09DiagnosticGate.Mode.FEED?View.VISIBLE:View.GONE);
+        if(mediaGroup!=null)mediaGroup.setVisibility(selectedMode==R1CD09DiagnosticGate.Mode.MEDIA?View.VISIBLE:View.GONE);
+        if(accountGroup!=null)accountGroup.setVisibility(selectedMode==R1CD09DiagnosticGate.Mode.ACCOUNT?View.VISIBLE:View.GONE);
+        if(keepRepost!=null)keepRepost.setEnabled(R1CD07Recovery.isSessionMode() ||
+                (!on && R1CD09DiagnosticGate.active(R1CD09DiagnosticGate.Mode.REELS)
+                && observingA && itmRecoveryOffAcknowledged &&
+                R1CD07ExactGateTrial.eligibleForHF13Recovery() &&
+                R1BContextMonitor.stableScreen()==R1BNavigationPolicy.Screen.REELS));
+        if(keepRepost!=null && keepRepost.isChecked()!=R1CD07Recovery.isSessionMode()) {
+            settingPicker=true;keepRepost.setChecked(R1CD07Recovery.isSessionMode());settingPicker=false;
+        }
+        if(cohortPicker!=null)cohortPicker.setEnabled(!R1CD09DiagnosticGate.running());
+        if(compareStartA!=null)compareStartA.setEnabled(R1CD09DiagnosticGate.active(R1CD09DiagnosticGate.Mode.AB)
+                && !R1CD07GateTrace.recording() && R1CD07GateTrace.cohortEvents(0)==0
+                && !on && R1CD07GateTrace.ready());
+        if (enableRecovery != null) enableRecovery.setEnabled(!on && R1CD09DiagnosticGate.active(R1CD09DiagnosticGate.Mode.REELS)
                 && R1CD07GateTrace.ready() && InstaActionsEntry.dataGateReady()
                 && R1BContextMonitor.stableScreen()==R1BNavigationPolicy.Screen.REELS
                 && observingA && R1CD07ExactGateTrial.eligibleForHF13Recovery()
                 && itmRecoveryOffAcknowledged && !CAPTURE.isActiveWindow());
-        if (startA != null) startA.setEnabled(!on && !observingB && R1CD07GateTrace.ready());
-        if (stopA != null) stopA.setEnabled(R1CD07ComparisonFlow.canStopA(
+        if (startA != null) startA.setEnabled(R1CD09DiagnosticGate.active(R1CD09DiagnosticGate.Mode.REELS) && !on && !observingB && R1CD07GateTrace.ready());
+        if (stopA != null) stopA.setEnabled(R1CD09DiagnosticGate.active(R1CD09DiagnosticGate.Mode.AB) && R1CD07ComparisonFlow.canStopA(
                 R1CD07GateTrace.recording(), R1CD07GateTrace.activeIndex(), on));
-        if (startB != null) startB.setEnabled(R1CD07ComparisonFlow.canStartB(
+        if (startB != null) startB.setEnabled(R1CD09DiagnosticGate.active(R1CD09DiagnosticGate.Mode.AB) && R1CD07ComparisonFlow.canStartB(
                 R1CD07GateTrace.recording(), R1CD07GateTrace.activeIndex(),
                 R1CD07GateTrace.cohortEvents(0), on, R1CD07GateTrace.ready()));
-        if (stopB != null) stopB.setEnabled(R1CD07ComparisonFlow.canStopB(
+        if (stopB != null) stopB.setEnabled(R1CD09DiagnosticGate.active(R1CD09DiagnosticGate.Mode.AB) && R1CD07ComparisonFlow.canStopB(
                 R1CD07GateTrace.recording(), R1CD07GateTrace.activeIndex(), on));
         if (abStatus != null) copyIfChanged(abStatus,
                 R1CD07ComparisonFlow.progress(R1CD07GateTrace.recording(),
@@ -608,10 +852,12 @@ final class R1CD05FabPanel {
         if (primary != null) {
             copyIfChanged(primary, !d05 ? "Start A1" : stage == R1CD05FabSession.Step.B2
                     ? "Finish capture" : "Next D05 stage");
-            primary.setEnabled(d05 || R1CD04PassiveProbe.hasCaptureCapacity());
+            primary.setEnabled(R1CD09DiagnosticGate.active(R1CD09DiagnosticGate.Mode.MEDIA)
+                    && (d05 || R1CD04PassiveProbe.hasCaptureCapacity()));
         }
     }
     private void copy() {
+        if(!requireMode(R1CD09DiagnosticGate.Mode.MEDIA))return;
         ClipboardManager manager = (ClipboardManager)
                 activity.getSystemService(Context.CLIPBOARD_SERVICE);
         if (manager == null) {toast("Clipboard unavailable");return;}
@@ -619,6 +865,7 @@ final class R1CD05FabPanel {
         toast("Content-free D05 report copied");
     }
     private void share() {
+        if(!requireMode(R1CD09DiagnosticGate.Mode.MEDIA))return;
         Intent send = new Intent(Intent.ACTION_SEND);
         send.setType("text/plain");
         send.putExtra(Intent.EXTRA_TEXT, CAPTURE.report());
@@ -627,6 +874,8 @@ final class R1CD05FabPanel {
     }
     private void detach() {
         R1CD07Recovery.onActivityExit();
+        if(R1CD09DiagnosticGate.active(R1CD09DiagnosticGate.Mode.REELS))
+            R1CD09DiagnosticGate.abort("Activity left foreground");
         itmRecoveryOffAcknowledged=false;
         detached=true;
         if(ticker!=null) MAIN.removeCallbacks(ticker);
