@@ -29,6 +29,8 @@ def check(apk:Path):
                 b'D08_MEDIA_IDENTITY=NOT_VERIFIED',
                 b'D08A FEED REPOST VISIBLE-LABEL AUDIT', b'D08 X.02ib EXACT CONFIG', b'CURRENT STATUS',
                 b'STEP 1 OF 5', b'STEP 5 OF 5',
+                b'R1CD17AutoRootDiagnostics', b'R1CD17RootLogParser',
+                b'Automatic Root FAB Diagnostics', b'ROOT_NOT_GRANTED_OR_SU_UNAVAILABLE',
                 b'R1CD16FabEvents', b'R1CD16LogReceiver', b'R1CD16LogStore',
                 b'R1CD16MainSurface', b'R1CD16AnchorPolicy',
                 b'INA_FAB_EVIDENCE', b'Copy FAB logs', b'Export FAB logs',

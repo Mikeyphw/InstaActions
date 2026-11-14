@@ -169,5 +169,13 @@
   "r1c_d15_hf08_device_acceptance": "NOT_RUN",
   "r1c_d16_fab_diagnostics_source": true,
   "r1c_d16_fab_diagnostics_device_acceptance": "NOT_RUN",
-  "r1c_d16_diagnostics_sender_policy": "ANDROID_UID_MATCH_REQUIRED"
+  "r1c_d16_diagnostics_sender_policy": "ANDROID_UID_MATCH_REQUIRED",
+  "r1c_d17_automatic_root_diagnostics_source": true,
+  "r1c_d17_no_in_app_opt_in": true,
+  "r1c_d17_su_grant_controlled_by_root_manager": true,
+  "r1c_d17_diagnostics_read_only": true,
+  "r1c_d17_logs_pid_bound_and_sanitized": true,
+  "r1c_d17_device_acceptance": "NOT_RUN",
+  "r1c_d17_root_granted_on_device": "NOT_VERIFIED",
+  "r1c_d17_fab_visible_on_device": false
 }

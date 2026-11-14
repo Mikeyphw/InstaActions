@@ -39,6 +39,8 @@ public final class MainActivity extends Activity {
     private LinearLayout root;
     private TextView fabLogText;
     private TextView fabLogSummary;
+    private TextView rootDiagnosticsText;
+    private TextView rootDiagnosticsStatus;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -95,20 +97,26 @@ public final class MainActivity extends Activity {
             ClipboardManager clipboard=(ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
             if(clipboard!=null){
                 clipboard.setPrimaryClip(ClipData.newPlainText("InstaActions FAB diagnostics",
-                        R1CD16LogStore.report(this)));
+                        combinedFabReport()));
                 fabLogSummary.setText("Copied FAB diagnostic report to clipboard");
             }
         });
         diagnosticButton(fabLogCard,"Export FAB logs",()->{
             Intent share=new Intent(Intent.ACTION_SEND);
             share.setType("text/plain");
-            share.putExtra(Intent.EXTRA_TEXT,R1CD16LogStore.report(this));
+            share.putExtra(Intent.EXTRA_TEXT,combinedFabReport());
             try { startActivity(Intent.createChooser(share,"Export InstaActions FAB diagnostics")); }
             catch(RuntimeException failure){fabLogSummary.setText("Share sheet unavailable; use Copy FAB logs");}
         });
         diagnosticButton(fabLogCard,"Clear stored FAB logs",()->{
-            R1CD16LogStore.clear(this); refreshFabLogs();
+            R1CD16LogStore.clear(this);R1CD17AutoRootDiagnostics.clear(this); refreshFabLogs();
         });
+        LinearLayout rootCard=card("Automatic Root FAB Diagnostics");
+        add(rootCard,"On each app resume, InstaActions automatically requests root through KernelSU and captures a bounded, read-only diagnosis on a background thread. No extra in-app permission button. KernelSU may show its own grant prompt.",14,DETAIL,false);
+        rootDiagnosticsStatus=add(rootCard,"Root capture pending",14,AMBER,true);
+        rootDiagnosticsText=add(rootCard,"",12,DETAIL,false);
+        rootDiagnosticsText.setTextIsSelectable(true);
+        add(rootCard,"Copy FAB logs and Export FAB logs above include this root report too. Root never grants account-specific Repost permission, changes Instagram, or collects raw logcat in saved reports.",13,DETAIL,false);
         refreshFabLogs();
 
         LinearLayout diagnosticPicker=card("Read one workflow at a time");
@@ -208,14 +216,30 @@ public final class MainActivity extends Activity {
     @Override protected void onResume(){
         super.onResume();
         if(fabLogText!=null)refreshFabLogs();
+        // Explicit user preference: automatic root diagnostics, no in-app opt-in.
+        // KernelSU retains independent control of the root grant/denial.
+        R1CD17AutoRootDiagnostics.onAppResumed(this,this::refreshFabLogs);
+    }
+    private String combinedFabReport(){
+        return R1CD16LogStore.report(this)+"\n\n"+R1CD17AutoRootDiagnostics.report(this);
     }
     private void refreshFabLogs(){
         if(fabLogText==null || fabLogSummary==null)return;
         String report=R1CD16LogStore.report(this);
         fabLogText.setText(report);
         fabLogSummary.setText(report.contains("NO EVENTS RECEIVED")
-                ? "No Instagram events received yet — check Vector scope or bridge delivery"
+                ? "No Instagram events received yet — root report below may explain why"
                 : "Received FAB events · last 180 retained · scroll below");
+        if(rootDiagnosticsText!=null)rootDiagnosticsText.setText(R1CD17AutoRootDiagnostics.report(this));
+        if(rootDiagnosticsStatus!=null){
+            String root=R1CD17AutoRootDiagnostics.report(this);
+            rootDiagnosticsStatus.setText(root.contains("status=READ_ONLY_ROOT_CAPTURE_AVAILABLE")
+                    ? "Root granted · matching InstaActions markers found"
+                    : root.contains("ROOT_PROBE=RUNNING") ? "Automatic root probe running…"
+                    : root.contains("status=ROOT_NOT_GRANTED") || root.contains("status=SU_UNAVAILABLE")
+                    ? "Root unavailable or denied · KernelSU controls access"
+                    : "Automatic root probe result · see classification below");
+        }
     }
     private void diagnosticButton(LinearLayout into,String caption,Runnable action){
         Button button=new Button(this);
