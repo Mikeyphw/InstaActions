@@ -267,6 +267,8 @@ public final class InstaActionsEntry extends XposedModule {
                         if (FIRST_RESUME.compareAndSet(false, true)) {
                             diagnostic("INA_DIAG_FIRST_ACTIVITY_RESUMED actions=off");
                         }
+                        R1CD16FabEvents.emit((Activity)owner,"RESUME_DISPATCH",
+                                "HOOK:"+((Activity)owner).getClass().getName());
                         // FAB is independent of all optional diagnostic probes.
                         // Attach FIRST: no DexKit, lifecycle, or auto-sampler
                         // failure may suppress the user's recovery controls.
@@ -274,6 +276,8 @@ public final class InstaActionsEntry extends XposedModule {
                         catch (Throwable fabFailure) {
                             diagnostic("INA_FAB_ATTACH_EXCEPTION type="
                                     + fabFailure.getClass().getSimpleName());
+                            R1CD16FabEvents.emit((Activity)owner,"FAB_FAILURE",
+                                fabFailure.getClass().getName());
                         }
                         try {
                             R1CD12AndroidBridge.install((Activity) owner);
@@ -319,6 +323,7 @@ public final class InstaActionsEntry extends XposedModule {
                                                 });
                                     });
                             diagnostic("INA_FAB_ATTACH_STATUS " + R1CD05FabPanel.attachStatus());
+                            R1CD16FabEvents.emit((Activity)owner,"HOOK_READY","ONRESUME_CHAIN_COMPLETED");
                         }
                     }
                 } catch (Throwable diagnosticFailure) {

@@ -1,6 +1,11 @@
 package com.mikeyphw.instaactions;
 
 import android.app.Activity;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
+import android.content.Intent;
+import android.widget.Button;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Typeface;
@@ -32,6 +37,8 @@ public final class MainActivity extends Activity {
     private static final int AMBER = 0xffffd585;
     private static final int GREEN = 0xff70ecbb;
     private LinearLayout root;
+    private TextView fabLogText;
+    private TextView fabLogSummary;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -77,6 +84,32 @@ public final class MainActivity extends Activity {
         add(status, "Instagram: " + installedVersion(ModuleConstants.TARGET_PACKAGE), 14, WHITE, false);
         add(status, "InstaEclipse: " + installedVersion("ps.reso.instaeclipse"), 14, WHITE, false);
         add(status, "Vector / LSPosed module enabled: NOT VERIFIED from this screen", 13, AMBER, false);
+
+        LinearLayout fabLogCard=card("FAB Diagnostics · visible even without the IA chip");
+        add(fabLogCard,"Live hook/Activity/attachment evidence reported from Instagram. No IA floating button is required to read or copy these logs.",14,DETAIL,false);
+        fabLogSummary=add(fabLogCard,"Loading FAB diagnostics…",14,AMBER,true);
+        fabLogText=add(fabLogCard,"",12,DETAIL,false);
+        fabLogText.setTextIsSelectable(true);
+        diagnosticButton(fabLogCard,"Refresh FAB logs",this::refreshFabLogs);
+        diagnosticButton(fabLogCard,"Copy FAB logs",()->{
+            ClipboardManager clipboard=(ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
+            if(clipboard!=null){
+                clipboard.setPrimaryClip(ClipData.newPlainText("InstaActions FAB diagnostics",
+                        R1CD16LogStore.report(this)));
+                fabLogSummary.setText("Copied FAB diagnostic report to clipboard");
+            }
+        });
+        diagnosticButton(fabLogCard,"Export FAB logs",()->{
+            Intent share=new Intent(Intent.ACTION_SEND);
+            share.setType("text/plain");
+            share.putExtra(Intent.EXTRA_TEXT,R1CD16LogStore.report(this));
+            try { startActivity(Intent.createChooser(share,"Export InstaActions FAB diagnostics")); }
+            catch(RuntimeException failure){fabLogSummary.setText("Share sheet unavailable; use Copy FAB logs");}
+        });
+        diagnosticButton(fabLogCard,"Clear stored FAB logs",()->{
+            R1CD16LogStore.clear(this); refreshFabLogs();
+        });
+        refreshFabLogs();
 
         LinearLayout diagnosticPicker=card("Read one workflow at a time");
         add(diagnosticPicker,"Choose a diagnostic below. This is guidance only; the interactive Begin / Finish / Abort controls live inside Instagram's IA panel.",14,DETAIL,false);
@@ -170,6 +203,28 @@ public final class MainActivity extends Activity {
         add(limits, "Dedicated Reels tab: user-reported InstaActions native Repost success; formal D07C checks still pending.", 14, WHITE, false);
         add(limits, "Reels in Feed, profiles, and ordinary posts: NOT QUALIFIED.", 14, AMBER, false);
         add(limits, "Reports summarize native return types/counts, not account names, media IDs or captions. No automatic Repost actions.", 14, DETAIL, false);
+    }
+
+    @Override protected void onResume(){
+        super.onResume();
+        if(fabLogText!=null)refreshFabLogs();
+    }
+    private void refreshFabLogs(){
+        if(fabLogText==null || fabLogSummary==null)return;
+        String report=R1CD16LogStore.report(this);
+        fabLogText.setText(report);
+        fabLogSummary.setText(report.contains("NO EVENTS RECEIVED")
+                ? "No Instagram events received yet — check Vector scope or bridge delivery"
+                : "Received FAB events · last 180 retained · scroll below");
+    }
+    private void diagnosticButton(LinearLayout into,String caption,Runnable action){
+        Button button=new Button(this);
+        button.setText(caption);
+        button.setAllCaps(false);
+        button.setTextColor(WHITE);
+        button.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xff266dbc));
+        button.setOnClickListener(v->action.run());
+        into.addView(button);
     }
 
     private LinearLayout column() {

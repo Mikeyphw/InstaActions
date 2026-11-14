@@ -29,6 +29,9 @@ def check(apk:Path):
                 b'D08_MEDIA_IDENTITY=NOT_VERIFIED',
                 b'D08A FEED REPOST VISIBLE-LABEL AUDIT', b'D08 X.02ib EXACT CONFIG', b'CURRENT STATUS',
                 b'STEP 1 OF 5', b'STEP 5 OF 5',
+                b'R1CD16FabEvents', b'R1CD16LogReceiver', b'R1CD16LogStore',
+                b'R1CD16MainSurface', b'R1CD16AnchorPolicy',
+                b'INA_FAB_EVIDENCE', b'Copy FAB logs', b'Export FAB logs',
                 b'INA_D07_REPOST_EXACT_APK_A_B_TRACE',
                 b'ina-d07-repost-ui-selector4', b'ina-d07-verified-d3r-'):
             assert token in blob, f'R1C missing DEX marker {token!r}'
