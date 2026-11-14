@@ -14,6 +14,8 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
+import android.util.Log;
+import java.lang.ref.WeakReference;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -55,6 +57,20 @@ final class R1CD05FabPanel {
     private static final R1CD05FabSession CAPTURE = new R1CD05FabSession();
     private static R1CD05FabPanel current;
     private static int savedTopDp = 220;
+    // A resumed Activity is a weak target for bounded retries; never retain an
+    // abandoned Activity or attach a FAB after onPause/onDestroy.
+    private static WeakReference<Activity> expectedActivity = new WeakReference<>(null);
+    private static int resumeGeneration;
+    private static final int MAX_ATTACH_ATTEMPTS = 4;
+    private static final long[] ATTACH_DELAYS_MS = {120L, 350L, 900L};
+    private static String lastAttachStatus = "NOT_ATTEMPTED";
+    static synchronized String attachStatus() { return lastAttachStatus; }
+    private static void status(String reason) {
+        if (!reason.equals(lastAttachStatus)) {
+            lastAttachStatus = reason;
+            Log.i("INA_FAB", "INA_FAB_ATTACH " + reason + " actions=unchanged");
+        }
+    }
 
     private final Activity activity;
     private final FrameLayout decor;
@@ -106,28 +122,128 @@ final class R1CD05FabPanel {
         if (activity == null || activity.isFinishing() || activity.isDestroyed()
                 || !ModuleConstants.TARGET_PACKAGE.equals(activity.getPackageName())
                 || !R1BNavigationPolicy.isMainActivity(activity.getClass().getName())) return;
-        // No overlay on unqualified Instagram versions. The exact APK SHA is
-        // verified separately by D04 before either observer can collect data.
+        if (Looper.myLooper() != Looper.getMainLooper()) {
+            WeakReference<Activity> weak = new WeakReference<>(activity);
+            MAIN.post(() -> { Activity owner = weak.get(); if (owner != null) onResumed(owner); });
+            return;
+        }
+        if (expectedActivity.get() != activity) {
+            expectedActivity = new WeakReference<>(activity);
+            resumeGeneration++;
+        }
+        attemptAttach(activity, resumeGeneration, 0);
+    }
+
+    /** Also called by Android's independent ActivityLifecycleCallbacks route. */
+    private static void attemptAttach(Activity activity, int generation, int attempt) {
+        if (generation != resumeGeneration || expectedActivity.get() != activity
+                || activity.isFinishing() || activity.isDestroyed()) return;
         try {
             android.content.pm.PackageInfo info = activity.getPackageManager().getPackageInfo(
                     ModuleConstants.TARGET_PACKAGE, 0);
-            if (!R1CD04Policy.TARGET_VERSION.equals(info.versionName)) return;
-        } catch (Throwable unqualified) { return; }
+            if (!R1CD04Policy.TARGET_VERSION.equals(info.versionName)) {
+                status("SKIPPED_VERSION_NOT_IG455"); return;
+            }
+        } catch (Throwable unqualified) {
+            status("SKIPPED_VERSION_QUERY_" + unqualified.getClass().getSimpleName());
+            return;
+        }
         View root = activity.getWindow() == null ? null : activity.getWindow().getDecorView();
-        if (!(root instanceof FrameLayout)) return;
-        if (current != null && current.activity == activity) return;
-        if (current != null) current.detach();
-        R1CD05FabPanel next = new R1CD05FabPanel(activity, (FrameLayout) root);
-        current = next;
-        R1CD10PassiveLedger.observe(R1CD10PassiveLedger.Signal.ACTIVITY_RESUME);
-        next.attach();
+        FrameLayout target = root instanceof FrameLayout ? (FrameLayout) root : null;
+        if (target == null) {
+            View content = activity.findViewById(android.R.id.content);
+            if (content instanceof FrameLayout) target = (FrameLayout) content;
+        }
+        if (target == null) {
+            status("DEFERRED_NO_FRAME_LAYOUT attempt=" + (attempt + 1));
+            scheduleAttachRetry(activity, generation, attempt);
+            return;
+        }
+        if (current != null && current.activity == activity && current.healthy(target)) {
+            current.chip.bringToFront();
+            status("ATTACHED_MAIN_ACTIVITY");
+            return;
+        }
+        if (current != null) {
+            R1CD05FabPanel old = current;
+            current = null;
+            try { old.detach(); }
+            catch (Throwable failure) { old.discardFailedAttach(); }
+        }
+        R1CD05FabPanel next = new R1CD05FabPanel(activity, target);
+        current = next; // Ticker's identity checks require this before attach().
+        try {
+            next.attach();
+            if (!next.healthy(target)) throw new IllegalStateException("FAB_PARENT_MISSING");
+            next.chip.bringToFront();
+            status("ATTACHED_MAIN_ACTIVITY");
+            // Recheck after Instagram has finished adding its own decor children.
+            WeakReference<Activity> weak = new WeakReference<>(activity);
+            MAIN.postDelayed(() -> {
+                Activity owner = weak.get();
+                if (owner == null || generation != resumeGeneration
+                        || expectedActivity.get() != owner) return;
+                if (current == null || !current.healthyCurrentRoot())
+                    attemptAttach(owner, generation, 1);
+                else current.chip.bringToFront();
+            }, 400L);
+        } catch (Throwable failed) {
+            next.discardFailedAttach();
+            if (current == next) current = null;
+            status("FAILED_ATTACH_" + failed.getClass().getSimpleName()
+                    + " attempt=" + (attempt + 1));
+            scheduleAttachRetry(activity, generation, attempt);
+        }
+    }
+
+    private boolean healthy(FrameLayout target) {
+        return !detached && chip != null && decor == target
+                && chip.getParent() == target;
+    }
+    private boolean healthyCurrentRoot() {
+        View root = activity.getWindow() == null ? null : activity.getWindow().getDecorView();
+        // Do not inspect View identifiers: FAB01 and UX01 require only
+        // Android-owned View reference comparisons for this controller.
+        View content = activity.findViewById(android.R.id.content);
+        return healthy(decor) && (root == decor || content == decor)
+                && decor.isAttachedToWindow();
+    }
+    private void discardFailedAttach() {
+        detached = true;
+        if (ticker != null) MAIN.removeCallbacks(ticker);
+        try { if (panel != null && panel.getParent() == decor) decor.removeView(panel); }
+        catch (Throwable ignored) { }
+        try { if (chip != null && chip.getParent() == decor) decor.removeView(chip); }
+        catch (Throwable ignored) { }
+        chip = null; panel = null;
+    }
+    private static void scheduleAttachRetry(Activity activity, int generation, int failedAttempt) {
+        if (failedAttempt >= MAX_ATTACH_ATTEMPTS - 1) {
+            status("REFUSED_RETRY_CAP_REACHED attempts=" + MAX_ATTACH_ATTEMPTS);
+            return;
+        }
+        WeakReference<Activity> weak = new WeakReference<>(activity);
+        MAIN.postDelayed(() -> {
+            Activity owner = weak.get();
+            if (owner == null || generation != resumeGeneration
+                    || expectedActivity.get() != owner) return;
+            attemptAttach(owner, generation, failedAttempt + 1);
+        }, ATTACH_DELAYS_MS[failedAttempt]);
     }
 
     static void onLeaving(Activity activity) {
+        if (expectedActivity.get() == activity) {
+            expectedActivity.clear();
+            expectedActivity = new WeakReference<>(null);
+            resumeGeneration++;
+        }
         if (current != null && current.activity == activity) {
             R1CD10PassiveLedger.observe(R1CD10PassiveLedger.Signal.ACTIVITY_LEAVE);
-            current.detach();
+            R1CD05FabPanel leaving = current;
             current = null;
+            try { leaving.detach(); }
+            catch (Throwable failed) { leaving.discardFailedAttach(); }
+            status("DETACHED_ACTIVITY_LEFT");
         }
     }
 
@@ -302,6 +418,14 @@ final class R1CD05FabPanel {
         ticker = new Runnable() {
             @Override public void run() {
                 if (detached || current != R1CD05FabPanel.this) return;
+                // Instagram may replace its DecorView or add a fullscreen child
+                // after onResume. Recover an orphaned chip instead of staying
+                // falsely marked as attached, and keep the own chip frontmost.
+                if (!healthyCurrentRoot()) {
+                    MAIN.post(() -> onResumed(activity));
+                    return;
+                }
+                chip.bringToFront();
                 if (CAPTURE.isActiveWindow()) {
                     R1CD06ViewPreflight.Snapshot snapshot = R1CD06ViewPreflight.inspect(activity);
                     if (CAPTURE.needsPreflight())

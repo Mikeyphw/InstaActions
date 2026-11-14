@@ -267,6 +267,14 @@ public final class InstaActionsEntry extends XposedModule {
                         if (FIRST_RESUME.compareAndSet(false, true)) {
                             diagnostic("INA_DIAG_FIRST_ACTIVITY_RESUMED actions=off");
                         }
+                        // FAB is independent of all optional diagnostic probes.
+                        // Attach FIRST: no DexKit, lifecycle, or auto-sampler
+                        // failure may suppress the user's recovery controls.
+                        try { R1CD05FabPanel.onResumed((Activity) owner); }
+                        catch (Throwable fabFailure) {
+                            diagnostic("INA_FAB_ATTACH_EXCEPTION type="
+                                    + fabFailure.getClass().getSimpleName());
+                        }
                         try {
                             R1CD12AndroidBridge.install((Activity) owner);
                             R1ProbeController.onActivityResumed((Activity) owner,
@@ -310,9 +318,7 @@ public final class InstaActionsEntry extends XposedModule {
                                                     }
                                                 });
                                     });
-                            // UI-only diagnostic controller. No Instagram action hooks.
-                            try { R1CD05FabPanel.onResumed((Activity) owner); }
-                            catch (Throwable ignored) { /* FAB is strictly optional. */ }
+                            diagnostic("INA_FAB_ATTACH_STATUS " + R1CD05FabPanel.attachStatus());
                         }
                     }
                 } catch (Throwable diagnosticFailure) {

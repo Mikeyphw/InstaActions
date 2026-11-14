@@ -27,7 +27,15 @@ final class R1CD12AndroidBridge implements Application.ActivityLifecycleCallback
         return activity!=null && ModuleConstants.TARGET_PACKAGE.equals(activity.getPackageName());
     }
     @Override public void onActivityResumed(Activity activity) {
-        if(target(activity))R1CD12AccountLifecycle.lifecycleResumed();
+        if (!target(activity)) return;
+        R1CD12AccountLifecycle.lifecycleResumed();
+        // Independent framework path: future resumes retry a missing FAB even
+        // when an optional InstaActions DexKit observer fails before UI setup.
+        try { R1CD05FabPanel.onResumed(activity); }
+        catch (Throwable failure) {
+            android.util.Log.w("INA_FAB", "INA_FAB_FRAMEWORK_RETRY_FAILED type="
+                    + failure.getClass().getSimpleName());
+        }
     }
     @Override public void onActivityPaused(Activity activity) {
         if(target(activity))R1CD12AccountLifecycle.lifecyclePaused();

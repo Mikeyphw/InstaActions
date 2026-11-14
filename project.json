@@ -159,5 +159,12 @@
   "r1c_d14_actions_enabled": false,
   "r1c_d14_native_hooks_added": false,
   "r1c_d14_device_acceptance": "NOT_RUN",
-  "r1c_d14_ci_qualified": false
+  "r1c_d14_ci_qualified": false,
+  "r1c_d15_fab_restore_source_implemented": true,
+  "r1c_d15_fab_device_qualified": false,
+  "r1c_d15_fab_device_acceptance": "NOT_RUN",
+  "r1c_d15_fab_attach_runtime_result": "PENDING_PHYSICAL_TEST",
+  "r1c_d15_hf08_privacy_source_implemented": true,
+  "r1c_d15_hf08_hosted_ci_qualified": false,
+  "r1c_d15_hf08_device_acceptance": "NOT_RUN"
 }
