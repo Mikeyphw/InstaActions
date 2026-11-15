@@ -28,6 +28,7 @@ final class R1CD17AutoRootDiagnostics {
     private static final String READ_ONLY_COMMAND =
             "printf 'INA_D17_UID\\n'; id -u; " +
             "printf 'INA_D17_PID\\n'; pidof com.instagram.android; " +
+            "printf 'INA_D18_PS\\n'; ps -A -o PID,NAME 2>/dev/null | grep -E '[c]om[.]instagram[.]android(:[a-zA-Z0-9._-]+)?$' | head -n 32; " +
             "printf 'INA_D17_LOGCAT\\n'; " +
             "logcat -d -t 1000 -v threadtime -s INA_FAB:V INA_DIAG:V INA_R1B:V INA_R1C:V '*:S'; " +
             "printf 'INA_D17_END\\n'";
