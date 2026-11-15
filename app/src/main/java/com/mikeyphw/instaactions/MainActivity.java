@@ -41,6 +41,7 @@ public final class MainActivity extends Activity {
     private TextView fabLogSummary;
     private TextView rootDiagnosticsText;
     private TextView rootDiagnosticsStatus;
+    private TextView rootLiveWatchText;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -109,7 +110,8 @@ public final class MainActivity extends Activity {
             catch(RuntimeException failure){fabLogSummary.setText("Share sheet unavailable; use Copy FAB logs");}
         });
         diagnosticButton(fabLogCard,"Clear stored FAB logs",()->{
-            R1CD16LogStore.clear(this);R1CD17AutoRootDiagnostics.clear(this); refreshFabLogs();
+            R1CD16LogStore.clear(this);R1CD17AutoRootDiagnostics.clear(this);
+            R1CD19RootWatchService.clear(this); refreshFabLogs();
         });
         LinearLayout rootCard=card("Automatic Root FAB Diagnostics");
         add(rootCard,"On each app resume, InstaActions automatically requests root through KernelSU and captures a bounded, read-only diagnosis on a background thread. No extra in-app permission button. KernelSU may show its own grant prompt.",14,DETAIL,false);
@@ -117,6 +119,9 @@ public final class MainActivity extends Activity {
         rootDiagnosticsText=add(rootCard,"",12,DETAIL,false);
         rootDiagnosticsText.setTextIsSelectable(true);
         add(rootCard,"Copy FAB logs and Export FAB logs above include this root report too. Root never grants account-specific Repost permission, changes Instagram, or collects raw logcat in saved reports.",13,DETAIL,false);
+        add(rootCard,"D19 LIVE CAPTURE: automatic foreground notification and root monitoring for up to 150 seconds. Open Instagram while it runs, then return here. No separate opt-in, and no raw logcat is saved.",13,DETAIL,false);
+        rootLiveWatchText=add(rootCard,"D19 capture pending",12,DETAIL,false);
+        rootLiveWatchText.setTextIsSelectable(true);
         refreshFabLogs();
 
         LinearLayout diagnosticPicker=card("Read one workflow at a time");
@@ -219,9 +224,18 @@ public final class MainActivity extends Activity {
         // Explicit user preference: automatic root diagnostics, no in-app opt-in.
         // KernelSU retains independent control of the root grant/denial.
         R1CD17AutoRootDiagnostics.onAppResumed(this,this::refreshFabLogs);
+        // Automatic capture stays foreground while the user moves into Instagram.
+        // Without this, D18's one-time snapshot can miss all Instagram startup events.
+        if(R1CD19RootWatchService.shouldStart(this)) {
+            try {startForegroundService(new Intent(this,R1CD19RootWatchService.class));}
+            catch(RuntimeException refused) {
+                R1CD19RootWatchService.startupFailure(this,refused);
+            }
+        }
     }
     private String combinedFabReport(){
-        return R1CD16LogStore.report(this)+"\n\n"+R1CD17AutoRootDiagnostics.report(this);
+        return R1CD16LogStore.report(this)+"\n\n"+R1CD17AutoRootDiagnostics.report(this)
+                +"\n\n"+R1CD19RootWatchService.report(this);
     }
     private void refreshFabLogs(){
         if(fabLogText==null || fabLogSummary==null)return;
@@ -231,6 +245,7 @@ public final class MainActivity extends Activity {
                 ? "No Instagram events received yet — root report below may explain why"
                 : "Received FAB events · last 180 retained · scroll below");
         if(rootDiagnosticsText!=null)rootDiagnosticsText.setText(R1CD17AutoRootDiagnostics.report(this));
+        if(rootLiveWatchText!=null)rootLiveWatchText.setText(R1CD19RootWatchService.report(this));
         if(rootDiagnosticsStatus!=null){
             String root=R1CD17AutoRootDiagnostics.report(this);
             rootDiagnosticsStatus.setText(root.contains("status=READ_ONLY_ROOT_CAPTURE_AVAILABLE")

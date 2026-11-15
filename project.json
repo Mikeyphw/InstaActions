@@ -181,5 +181,11 @@
   "r1c_d18_root_ps_fallback_source": true,
   "r1c_d18_historical_pid_unverified_markers_only": true,
   "r1c_d18_fab_device_acceptance": "NOT_RUN",
-  "r1c_d18_fab_visible_on_device": false
+  "r1c_d18_fab_visible_on_device": false,
+  "r1c_d19_live_root_foreground_capture_source": true,
+  "r1c_d19_fab_visible_on_device": false,
+  "r1c_d19_device_acceptance": "NOT_RUN",
+  "r1c_d19_capture_window_seconds": 150,
+  "r1c_d19_no_in_app_opt_in": true,
+  "r1c_d19_logs_category_only": true
 }
