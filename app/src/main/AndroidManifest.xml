@@ -28,6 +28,10 @@
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                       android:value="short user-visible read-only app diagnostics" />
         </service>
+        <!-- D20: single Boolean policy readable by the real Instagram UID only; no writes. -->
+        <provider android:name=".R1CD20FabPolicyProvider"
+                  android:authorities="com.mikeyphw.instaactions.fabpolicy"
+                  android:exported="true" android:grantUriPermissions="false" />
         <!-- Explicit cross-UID diagnostics only. Runtime UID check is mandatory. -->
         <receiver android:name=".R1CD16LogReceiver" android:exported="true" />
         <meta-data android:name="xposedmodule" android:value="true" />

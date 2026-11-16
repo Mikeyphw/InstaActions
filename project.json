@@ -187,5 +187,13 @@
   "r1c_d19_device_acceptance": "NOT_RUN",
   "r1c_d19_capture_window_seconds": 150,
   "r1c_d19_no_in_app_opt_in": true,
-  "r1c_d19_logs_category_only": true
+  "r1c_d19_logs_category_only": true,
+  "r1c_d20_fab_version_override_source_implemented": true,
+  "r1c_d20_fab_override_default_enabled": false,
+  "r1c_d20_fab_override_scope": "FAB_UI_ONLY_NOT_NATIVE_HOOKS",
+  "r1c_d20_fab_override_provider_policy": "ANDROID_CALLER_UID_CHECK_READ_ONLY",
+  "r1c_d20_native_repost_override_enabled": false,
+  "r1c_d20_device_acceptance": "NOT_RUN",
+  "r1c_d20_fab_visible_on_unsupported_version": false,
+  "r1c_d20_hosted_build_qualified": false
 }

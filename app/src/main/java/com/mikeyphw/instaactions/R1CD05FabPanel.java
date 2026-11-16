@@ -114,6 +114,8 @@ final class R1CD05FabPanel {
     private boolean advancedVisible;
     // Manual assertion only; cannot inspect another module's state.
     private boolean itmRecoveryOffAcknowledged;
+    // D20: unsupported versions get diagnostics UI only, NEVER native Repost recovery.
+    private boolean unsupportedVersion;
 
     private R1CD05FabPanel(Activity activity, FrameLayout decor) {
         this.activity = activity;
@@ -157,15 +159,25 @@ final class R1CD05FabPanel {
             return;
         }
         R1CD16FabEvents.emit(activity,"FAB_ROOT","QUALIFIED_BY_"+route.name());
+        boolean exactVersion;
         try {
             android.content.pm.PackageInfo info = activity.getPackageManager().getPackageInfo(
                     ModuleConstants.TARGET_PACKAGE, 0);
-            if (!R1CD04Policy.TARGET_VERSION.equals(info.versionName)) {
-                status("SKIPPED_VERSION_NOT_IG455"); return;
-            }
+            exactVersion = R1CD04Policy.TARGET_VERSION.equals(info.versionName);
         } catch (Throwable unqualified) {
             status("SKIPPED_VERSION_QUERY_" + unqualified.getClass().getSimpleName());
             return;
+        }
+        // User's override concerns FAB visibility ONLY. The D04 APK SHA check,
+        // native selector hooks and actual Repost recovery never inherit this bit.
+        boolean override= !exactVersion && R1CD20FabVersionSwitch.enabled(activity);
+        if(!R1CD20FabGatePolicy.canShowFab(exactVersion,override)){
+            status("SKIPPED_VERSION_NOT_IG455_OVERRIDE_OFF");return;
+        }
+        if(!exactVersion){
+            status("VERSION_OVERRIDE_UI_ONLY");
+            R1CD16FabEvents.emit(activity,"FAB_STATUS","VERSION_OVERRIDE_UI_ONLY");
+            if(R1CD07Recovery.isEnabled())R1CD07Recovery.off("Unsupported Instagram version · UI-only FAB");
         }
         View root = activity.getWindow() == null ? null : activity.getWindow().getDecorView();
         FrameLayout target = root instanceof FrameLayout ? (FrameLayout) root : null;
@@ -182,6 +194,7 @@ final class R1CD05FabPanel {
         if(root==target)R1CD16FabEvents.emit(activity,"FAB_ROOT","DECOR_ROOT");
         else R1CD16FabEvents.emit(activity,"FAB_ROOT","CONTENT_ROOT");
         if (current != null && current.activity == activity && current.healthy(target)) {
+            current.unsupportedVersion=!exactVersion;
             current.chip.bringToFront();
             status("ATTACHED_MAIN_ACTIVITY");
             return;
@@ -193,6 +206,7 @@ final class R1CD05FabPanel {
             catch (Throwable failure) { old.discardFailedAttach(); }
         }
         R1CD05FabPanel next = new R1CD05FabPanel(activity, target);
+        next.unsupportedVersion=!exactVersion;
         current = next; // Ticker's identity checks require this before attach().
         try {
             next.attach();
@@ -493,6 +507,7 @@ final class R1CD05FabPanel {
 
         bold(body, "InstaActions", 20, FG);
         body.addView(label("D07 · Repost recovery · guided trial", 14, ACCENT));
+        if(unsupportedVersion)hint(body,"FAB VERSION OVERRIDE ACTIVE · UI diagnostics only. Native Repost recovery and unverified Instagram actions are disabled.");
         hint(body, "Dedicated Reels tab only for Repost recovery. Reels-tab Repost is user-confirmed working. Feed/avatars/media identity remain UNQUALIFIED. Choose one diagnostic below, then Begin.");
         hint(body, "RECOVERY: user-confirmed native Reels-tab Repost for 90 seconds; formal D07C signoff still pending. New foreground-session toggle is NOT qualified and is never saved across activities.");
 
@@ -591,6 +606,7 @@ final class R1CD05FabPanel {
             toast("Manual confirmation noted; cannot verify another module");refresh();
         });
         enableRecovery = mainAction(recovery, "4B · Enable native Repost · 90 s max", () -> {
+            if(unsupportedVersion){toast("REFUSED: version override permits FAB diagnostics only");return;}
             if(!requireMode(R1CD09DiagnosticGate.Mode.REELS))return;
             if (!itmRecoveryOffAcknowledged) {
                 toast("REFUSED: do step 4A after Start A, then step 4B");return;
@@ -852,6 +868,10 @@ final class R1CD05FabPanel {
     }
     private void toggleSessionRepost(CompoundButton control, boolean enabled) {
         if(settingPicker)return;
+        if(enabled && unsupportedVersion){
+            settingPicker=true;control.setChecked(false);settingPicker=false;
+            toast("REFUSED: unsupported Instagram version · native Repost OFF");return;
+        }
         if(!enabled){
             if(R1CD07Recovery.isSessionMode())R1CD07GateTrace.stopExactTrial();
             itmRecoveryOffAcknowledged=false;refresh();return;
@@ -1115,11 +1135,11 @@ final class R1CD05FabPanel {
                 selectedMode!=R1CD09DiagnosticGate.Mode.PASSIVE &&
                 selectedMode!=R1CD09DiagnosticGate.Mode.REELS &&
                 selectedMode!=R1CD09DiagnosticGate.Mode.AB?View.VISIBLE:View.GONE);
-        if(keepRepost!=null)keepRepost.setEnabled(R1CD07Recovery.isSessionMode() ||
+        if(keepRepost!=null)keepRepost.setEnabled(!unsupportedVersion && (R1CD07Recovery.isSessionMode() ||
                 (!on && R1CD09DiagnosticGate.active(R1CD09DiagnosticGate.Mode.REELS)
                 && observingA && itmRecoveryOffAcknowledged &&
                 R1CD07ExactGateTrial.eligibleForHF13Recovery() &&
-                R1BContextMonitor.stableScreen()==R1BNavigationPolicy.Screen.REELS));
+                R1BContextMonitor.stableScreen()==R1BNavigationPolicy.Screen.REELS)));
         if(keepRepost!=null && keepRepost.isChecked()!=R1CD07Recovery.isSessionMode()) {
             settingPicker=true;keepRepost.setChecked(R1CD07Recovery.isSessionMode());settingPicker=false;
         }
@@ -1127,7 +1147,7 @@ final class R1CD05FabPanel {
         if(compareStartA!=null)compareStartA.setEnabled(R1CD09DiagnosticGate.active(R1CD09DiagnosticGate.Mode.AB)
                 && !R1CD07GateTrace.recording() && R1CD07GateTrace.cohortEvents(0)==0
                 && !on && R1CD07GateTrace.ready());
-        if (enableRecovery != null) enableRecovery.setEnabled(!on && R1CD09DiagnosticGate.active(R1CD09DiagnosticGate.Mode.REELS)
+        if (enableRecovery != null) enableRecovery.setEnabled(!on && !unsupportedVersion && R1CD09DiagnosticGate.active(R1CD09DiagnosticGate.Mode.REELS)
                 && R1CD07GateTrace.ready() && InstaActionsEntry.dataGateReady()
                 && R1BContextMonitor.stableScreen()==R1BNavigationPolicy.Screen.REELS
                 && observingA && R1CD07ExactGateTrial.eligibleForHF13Recovery()

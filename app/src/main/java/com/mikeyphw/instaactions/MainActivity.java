@@ -22,6 +22,7 @@ import android.view.WindowInsets;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Switch;
 
 /**
  * D07 UX02 ordered information screen. Installed package versions are informational,
@@ -87,6 +88,36 @@ public final class MainActivity extends Activity {
         add(status, "Instagram: " + installedVersion(ModuleConstants.TARGET_PACKAGE), 14, WHITE, false);
         add(status, "InstaEclipse: " + installedVersion("ps.reso.instaeclipse"), 14, WHITE, false);
         add(status, "Vector / LSPosed module enabled: NOT VERIFIED from this screen", 13, AMBER, false);
+
+        // D20: user-controlled, app-private policy. This does NOT bypass the
+        // native Repost/D04 exact-build checks, only the floating FAB's version gate.
+        LinearLayout fabGateCard=card("FAB visibility · Instagram version override");
+        add(fabGateCard,"The IA button normally requires Instagram 455.0.0.8.72. If Instagram updated, enable this to TRY showing the diagnostic FAB anyway. This does NOT enable Repost, DexKit native actions or unqualified hooks.",14,AMBER,false);
+        Switch fabVersionOverride=new Switch(this);
+        fabVersionOverride.setText("Ignore Instagram version for FAB (UI only)");
+        fabVersionOverride.setTextColor(WHITE);
+        fabVersionOverride.setTextSize(15);
+        fabVersionOverride.setPadding(dp(10),dp(12),dp(10),dp(12));
+        fabVersionOverride.setChecked(R1CD20FabOverrideStore.enabled(this));
+        fabGateCard.addView(fabVersionOverride);
+        TextView versionOverrideStatus=add(fabGateCard,
+            fabVersionOverride.isChecked()?"Enabled · unsupported builds: diagnostic-only FAB":
+                    "Disabled · original exact-version requirement",14,DETAIL,false);
+        final boolean[] restoringToggle={false};
+        fabVersionOverride.setOnCheckedChangeListener((button,enabled)->{
+            if(restoringToggle[0])return;
+            if(!R1CD20FabOverrideStore.setEnabled(this,enabled)){
+                restoringToggle[0]=true;
+                button.setChecked(!enabled);
+                restoringToggle[0]=false;
+                versionOverrideStatus.setText("Unable to save preference · unchanged");
+                return;
+            }
+            versionOverrideStatus.setText(enabled?
+                "Enabled · return to Instagram to try IA diagnostics FAB; native recovery OFF":
+                "Disabled · exact Instagram 455 gate restored on next Activity resume");
+        });
+        add(fabGateCard,"If it still doesn't appear, verify Vector scope and use Copy FAB logs. Changing this setting cannot load a missing Vector hook. Restart Instagram if needed.",13,DETAIL,false);
 
         LinearLayout fabLogCard=card("FAB Diagnostics · visible even without the IA chip");
         add(fabLogCard,"Live hook/Activity/attachment evidence reported from Instagram. No IA floating button is required to read or copy these logs.",14,DETAIL,false);
