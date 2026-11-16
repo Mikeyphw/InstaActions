@@ -107,7 +107,7 @@ final class R1CD14NativeOriginProbe {
     static synchronized String brief(){return "D14_NATIVE_REEL_SOURCE="+last+" status="+status;}
     static synchronized String report() {
         StringBuilder b=new StringBuilder("D14 INSTA ECLIPSE / IG455 NATIVE REEL-ORIGIN CORRELATION (PASSIVE, READ ONLY)\n");
-        b.append("IG455_APK_SHA256=fb6ca8c21d909d95892e67339746b8fe43f409a9dea11f87d9ab0cee8e97c5b6\n")
+        b.append("IG455_APK_PIN=EXACT_D04_HASH_APPROVED_VARIANT_NOT_ACTUAL_HASH\n")
             .append("UPSTREAM_SOURCE=ReSo7200/InstaEclipse ee1c81cadfbc.. (relevant files identical to e19ab0def..)\n")
             .append("HOOK=REUSE_EXISTING_D04_X07EF_A05 NONE_ADDED status=").append(status).append('\n')
             .append("NATIVE_SOURCE_COMES_FROM_X07EF_A08_CONFIG_A00_ENUM; ONLY OBSERVED WHEN REELS OPTIONS BUILDER RUNS\n")

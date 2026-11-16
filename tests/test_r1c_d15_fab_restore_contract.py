@@ -7,17 +7,19 @@ ENTRY=(J/'InstaActionsEntry.java').read_text()
 FAB=(J/'R1CD05FabPanel.java').read_text()
 BRIDGE=(J/'R1CD12AndroidBridge.java').read_text()
 class FabRecovery(unittest.TestCase):
+    # D15's historical FAB remains source-preserved for future regressions,
+    # but the live entry + framework bridge must now attach ONLY RCA01.
     def test_attach_before_all_optional_probes(self):
         resume=ENTRY.split('hook(resumed).intercept(chain -> {',1)[1].split('for (String method :',1)[0]
-        self.assertLess(resume.index('R1CD05FabPanel.onResumed((Activity) owner)'),resume.index('R1CD12AndroidBridge.install((Activity) owner)'))
-        self.assertLess(resume.index('R1CD05FabPanel.onResumed((Activity) owner)'),resume.index('R1CDiscoveryController.onActivityResumed((Activity) owner'))
-        self.assertLess(resume.index('R1CD05FabPanel.onResumed((Activity) owner)'),resume.index('R1CD04PassiveProbe.onActivityResumed((Activity) owner'))
-        self.assertEqual(resume.count('R1CD05FabPanel.onResumed((Activity) owner)'),1)
+        self.assertLess(resume.index('R1CRCA01Fab.onResumed((Activity) owner)'),resume.index('R1CD12AndroidBridge.install((Activity) owner)'))
+        self.assertLess(resume.index('R1CRCA01Fab.onResumed((Activity) owner)'),resume.index('R1CDiscoveryController.onActivityResumed((Activity) owner'))
+        self.assertLess(resume.index('R1CRCA01Fab.onResumed((Activity) owner)'),resume.index('R1CD04PassiveProbe.onActivityResumed((Activity) owner'))
+        self.assertEqual(resume.count('R1CRCA01Fab.onResumed((Activity) owner)'),1)
         self.assertIn('INA_FAB_ATTACH_EXCEPTION type=',resume)
         self.assertNotIn('catch (Throwable ignored) { /* FAB is strictly optional. */ }',resume)
     def test_separate_android_lifecycle_fallback(self):
         self.assertIn('registerActivityLifecycleCallbacks(INSTANCE)',BRIDGE)
-        self.assertIn('R1CD05FabPanel.onResumed(activity)',BRIDGE)
+        self.assertIn('R1CRCA01Fab.onResumed(activity)',BRIDGE)
         self.assertIn('INA_FAB_FRAMEWORK_RETRY_FAILED',BRIDGE)
         self.assertIn('R1CD12AccountLifecycle.lifecycleResumed();',BRIDGE)
     def test_missing_or_orphaned_fab_not_false_positive(self):

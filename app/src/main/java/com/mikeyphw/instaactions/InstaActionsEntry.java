@@ -81,6 +81,11 @@ public final class InstaActionsEntry extends XposedModule {
                             R1CD07PredicateTrace.note(R1CD07PredicateTrace.ELIGIBILITY, original);
                             R1CD07PredicateTrace.noteDataReceiver(chain.getThisObject(),
                                     method.getDeclaringClass());
+                            Object arg=chain.getArg(0);
+                            if(arg instanceof Integer && ((Integer)arg).intValue()==0xdf82522e
+                                    && R1CD07GateTrace.recording())
+                                R1CRCA01GateLedger.record(R1CD07GateTrace.activeIndex(),
+                                    R1CRCA01GateLedger.Site.EXACT_D3R_ORIGINAL,original);
                             return R1CD07PredicateTrace.noteExactData(chain.getArg(0),original);
                         } catch(Throwable ignored) {
                             R1CD07Recovery.onHookFailure();
@@ -100,11 +105,57 @@ public final class InstaActionsEntry extends XposedModule {
         catch(Throwable failed) {d07Failed++;R1CD07Recovery.onHookFailure();}
     }
 
+    /**
+     * RCA01: two source-pinned Media accessor observations after exact D04 APK
+     * attestation. Neither observer calls model methods beyond original proceed.
+     * Results are aggregated ONLY during a tester-labeled A/B capture.
+     */
+    private void installRca01MediaHooks(ClassLoader loader) {
+        int success=0;
+        try {
+            Class<?> media=Class.forName("com.instagram.feed.media.Media",false,loader);
+            Method getter=media.getDeclaredMethod("A3x");
+            if(getter.getReturnType()!=Boolean.class || getter.getParameterTypes().length!=0)
+                throw new NoSuchMethodException("IG455 Media.A3x() shape mismatch");
+            hook(getter).setId("ina-rca01-media-get-original")
+                .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+                .intercept(chain -> {
+                    Object original=chain.proceed();
+                    try {R1CRCA01GateLedger.record(
+                        R1CD07GateTrace.recording()?R1CD07GateTrace.activeIndex():-1,
+                        R1CRCA01GateLedger.Site.MEDIA_GET_ORIGINAL,original);}
+                    catch(Throwable ignored) { /* no effect on Instagram */ }
+                    return original;
+                });
+            success|=1;
+            Method setter=media.getDeclaredMethod("AFV",Boolean.class);
+            if(setter.getReturnType()!=void.class)
+                throw new NoSuchMethodException("IG455 Media.AFV(Boolean) shape mismatch");
+            hook(setter).setId("ina-rca01-media-set-argument-readonly")
+                .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+                .intercept(chain -> {
+                    Object original=chain.proceed(); // always honor native success/exception
+                    try {R1CRCA01GateLedger.record(
+                        R1CD07GateTrace.recording()?R1CD07GateTrace.activeIndex():-1,
+                        R1CRCA01GateLedger.Site.MEDIA_SET_ARGUMENT_AFTER_SUCCESS,chain.getArg(0));}
+                    catch(Throwable ignored) { /* never affect native state */ }
+                    return original;
+                });
+            success|=2;
+        } catch(Throwable unavailable) {
+            Log.i("INA_RCA01","INA_RCA01_MEDIA_OBSERVER_PARTIAL type="+
+                    unavailable.getClass().getSimpleName());
+        }
+        R1CRCA01GateLedger.mediaHooks(success==3?"READY_GET_AND_SET":
+                success==1?"PARTIAL_GET_ONLY":success==2?"PARTIAL_SET_ONLY":"UNAVAILABLE");
+    }
+
     private void installD07(ClassLoader loader) {
         if (!R1CD04PassiveProbe.isInstalled()) {
             R1CD07GateTrace.setStatus("REFUSED: D04 exact-build attestation absent");
             return;
         }
+        installRca01MediaHooks(loader);
         StringBuilder unavailable = new StringBuilder();
         try {
             R1CD07GateTrace.setInputPresence(R1CD07InputPresence.preflight(loader));
@@ -127,6 +178,11 @@ public final class InstaActionsEntry extends XposedModule {
                     }
                     try {
                         Object result=chain.proceed(); // original once, preserve throws
+                        if(frame!=null) {
+                            try {R1CRCA01GateLedger.recordUi(R1CD07GateTrace.activeIndex(),
+                                    R1CD07PredicateTrace.classify(result));}
+                            catch(Throwable ignored) { /* only primitive status */ }
+                        }
                         R1CD07GateTrace.leaveUi(frame,result);
                         frame=null;
                         try {return R1CD07GateTrace.noteUi(chain.getThisObject(),result);}
@@ -169,6 +225,11 @@ public final class InstaActionsEntry extends XposedModule {
                     if (!R1CD07PredicateTrace.inRepostFrame()) return original;
                     try {
                         R1CD07PredicateTrace.note(R1CD07PredicateTrace.MOBILE_CONFIG,original);
+                        Object key=chain.getArg(0);
+                        if(key instanceof Long && ((Long)key).longValue()==0x0081089a0045309dL
+                                && R1CD07GateTrace.recording())
+                            R1CRCA01GateLedger.record(R1CD07GateTrace.activeIndex(),
+                                R1CRCA01GateLedger.Site.MOBILECONFIG_FIRST_KEY_ORIGINAL,original);
                         // Trial cannot be user-armed. Keep first config unmodified.
                     } catch(Throwable ignored) { }
                     return original;
@@ -272,7 +333,7 @@ public final class InstaActionsEntry extends XposedModule {
                         // FAB is independent of all optional diagnostic probes.
                         // Attach FIRST: no DexKit, lifecycle, or auto-sampler
                         // failure may suppress the user's recovery controls.
-                        try { R1CD05FabPanel.onResumed((Activity) owner); }
+                        try { R1CRCA01Fab.onResumed((Activity) owner); }
                         catch (Throwable fabFailure) {
                             diagnostic("INA_FAB_ATTACH_EXCEPTION type="
                                     + fabFailure.getClass().getSimpleName());
@@ -322,7 +383,7 @@ public final class InstaActionsEntry extends XposedModule {
                                                     }
                                                 });
                                     });
-                            diagnostic("INA_FAB_ATTACH_STATUS " + R1CD05FabPanel.attachStatus());
+                            diagnostic("INA_FAB_ATTACH_STATUS " + R1CRCA01Fab.attachStatus());
                             R1CD16FabEvents.emit((Activity)owner,"HOOK_READY","ONRESUME_CHAIN_COMPLETED");
                         }
                     }
@@ -345,7 +406,7 @@ public final class InstaActionsEntry extends XposedModule {
                                 catch(Throwable ignored) { /* Optional passive sampler. */ } }
                             finally {
                                 R1CD04PassiveProbe.paused();
-                                try { R1CD05FabPanel.onLeaving((Activity) owner); }
+                                try { R1CRCA01Fab.onLeaving((Activity) owner); }
                                 catch (Throwable ignored) { /* Optional UI teardown. */ }
                             }
                         }

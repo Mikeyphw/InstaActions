@@ -29,8 +29,10 @@ class Fab01Contract(unittest.TestCase):
         session = (JAVA/'R1CD05FabSession.java').read_text()
         self.assertIn('R1CD05FabPanel.record(safeScreen, continuityResult,',src)
         self.assertIn('return observation.proceed();',entry)
-        self.assertIn('R1CD05FabPanel.onResumed',entry)
-        self.assertIn('R1CD05FabPanel.onLeaving',entry)
+        self.assertIn('R1CRCA01Fab.onResumed',entry)
+        self.assertIn('R1CRCA01Fab.onLeaving',entry)
+        self.assertNotIn('R1CD05FabPanel.onResumed',entry)
+        self.assertNotIn('R1CD05FabPanel.onLeaving',entry)
         self.assertIn('MAX_WINDOW_MS = 60_000L',session)
         self.assertIn('MEDIA_IDENTITY=NOT_VERIFIED',session)
         for forbidden in ('.getId(', '.getCaption(', '.getUsername(',

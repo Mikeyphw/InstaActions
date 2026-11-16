@@ -5,6 +5,10 @@ public final class R1CD04Policy {
     static final String TARGET_VERSION = "455.0.0.8.72";
     static final String TARGET_APK_SHA256 =
             "fb6ca8c21d909d95892e67339746b8fe43f409a9dea11f87d9ab0cee8e97c5b6";
+    // User's APKM has the same bytecode for qualified native Repost pathways,
+    // but a distinct full base.apk hash. Never accept by version alone.
+    static final String RCA01_APKM_BASE_SHA256 =
+            "4f5bc1bd5e7b2be6e0634200d01926ddea1096c6fc780312fe0452ef66d28c0a";
     static final long TARGET_APK_BYTES = 238346353L;
     static final long MAX_HASH_BYTES = 320L * 1024L * 1024L;
     static final int MAX_DECLARED_METHODS = 256;
@@ -14,6 +18,7 @@ public final class R1CD04Policy {
     private R1CD04Policy() { throw new AssertionError("No instances"); }
 
     static boolean validBuild(String version, String digest) {
-        return TARGET_VERSION.equals(version) && TARGET_APK_SHA256.equals(digest);
+        return TARGET_VERSION.equals(version) &&
+                (TARGET_APK_SHA256.equals(digest) || RCA01_APKM_BASE_SHA256.equals(digest));
     }
 }
