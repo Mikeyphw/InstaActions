@@ -1,0 +1,49 @@
+#!/usr/bin/env python3
+"""Hosted proof of packaged R1C-D01 discovery only, not runtime acceptance."""
+import argparse
+from pathlib import Path
+import zipfile
+
+def check(apk:Path):
+    with zipfile.ZipFile(apk) as z:
+        dexes=[n for n in z.namelist() if n.endswith('.dex')]
+        assert dexes, 'R1C: APK has no DEX'
+        blob=b''.join(z.read(n) for n in dexes)
+        for token in (b'R1CDiscoveryPolicy', b'R1CDiscoveryController',
+                b'R1CMediaCandidateProbe', b'R1CStaticShapeProbe', b'R1CModernReelsPolicy', b'R1CD04Policy', b'R1CD04PassiveProbe', b'R1CD05ReferenceContinuity', b'R1CD05FabPanel',
+                b'R1CD05FabSession', b'INA_D05_FAB_REPORT_V1', b'R1CD06MenuOwnership', b'INA_R1C_D06_OWNER', b'R1CD06VisiblePageBinding', b'R1CD06DirectViewMedia', b'INA_R1C_D06_VISIBLE_PAGE', b'INA_D06_VISIBLE_PAGE_REPORT_V1', b'R1CD06ViewPreflight', b'INA_D06_DEEP_DIAGNOSIS_V1', b'INA_D06_STRUCTURAL_PREFLIGHT_REPORT_V1', b'R1CD06PreMenuReconciliation', b'R1CD06PreMenuPolicy', b'INA_D06_PREMENU_RECONCILIATION_V1', b'INA_R1C_D06_PREMENU', b'PREMENU_MEDIA_MATCH_CANDIDATE', b'R1CD06UpstreamConformance', b'INA_D06_INSTAECLIPSE_SOURCE_CONFORMANCE_V1', b'ClipsViewPagerImpl_getViewAtIndex', b'PLAYBACK_CONTROLS', b'UNSAVE', b'INA_D06_MENU_OWNER_REPORT_V1', b'INA_R1C_D04_HOOK', b'INA_R1C_D04_EVENT', b'INA_R1C_D05_REFERENCE', b'INA_R1C_DIRECT_REELS', b'INA_R1C_MODEL',
+                b'INA_R1C_ANCHOR', b'INA_R1C_SHAPE', b'INA_R1C_SUMMARY',
+                b'identity_verified=false binding_hooks=off actions=off',
+                b'R1BNavigationPolicy', b'R1CD07Recovery', b'R1CD07GateTrace',
+                b'R1CD07PredicateTrace', b'R1CD07ActualDataTarget',
+                b'R1CD07UxGuide', b'R1CD07ComparisonFlow', b'R1CD08MediaEvidence',
+                b'R1CD08FeedAudit', b'R1CD09DiagnosticGate',
+                b'R1CD09AccountSentinel', b'R1CD10ComparisonFlow', b'R1CD10PassiveLedger',
+                b'R1CD10ReportArchive', b'R1CD10AvatarAudit', b'SESSION ON', b'D09 ACCOUNT CHANGE SIGNAL',
+                b'Finish current diagnostic', b'CHOOSE ONE DIAGNOSTIC', b'Copy ALL diagnostics',
+                b'Export ALL diagnostics', b'PASSIVE DIAGNOSTICS',
+                b'FEATURE_EVIDENCE A_explicit=', b'ACCOUNT_EVENT_ORDER (bounded)',
+                b'ARCHIVE_INCOMPLETE', b'R1CD12AccountLifecycle',
+                b'R1CD12AndroidBridge', b'D12 INDEPENDENT ACCOUNT-SWITCH',
+                b'ina-d12-android-new-intent-', b'AUTO_REARM=FORBIDDEN',
+                b'D08_MEDIA_IDENTITY=NOT_VERIFIED',
+                b'D08A FEED REPOST VISIBLE-LABEL AUDIT', b'D08 X.02ib EXACT CONFIG', b'CURRENT STATUS',
+                b'STEP 1 OF 5', b'STEP 5 OF 5',
+                b'R1CD19RootWatchService', b'R1CD19LiveTrace', b'INA D19 LIVE ROOT FAB MONITOR', b'R1CD20FabGatePolicy', b'R1CD20FabOverrideStore',
+                b'R1CD20FabPolicyProvider', b'R1CD20FabVersionSwitch',
+                b'Ignore Instagram version for FAB', b'VERSION_OVERRIDE_UI_ONLY',
+                b'R1CD17AutoRootDiagnostics', b'R1CD17RootLogParser', b'INA_D18_PS', b'HISTORICAL_UNVERIFIED_MARKERS_ONLY', b'pidof_main_count=',
+                b'Automatic Root FAB Diagnostics', b'ROOT_NOT_GRANTED_OR_SU_UNAVAILABLE',
+                b'R1CD16FabEvents', b'R1CD16LogReceiver', b'R1CD16LogStore',
+                b'R1CD16MainSurface', b'R1CD16AnchorPolicy',
+                b'INA_FAB_EVIDENCE', b'Copy FAB logs', b'Export FAB logs',
+                b'INA_D07_REPOST_EXACT_APK_A_B_TRACE',
+                b'ina-d07-repost-ui-selector4', b'ina-d07-verified-d3r-'):
+            assert token in blob, f'R1C missing DEX marker {token!r}'
+        assert z.read('META-INF/xposed/scope.list').decode().strip() == 'com.instagram.android'
+    print('INA_R1C_D04_HOSTED_PACKAGING_PASS (live media identity NOT_RUN)')
+
+if __name__=='__main__':
+    p=argparse.ArgumentParser()
+    p.add_argument('--apk', type=Path,required=True)
+    check(p.parse_args().apk)

@@ -1,11 +1,16 @@
 package com.mikeyphw.instaactions;
 
 import android.app.Activity;
+import android.app.Instrumentation;
+import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.util.Log;
 import java.lang.reflect.Method;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import io.github.libxposed.api.XposedModule;
+import io.github.libxposed.api.XposedInterface;
 
 /**
  * Vector API 102 R1B. Diagnostic callbacks are deliberately before any scope
@@ -16,6 +21,314 @@ public final class InstaActionsEntry extends XposedModule {
     private static final AtomicBoolean FIRST_RESUME = new AtomicBoolean(false);
     private String processName = "";
     private String moduleNativeLibDir;
+    // D07 is independent of D06: manual opt-in native UI-eligibility recovery.
+    private static volatile InstaActionsEntry live;
+    private volatile ClassLoader d07Loader;
+    private final AtomicBoolean d07Requested = new AtomicBoolean(false);
+    private volatile R1CD07ActualDataTarget d07DataTarget;
+    private final Set<Method> d07HookedMethods = new HashSet<>();
+    private volatile int d07Installed, d07Failed, d07Attempted, d07ResolveMisses;
+    private static final int D07_MAX_DATA_HOOKS = 3;
+
+    static void requestD07(Activity activity) {
+        InstaActionsEntry module = live;
+        if (module == null || activity == null ||
+                !ModuleConstants.TARGET_PACKAGE.equals(activity.getPackageName()) ||
+                !R1CD04PassiveProbe.isInstalled() || module.d07Loader == null ||
+                !module.d07Requested.compareAndSet(false, true)) return;
+        Thread worker = new Thread(() -> module.installD07(module.d07Loader),
+                "ina-d07-repost-install");
+        worker.setDaemon(true);
+        try { worker.start(); }
+        catch (Throwable failure) {
+            R1CD07GateTrace.setStatus("REFUSED: D07 worker failed");
+            R1CD07Recovery.onHookFailure();
+        }
+    }
+
+    static boolean dataGateReady() {
+        InstaActionsEntry m = live;
+        return m != null && m.d07Installed > 0 && m.d07Failed == 0;
+    }
+    static String dataGateStatus() {
+        InstaActionsEntry m = live;
+        if (m == null) return "D07 actual D3r receiver: NOT_LOADED";
+        return "D07 actual D3r receiver: attempted=" + m.d07Attempted
+                + " installed=" + m.d07Installed + " failures=" + m.d07Failed
+                + " unresolved=" + m.d07ResolveMisses + " limit=" + D07_MAX_DATA_HOOKS;
+    }
+
+    private synchronized void maybeHookActualD07(Object selectorInstance) {
+        R1CD07ActualDataTarget resolver = d07DataTarget;
+        if (resolver == null || d07Attempted >= D07_MAX_DATA_HOOKS) return;
+        Method method = resolver.resolve(selectorInstance);
+        if (method == null) {
+            if (d07ResolveMisses < 256) d07ResolveMisses++;
+            return;
+        }
+        if (d07HookedMethods.contains(method)) return;
+        d07HookedMethods.add(method);
+        int ordinal = d07Attempted++;
+        // Don't mutate ART hook tables while the original selector is executing.
+        Thread installer = new Thread(() -> {
+            try {
+                hook(method).setId("ina-d07-verified-d3r-" + ordinal)
+                    .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+                    .intercept(chain -> {
+                        Object original = chain.proceed(); // exactly once
+                        if (!R1CD07PredicateTrace.inRepostFrame()) return original;
+                        try {
+                            R1CD07PredicateTrace.note(R1CD07PredicateTrace.ELIGIBILITY, original);
+                            R1CD07PredicateTrace.noteDataReceiver(chain.getThisObject(),
+                                    method.getDeclaringClass());
+                            Object arg=chain.getArg(0);
+                            if(arg instanceof Integer && ((Integer)arg).intValue()==0xdf82522e
+                                    && R1CD07GateTrace.recording())
+                                R1CRCA01GateLedger.record(R1CD07GateTrace.activeIndex(),
+                                    R1CRCA01GateLedger.Site.EXACT_D3R_ORIGINAL,original);
+                            if(arg instanceof Integer && ((Integer)arg).intValue()==0xdf82522e
+                                    && R1CRCA02LineageLedger.activePass()>=0)
+                                R1CRCA02LineageLedger.d3r(original);
+                            return R1CD07PredicateTrace.noteExactData(chain.getArg(0),original);
+                        } catch(Throwable ignored) {
+                            R1CD07Recovery.onHookFailure();
+                            return original;
+                        }
+                    });
+                d07Installed++;
+            } catch(Throwable failed) {
+                d07Failed++;
+                R1CD07Recovery.onHookFailure();
+                Log.w("INA_D07", "INA_D07_DATA_HOOK_FAILED type="
+                        + failed.getClass().getSimpleName());
+            }
+        }, "ina-d07-d3r-" + ordinal);
+        installer.setDaemon(true);
+        try {installer.start();}
+        catch(Throwable failed) {d07Failed++;R1CD07Recovery.onHookFailure();}
+    }
+
+    /**
+     * RCA01: two source-pinned Media accessor observations after exact D04 APK
+     * attestation. Neither observer calls model methods beyond original proceed.
+     * Results are aggregated ONLY during a tester-labeled A/B capture.
+     */
+    private void installRca01MediaHooks(ClassLoader loader) {
+        int success=0;
+        try {
+            Class<?> media=Class.forName("com.instagram.feed.media.Media",false,loader);
+            Method getter=media.getDeclaredMethod("A3x");
+            if(getter.getReturnType()!=Boolean.class || getter.getParameterTypes().length!=0)
+                throw new NoSuchMethodException("IG455 Media.A3x() shape mismatch");
+            hook(getter).setId("ina-rca01-media-get-original")
+                .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+                .intercept(chain -> {
+                    Object original=chain.proceed();
+                    try {R1CRCA01GateLedger.record(
+                        R1CD07GateTrace.recording()?R1CD07GateTrace.activeIndex():-1,
+                        R1CRCA01GateLedger.Site.MEDIA_GET_ORIGINAL,original);
+                        R1CRCA02LineageLedger.mediaGet(chain.getThisObject(),original);}
+                    catch(Throwable ignored) { /* no effect on Instagram */ }
+                    return original;
+                });
+            success|=1;
+            Method setter=media.getDeclaredMethod("AFV",Boolean.class);
+            if(setter.getReturnType()!=void.class)
+                throw new NoSuchMethodException("IG455 Media.AFV(Boolean) shape mismatch");
+            hook(setter).setId("ina-rca01-media-set-argument-readonly")
+                .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+                .intercept(chain -> {
+                    Object original=chain.proceed(); // always honor native success/exception
+                    try {R1CRCA01GateLedger.record(
+                        R1CD07GateTrace.recording()?R1CD07GateTrace.activeIndex():-1,
+                        R1CRCA01GateLedger.Site.MEDIA_SET_ARGUMENT_AFTER_SUCCESS,chain.getArg(0));
+                        R1CRCA02LineageLedger.mediaSet(chain.getThisObject(),chain.getArg(0));}
+                    catch(Throwable ignored) { /* never affect native state */ }
+                    return original;
+                });
+            success|=2;
+        } catch(Throwable unavailable) {
+            Log.i("INA_RCA01","INA_RCA01_MEDIA_OBSERVER_PARTIAL type="+
+                    unavailable.getClass().getSimpleName());
+        }
+        R1CRCA01GateLedger.mediaHooks(success==3?"READY_GET_AND_SET":
+                success==1?"PARTIAL_GET_ONLY":success==2?"PARTIAL_SET_ONLY":"UNAVAILABLE");
+    }
+
+    /** Two IG455 DEX-verified direct caller scopes; no client/server payload read. */
+    private void installRca02WriterHooks(ClassLoader loader) {
+        boolean delta=false, legacy=false;
+        try {
+            Class<?> owner=Class.forName("X.06nv",false,loader);
+            Class<?> arg=Class.forName("X.06ck",false,loader);
+            Class<?> media=Class.forName("com.instagram.feed.media.Media",false,loader);
+            Method source=owner.getDeclaredMethod("A03",arg,boolean.class);
+            if(source.getReturnType()!=media || !java.lang.reflect.Modifier.isStatic(source.getModifiers()))
+                throw new NoSuchMethodException("IG455 X.06nv.A03 exact shape changed");
+            hook(source).setId("ina-rca02-source-x06nv-A03")
+                .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+                .intercept(chain -> {
+                    int previous=R1CRCA02LineageLedger.enterWriter(
+                            R1CRCA02LineageLedger.DELTA_MERGE_OR_FALLBACK);
+                    try {return chain.proceed();}
+                    finally {R1CRCA02LineageLedger.leaveWriter(previous);}
+                });
+            delta=true;
+        } catch(Throwable unavailable) {
+            Log.i("INA_RCA02","INA_RCA02_X06NV_SOURCE_UNAVAILABLE type="+
+                    unavailable.getClass().getSimpleName());
+        }
+        try {
+            Class<?> owner=Class.forName("X.043F",false,loader);
+            Method source=owner.getDeclaredMethod("A00",owner);
+            if(source.getReturnType()!=void.class || !java.lang.reflect.Modifier.isStatic(source.getModifiers()))
+                throw new NoSuchMethodException("IG455 X.043F.A00 exact shape changed");
+            hook(source).setId("ina-rca02-source-x043f-A00")
+                .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+                .intercept(chain -> {
+                    int previous=R1CRCA02LineageLedger.enterWriter(
+                            R1CRCA02LineageLedger.LEGACY_FIELD_COPY);
+                    try {return chain.proceed();}
+                    finally {R1CRCA02LineageLedger.leaveWriter(previous);}
+                });
+            legacy=true;
+        } catch(Throwable unavailable) {
+            Log.i("INA_RCA02","INA_RCA02_X043F_SOURCE_UNAVAILABLE type="+
+                    unavailable.getClass().getSimpleName());
+        }
+        R1CRCA02LineageLedger.writerStatus(delta,legacy);
+    }
+
+    private void installD07(ClassLoader loader) {
+        if (!R1CD04PassiveProbe.isInstalled()) {
+            R1CD07GateTrace.setStatus("REFUSED: D04 exact-build attestation absent");
+            return;
+        }
+        installRca02WriterHooks(loader);
+        installRca01MediaHooks(loader);
+        StringBuilder unavailable = new StringBuilder();
+        try {
+            R1CD07GateTrace.setInputPresence(R1CD07InputPresence.preflight(loader));
+        } catch(Throwable e) {R1CD07GateTrace.setInputPresence(null);unavailable.append("input;");}
+        try {
+            R1CD07GateTrace.setBranchInputs(R1CD07BranchInputs.preflight(loader));
+        } catch(Throwable e) {R1CD07GateTrace.setBranchInputs(null);unavailable.append("data;");}
+        try {d07DataTarget=R1CD07ActualDataTarget.preflight(loader);}
+        catch(Throwable e) {d07DataTarget=null;unavailable.append("receiver;");}
+        try {
+            Method ui=R1CD07GateTrace.uiMethod(loader);
+            Method ufi=R1CD07GateTrace.ufiMethod(loader);
+            hook(ui).setId("ina-d07-repost-ui-selector4")
+                .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+                .intercept(chain -> {
+                    R1CD07PredicateTrace.Frame frame=R1CD07GateTrace.enterUi(chain.getThisObject());
+                    R1CRCA02LineageLedger.UiFrame rca02Frame=null;
+                    if(frame!=null) {
+                        try {rca02Frame=R1CRCA02LineageLedger.enterUi(
+                                R1CD07GateTrace.rca02DataPresence(chain.getThisObject()));}
+                        catch(Throwable ignored) { /* optional passive correlation */ }
+                    }
+                    if(frame != null) {
+                        try {maybeHookActualD07(chain.getThisObject());}
+                        catch(Throwable ignored) {R1CD07Recovery.onHookFailure();}
+                    }
+                    try {
+                        Object result=chain.proceed(); // original once, preserve throws
+                        if(frame!=null) {
+                            try {R1CRCA01GateLedger.recordUi(R1CD07GateTrace.activeIndex(),
+                                    R1CD07PredicateTrace.classify(result));}
+                            catch(Throwable ignored) { /* only primitive status */ }
+                        }
+                        if(rca02Frame!=null) {
+                            try {R1CRCA02LineageLedger.finishUi(rca02Frame,
+                                    R1CD07PredicateTrace.classify(result));}
+                            catch(Throwable ignored) { /* native result retained */ }
+                            finally {R1CRCA02LineageLedger.cancelUi(rca02Frame);rca02Frame=null;}
+                        }
+                        R1CD07GateTrace.leaveUi(frame,result);
+                        frame=null;
+                        try {return R1CD07GateTrace.noteUi(chain.getThisObject(),result);}
+                        catch(Throwable ignored) {return result;}
+                    } finally {
+                        R1CRCA02LineageLedger.cancelUi(rca02Frame);
+                        R1CD07GateTrace.leaveUi(frame,null);
+                    }
+                });
+            hook(ufi).setId("ina-d07-repost-ufi-selectors11-12")
+                .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+                .intercept(chain -> {
+                    Object result=chain.proceed();
+                    try {R1CD07GateTrace.noteUfi(chain.getThisObject(),result);}
+                    catch(Throwable ignored) { }
+                    return result;
+                });
+        } catch(Throwable failure) {
+            R1CD07GateTrace.setStatus("REFUSED: native selector hooks unavailable");
+            R1CD07Recovery.onHookFailure();
+            Log.w("INA_D07","INA_D07_HOOK_FAILED type="+failure.getClass().getSimpleName());
+            return;
+        }
+        int optional=0;
+        try {
+            Method factory=R1CD07FactoryTarget.resolve(loader);
+            hook(factory).setId("ina-d07-repost-factory-readonly")
+                .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+                .intercept(chain -> {
+                    Object original=chain.proceed();
+                    try {R1CD07PredicateTrace.noteFactory(original);}
+                    catch(Throwable ignored) { }
+                    return original;
+                });
+            optional++;
+        } catch(Throwable e) {unavailable.append("factory;");}
+        try {
+            Method config=R1CD07GateTrace.mobileConfigMethod(loader);
+            hook(config).setId("ina-d07-repost-config-readonly")
+                .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+                .intercept(chain -> {
+                    Object original=chain.proceed();
+                    if (!R1CD07PredicateTrace.inRepostFrame()) return original;
+                    try {
+                        R1CD07PredicateTrace.note(R1CD07PredicateTrace.MOBILE_CONFIG,original);
+                        Object key=chain.getArg(0);
+                        if(key instanceof Long && ((Long)key).longValue()==0x0081089a0045309dL
+                                && R1CD07GateTrace.recording())
+                            R1CRCA01GateLedger.record(R1CD07GateTrace.activeIndex(),
+                                R1CRCA01GateLedger.Site.MOBILECONFIG_FIRST_KEY_ORIGINAL,original);
+                        if(key instanceof Long && ((Long)key).longValue()==0x0081089a0045309dL
+                                && R1CRCA02LineageLedger.activePass()>=0)
+                            R1CRCA02LineageLedger.config(original);
+                        // Trial cannot be user-armed. Keep first config unmodified.
+                    } catch(Throwable ignored) { }
+                    return original;
+                });
+            optional++;
+        } catch(Throwable e) {unavailable.append("config;");}
+        try {
+            Method session=R1CD07GateTrace.sessionCheckMethod(loader);
+            hook(session).setId("ina-d07-repost-session-check-readonly")
+                .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+                .intercept(chain -> {
+                    Object original=chain.proceed();
+                    try {
+                        R1CD09AccountSentinel.observe(chain.getArg(0));
+                        R1CD07PredicateTrace.note(R1CD07PredicateTrace.SESSION_CHECK,original);
+                    }
+                    catch(Throwable ignored) { }
+                    return original;
+                });
+            optional++;
+        } catch(Throwable e) {unavailable.append("session;");}
+        boolean deopt=false;
+        try {deopt=deoptimize(R1CD07GateTrace.uiMethod(loader));}
+        catch(Throwable e) {unavailable.append("deopt;");}
+        R1CD07ExactGateTrial.setDeoptimized(deopt);
+        if(!deopt)R1CD07Recovery.onHookFailure();
+        R1CD07GateTrace.installed(optional,unavailable.toString());
+        Log.i("INA_D07", "INA_D07_SOURCE_READY exact_d04=true deopt=" + deopt
+                + " recovery=OFF media_identity=NOT_VERIFIED");
+    }
+
 
     public InstaActionsEntry() { super(); }
 
@@ -67,6 +380,9 @@ public final class InstaActionsEntry extends XposedModule {
         }
         final ApplicationInfo target = param.getApplicationInfo();
         final String targetApk = target == null ? null : target.sourceDir;
+        final ClassLoader instagramLoader = param.getClassLoader();
+        live = this;
+        d07Loader = instagramLoader;
         diagnostic("INA_DIAG_TARGET_APK_PRESENT value="
                 + (targetApk != null && !targetApk.isEmpty()));
         try {
@@ -80,11 +396,63 @@ public final class InstaActionsEntry extends XposedModule {
                         if (FIRST_RESUME.compareAndSet(false, true)) {
                             diagnostic("INA_DIAG_FIRST_ACTIVITY_RESUMED actions=off");
                         }
+                        R1CD16FabEvents.emit((Activity)owner,"RESUME_DISPATCH",
+                                "HOOK:"+((Activity)owner).getClass().getName());
+                        // FAB is independent of all optional diagnostic probes.
+                        // Attach FIRST: no DexKit, lifecycle, or auto-sampler
+                        // failure may suppress the user's recovery controls.
+                        try { R1CRCA01Fab.onResumed((Activity) owner); }
+                        catch (Throwable fabFailure) {
+                            diagnostic("INA_FAB_ATTACH_EXCEPTION type="
+                                    + fabFailure.getClass().getSimpleName());
+                            R1CD16FabEvents.emit((Activity)owner,"FAB_FAILURE",
+                                fabFailure.getClass().getName());
+                        }
                         try {
+                            R1CD12AndroidBridge.install((Activity) owner);
                             R1ProbeController.onActivityResumed((Activity) owner,
                                     targetApk, moduleNativeLibDir);
                         } finally {
                             R1BContextMonitor.resumed((Activity) owner);
+                            try {R1CD13AndroidSampler.resumed((Activity) owner);}
+                            catch(Throwable ignored) { /* Optional passive sampler must never block R1C. */ }
+                            // Independent, read-only metadata inventory. Not a media binding.
+                            R1CDiscoveryController.onActivityResumed((Activity) owner,
+                                    targetApk, moduleNativeLibDir, instagramLoader);
+                            // D04 installs one passive, exact-build-only method observer.
+                            // The interceptor NEVER alters arguments, return values or exceptions.
+                            R1CD04PassiveProbe.onActivityResumed((Activity) owner,
+                                    targetApk, moduleNativeLibDir, instagramLoader, (method, counter) -> {
+                                        // D14: source fields are pinned to exact IG455 DEX;
+                                        // reuse the D04 pass-through observer, no extra hook.
+                                        R1CD14NativeOriginProbe.prepare(instagramLoader);
+                                        hook(method)
+                                                .setId("ina-r1c-d04-reels-passive")
+                                                .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+                                                .intercept(observation -> {
+                                                    try {
+                                                        return observation.proceed();
+                                                    } finally {
+                                                        // The original exception propagates unchanged.
+                                                        // A probe failure must never escape this finally.
+                                                        try {
+                                                            // D14 failures must not suppress the existing D04 counter.
+                                                            try { R1CD14NativeOriginProbe.observe(
+                                                                    observation.getThisObject(),
+                                                                    R1BContextMonitor.stableScreen().name()); }
+                                                            catch(Throwable ignored) { }
+                                                            counter.observe(observation.getArg(1),
+                                                                    R1BContextMonitor.stableScreen(),
+                                                                    observation.getThisObject(),
+                                                                    observation.getArg(0));
+                                                        } catch (Throwable ignored) {
+                                                            // Fail closed: instrumentation cannot affect Instagram.
+                                                        }
+                                                    }
+                                                });
+                                    });
+                            diagnostic("INA_FAB_ATTACH_STATUS " + R1CRCA01Fab.attachStatus());
+                            R1CD16FabEvents.emit((Activity)owner,"HOOK_READY","ONRESUME_CHAIN_COMPLETED");
                         }
                     }
                 } catch (Throwable diagnosticFailure) {
@@ -96,10 +464,20 @@ public final class InstaActionsEntry extends XposedModule {
             for (String method : new String[] {"onPause", "onDestroy"}) {
                 Method leaving = Activity.class.getDeclaredMethod(method);
                 hook(leaving).intercept(chain -> {
+                    R1CD07Recovery.onActivityExit();
                     Object result = chain.proceed();
                     try {
                         Object owner = chain.getThisObject();
-                        if (owner instanceof Activity) R1BContextMonitor.paused((Activity) owner);
+                        if (owner instanceof Activity) {
+                            try { R1BContextMonitor.paused((Activity) owner);
+                                try {R1CD13AndroidSampler.paused((Activity) owner);}
+                                catch(Throwable ignored) { /* Optional passive sampler. */ } }
+                            finally {
+                                R1CD04PassiveProbe.paused();
+                                try { R1CRCA01Fab.onLeaving((Activity) owner); }
+                                catch (Throwable ignored) { /* Optional UI teardown. */ }
+                            }
+                        }
                     } catch (Throwable diagnosticFailure) {
                         diagnostic("INA_DIAG_DETACH_CALLBACK_FAILED type="
                                 + diagnosticFailure.getClass().getSimpleName());
@@ -107,6 +485,53 @@ public final class InstaActionsEntry extends XposedModule {
                     return result;
                 });
             }
+            // D12: independent Android framework new-intent dispatch signal.
+            // Hook the *Instrumentation* dispatch (also reaches Activity overrides),
+            // not a guessed Instagram account getter. Never inspect Intent extras,
+            // action, data, caller, or associated account information.
+            int d12IntentHooks=0;
+            boolean d12Two=false,d12Three=false;
+            try {
+                for(Method dispatch:Instrumentation.class.getDeclaredMethods()) {
+                    if(!"callActivityOnNewIntent".equals(dispatch.getName()) ||
+                       dispatch.getReturnType()!=void.class)continue;
+                    Class<?>[] types=dispatch.getParameterTypes();
+                    if((types.length!=2 && types.length!=3) ||
+                       types[0]!=Activity.class || types[1]!=Intent.class)continue;
+                    if(types.length==3 && !"android.app.ComponentCaller".equals(types[2].getName()))
+                        continue;
+                    final int arguments=types.length;
+                    try {
+                        hook(dispatch).setId("ina-d12-android-new-intent-"+arguments)
+                            .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+                            .intercept(chain -> {
+                                Object original=chain.proceed(); // dispatch EXACTLY once
+                                try {
+                                    Object owner=chain.getArg(0);
+                                    if(owner instanceof Activity &&
+                                       ModuleConstants.TARGET_PACKAGE.equals(((Activity)owner).getPackageName())) {
+                                            R1CD12AccountLifecycle.newIntentDelivered();
+                                            R1CD13AutoSurface.invalidatedByNewIntent();
+                                        }
+                                }catch(Throwable ignored){ /* never affect Instagram */ }
+                                return original;
+                            });
+                        d12IntentHooks++;
+                        if(arguments==2)d12Two=true;
+                        else d12Three=true;
+                    } catch(Throwable unavailableOverload) {
+                        diagnostic("INA_D12_NEW_INTENT_OVERLOAD_UNAVAILABLE arguments="+arguments);
+                    }
+                }
+            } catch(Throwable notAvailable) {
+                diagnostic("INA_D12_NEW_INTENT_HOOK_REFUSED reason=framework_binding_failed");
+            }
+            R1CD12AccountLifecycle.setIntentHookStatus(
+                d12Two && d12Three?"READY_2_AND_3_ARGUMENT_OVERLOADS":
+                d12Two?"READY_2_ARGUMENT_ONLY":
+                d12Three?"READY_3_ARGUMENT_ONLY":"UNAVAILABLE_FAIL_CLOSED");
+            diagnostic("INA_D12_NEW_INTENT_DISPATCH_HOOKS count="+d12IntentHooks+
+                " independent_of_repost=true account_identity=not_verified");
             diagnostic("INA_DIAG_HOOKS_INSTALLED lifecycle=resume_pause_destroy actions=off");
             Log.i("INA_R1B", "INA_R1B_LIFECYCLE_READY hooks=resume_pause_destroy"
                     + " action_hooks=0");

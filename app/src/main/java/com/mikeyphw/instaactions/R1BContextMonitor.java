@@ -70,6 +70,23 @@ final class R1BContextMonitor {
         return normalized.length() > 64 ? normalized.substring(0, 64) : normalized;
     }
 
+    /** Read only the current lifecycle-local stable screen. Multiple sessions fail closed.
+     * No Activity or user/media object is kept by the caller.
+     */
+    static R1BNavigationPolicy.Screen stableScreen() {
+        synchronized (SESSIONS) {
+            R1BNavigationPolicy.Screen current = R1BNavigationPolicy.Screen.UNKNOWN;
+            int activeCount = 0;
+            for (Session session : SESSIONS.values()) {
+                if (!session.active) continue;
+                if (++activeCount > 1) return R1BNavigationPolicy.Screen.UNKNOWN;
+                current = session.lastNavigation;
+            }
+            return activeCount == 1 && current != null
+                    ? current : R1BNavigationPolicy.Screen.UNKNOWN;
+        }
+    }
+
     static void paused(Activity activity) {
         if (activity == null) return;
         Session session;
@@ -90,11 +107,11 @@ final class R1BContextMonitor {
         private final boolean mainActivity;
         private final Handler ui = new Handler(Looper.getMainLooper());
         private final R1BNavigationStabilizer navigation = new R1BNavigationStabilizer();
-        private R1BNavigationPolicy.Screen lastNavigation;
+        private volatile R1BNavigationPolicy.Screen lastNavigation;
         private int lastNavEvidenceBits = -1;
         private int navEvidenceEmitted;
         private ViewTreeObserver observer;
-        private boolean active;
+        private volatile boolean active;
         private boolean pending;
         private long lastSampleMs;
         private R1BContextPolicy.Decision lastDecision;
@@ -144,6 +161,7 @@ final class R1BContextMonitor {
             ui.removeCallbacks(hintTimer);
             ui.removeCallbacks(navigationTimer);
             navigation.reset();
+            lastNavigation = R1BNavigationPolicy.Screen.UNKNOWN;
             if (observer != null && observer.isAlive()) {
                 observer.removeOnGlobalLayoutListener(this);
                 observer.removeOnScrollChangedListener(this);

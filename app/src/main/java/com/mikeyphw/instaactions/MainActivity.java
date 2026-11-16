@@ -1,37 +1,59 @@
 package com.mikeyphw.instaactions;
 
 import android.app.Activity;
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
+import android.content.Intent;
+import android.widget.Button;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.Gravity;
+import android.view.View;
+import android.widget.Spinner;
+import android.widget.ArrayAdapter;
+import android.widget.AdapterView;
 import android.view.ViewGroup;
 import android.view.WindowInsets;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Switch;
 
-/** R0 companion: informative only, no Vector enable-state claims. */
+/**
+ * D07 UX02 ordered information screen. Installed package versions are informational,
+ * not claims about Vector scope, hook readiness or D07C device acceptance.
+ */
 public final class MainActivity extends Activity {
+    private static final int BACKGROUND = 0xff0c1320;
+    private static final int CARD = 0xff1b2739;
+    private static final int BORDER = 0xff51667d;
+    private static final int WHITE = 0xfff9fbff;
+    private static final int DETAIL = 0xffd7e1ed;
+    private static final int BLUE = 0xff74c3ff;
+    private static final int AMBER = 0xffffd585;
+    private static final int GREEN = 0xff70ecbb;
     private LinearLayout root;
+    private TextView fabLogText;
+    private TextView fabLogSummary;
+    private TextView rootDiagnosticsText;
+    private TextView rootDiagnosticsStatus;
+    private TextView rootLiveWatchText;
 
-    @Override
-    protected void onCreate(Bundle state) {
+    @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
-        getWindow().setStatusBarColor(Color.rgb(15, 23, 42));
-        getWindow().setNavigationBarColor(Color.rgb(15, 23, 42));
-
+        getWindow().setStatusBarColor(BACKGROUND);
+        getWindow().setNavigationBarColor(BACKGROUND);
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
-        scroll.setBackgroundColor(Color.rgb(15, 23, 42));
-        root = new LinearLayout(this);
-        root.setOrientation(LinearLayout.VERTICAL);
-        int horizontal = dp(24);
-        int vertical = dp(20);
-        root.setPadding(horizontal, vertical, horizontal, vertical);
+        scroll.setBackgroundColor(BACKGROUND);
+        root = column();
+        final int h = dp(18), v = dp(14);
+        root.setPadding(h, v, h, v);
         scroll.addView(root);
         scroll.setOnApplyWindowInsetsListener((view, insets) -> {
             int top, bottom;
@@ -43,73 +65,289 @@ public final class MainActivity extends Activity {
                 top = insets.getSystemWindowInsetTop();
                 bottom = insets.getSystemWindowInsetBottom();
             }
-            root.setPadding(horizontal, vertical + top, horizontal, vertical + bottom);
+            root.setPadding(h, v + top, h, v + bottom);
             return insets;
         });
         setContentView(scroll);
-        title("InstaActions", 26);
-        label("R1B  •  Read-only context telemetry", 14, 0xffa5b4fc);
-        section("Installation");
-        label("Instagram: " + installedVersion(ModuleConstants.TARGET_PACKAGE), 16, Color.WHITE);
-        label("InstaEclipse: " + installedVersion("ps.reso.instaeclipse"), 16, Color.WHITE);
-        label("Vector module enabled: NOT VERIFIED HERE", 15, 0xfffbbf24);
-        section("Safety / scope");
-        label("Target: com.instagram.android (main process only)", 15, Color.WHITE);
-        label("Instagram action hooks: OFF (R1)", 15, 0xff86efac);
-        label("No network, storage or account permissions requested.", 15, Color.LTGRAY);
-        section("R1 probe status");
-        label("Discovery: logged in Instagram process; not yet confirmed here", 15, 0xfffbbf24);
-        label("Qualified builds: Instagram 451.0.0.20.80 / 453.0.0.0.56", 14, Color.WHITE);
-        label("Reel/Story/Feed surfaces: candidate markers only", 14, Color.LTGRAY);
-        label("Method matches are not proof of working action hooks.", 14, Color.LTGRAY);
-        section("R1B surface tracker");
-        label("Visible Instagram resource IDs only; no user content or media IDs.",
-                14, Color.WHITE);
-        label("Reels / Story / Post are tentative UI classifications.",
-                14, Color.LTGRAY);
-        label("Actions: OFF. Context identity: NOT VERIFIED.", 14, 0xfffbbf24);
-        label("Look for INA_R1B_CONTEXT in logcat after navigating Instagram.",
-                14, Color.LTGRAY);
-        section("Device acceptance");
-        label("1. Install this APK and enable only Instagram in Vector.", 15, Color.WHITE);
-        label("2. Keep InstaEclipse enabled and force-stop Instagram.", 15, Color.WHITE);
-        label("3. Open Instagram and look for INA_R1_SUMMARY in logcat.", 15, Color.WHITE);
-        label("4. Confirm Instagram UI stays unchanged with InstaEclipse enabled.",
-                15, Color.WHITE);
-        label("Note: installed package detection is not proof that a module loaded.",
-                13, Color.LTGRAY);
+
+        add(root, "InstaActions · RCA02", 25, WHITE, true);
+        add(root, "Current mode: read-only Repost model provenance", 16, BLUE, true);
+        LinearLayout rca02Guide=card("RCA02 · A1 → B → A2 · active diagnostics");
+        add(rca02Guide, "The ONLY in-Instagram FAB is RCA02. The old Repost enabling panel is disabled. Native eligibility remains untouched.", 15, WHITE, true);
+        add(rca02Guide, "In Instagram: Start A1 → observe the same public Reel → Stop A1 → manually switch to B and confirm → Start B → Stop B → return to A and confirm → Start A2 → Stop A2 → Copy RCA02 report.", 14, DETAIL, false);
+        add(rca02Guide, "RCA02 categorizes two IG455 setter caller methods, matches Media getter/setter only on the same weakly held object, and records missing-data versus false-predicate Repost UI paths. This does NOT prove server rollout, same Reel or account identities.", 14, AMBER, false);
+        add(rca02Guide, "Turn off InstaTaskManager Repost recovery; keep InstaEclipse scope unchanged. Use only exact approved Instagram 455 APKs. Never activate old Repost overrides.", 14, DETAIL, false);
+        add(rca02Guide, "Physical RCA02 acceptance: NOT RUN. Use the explicit Copy button in Instagram; reports are not accessible from this separate app process.", 13, AMBER, false);
+
+        LinearLayout pickerGuide=card("NEW · One diagnostic at a time");
+        add(pickerGuide, "Open IA → choose a diagnostic. Passive overview runs automatically; active modes require Begin.", 15, WHITE, true);
+        add(pickerGuide, "Select Reels recovery, Account A/B, Feed Repost, Visible media, Account change, or Friend avatars. Only the chosen tools appear. Finish preserves that report; Abort disarms and ends it. Switching while active is refused.",14,DETAIL,false);
+        add(pickerGuide, "For EVERY active feature: Begin → Start A → observe → Stop A → switch manually with recovery OFF → confirm switch → Start B → repeat the SAME observations → Stop B → Finish → Copy/Export ALL. Account labels are still manual, not verified identity.",14,WHITE,false);
+        add(pickerGuide, "Reels recovery offers 90s trial or Keep Repost available (foreground session only). This is NOT saved across restarts or account changes; emergency OFF remains visible.",14,AMBER,false);
+        add(pickerGuide, "Account-change diagnostic now combines the existing opaque UserSession reference signal with independent Android Activity lifecycle and new-intent dispatch events. Neither proves account identity; missing callbacks mean NOT VERIFIED.",14,DETAIL,false);
+
+        LinearLayout status = card("What is ready?");
+        add(status, "RCA02 SOURCE PRESENT · A1/B/A2 DEVICE ACCEPTANCE PENDING", 14, GREEN, true);
+        add(status, "RCA01 field-origin A/B evidence was captured on device; RCA02 first-writer provenance and A1/B/A2 have not been physically qualified. Repost recovery stays OFF.", 14, DETAIL, false);
+        add(status, "Instagram: " + installedVersion(ModuleConstants.TARGET_PACKAGE), 14, WHITE, false);
+        add(status, "InstaEclipse: " + installedVersion("ps.reso.instaeclipse"), 14, WHITE, false);
+        add(status, "Vector / LSPosed module enabled: NOT VERIFIED from this screen", 13, AMBER, false);
+
+        // D20: user-controlled, app-private policy. This does NOT bypass the
+        // native Repost/D04 exact-build checks, only the floating FAB's version gate.
+        LinearLayout fabGateCard=card("FAB visibility · Instagram version override");
+        add(fabGateCard,"The IA button normally requires Instagram 455.0.0.8.72. If Instagram updated, enable this to TRY showing the diagnostic FAB anyway. This does NOT enable Repost, DexKit native actions or unqualified hooks.",14,AMBER,false);
+        Switch fabVersionOverride=new Switch(this);
+        fabVersionOverride.setText("Ignore Instagram version for FAB (UI only)");
+        fabVersionOverride.setTextColor(WHITE);
+        fabVersionOverride.setTextSize(15);
+        fabVersionOverride.setPadding(dp(10),dp(12),dp(10),dp(12));
+        fabVersionOverride.setChecked(R1CD20FabOverrideStore.enabled(this));
+        fabGateCard.addView(fabVersionOverride);
+        TextView versionOverrideStatus=add(fabGateCard,
+            fabVersionOverride.isChecked()?"Enabled · unsupported builds: diagnostic-only FAB":
+                    "Disabled · original exact-version requirement",14,DETAIL,false);
+        final boolean[] restoringToggle={false};
+        fabVersionOverride.setOnCheckedChangeListener((button,enabled)->{
+            if(restoringToggle[0])return;
+            if(!R1CD20FabOverrideStore.setEnabled(this,enabled)){
+                restoringToggle[0]=true;
+                button.setChecked(!enabled);
+                restoringToggle[0]=false;
+                versionOverrideStatus.setText("Unable to save preference · unchanged");
+                return;
+            }
+            versionOverrideStatus.setText(enabled?
+                "Enabled · return to Instagram to try IA diagnostics FAB; native recovery OFF":
+                "Disabled · exact Instagram 455 gate restored on next Activity resume");
+        });
+        add(fabGateCard,"If it still doesn't appear, verify Vector scope and use Copy FAB logs. Changing this setting cannot load a missing Vector hook. Restart Instagram if needed.",13,DETAIL,false);
+
+        LinearLayout fabLogCard=card("FAB Diagnostics · visible even without the IA chip");
+        add(fabLogCard,"Live hook/Activity/attachment evidence reported from Instagram. No IA floating button is required to read or copy these logs.",14,DETAIL,false);
+        fabLogSummary=add(fabLogCard,"Loading FAB diagnostics…",14,AMBER,true);
+        fabLogText=add(fabLogCard,"",12,DETAIL,false);
+        fabLogText.setTextIsSelectable(true);
+        diagnosticButton(fabLogCard,"Refresh FAB logs",this::refreshFabLogs);
+        diagnosticButton(fabLogCard,"Copy FAB logs",()->{
+            ClipboardManager clipboard=(ClipboardManager)getSystemService(Context.CLIPBOARD_SERVICE);
+            if(clipboard!=null){
+                clipboard.setPrimaryClip(ClipData.newPlainText("InstaActions FAB diagnostics",
+                        combinedFabReport()));
+                fabLogSummary.setText("Copied FAB diagnostic report to clipboard");
+            }
+        });
+        diagnosticButton(fabLogCard,"Export FAB logs",()->{
+            Intent share=new Intent(Intent.ACTION_SEND);
+            share.setType("text/plain");
+            share.putExtra(Intent.EXTRA_TEXT,combinedFabReport());
+            try { startActivity(Intent.createChooser(share,"Export InstaActions FAB diagnostics")); }
+            catch(RuntimeException failure){fabLogSummary.setText("Share sheet unavailable; use Copy FAB logs");}
+        });
+        diagnosticButton(fabLogCard,"Clear stored FAB logs",()->{
+            R1CD16LogStore.clear(this);R1CD17AutoRootDiagnostics.clear(this);
+            R1CD19RootWatchService.clear(this); refreshFabLogs();
+        });
+        LinearLayout rootCard=card("Automatic Root FAB Diagnostics");
+        add(rootCard,"On each app resume, InstaActions automatically requests root through KernelSU and captures a bounded, read-only diagnosis on a background thread. No extra in-app permission button. KernelSU may show its own grant prompt.",14,DETAIL,false);
+        rootDiagnosticsStatus=add(rootCard,"Root capture pending",14,AMBER,true);
+        rootDiagnosticsText=add(rootCard,"",12,DETAIL,false);
+        rootDiagnosticsText.setTextIsSelectable(true);
+        add(rootCard,"Copy FAB logs and Export FAB logs above include this root report too. Root never grants account-specific Repost permission, changes Instagram, or collects raw logcat in saved reports.",13,DETAIL,false);
+        add(rootCard,"D19 LIVE CAPTURE: automatic foreground notification and root monitoring for up to 150 seconds. Open Instagram while it runs, then return here. No separate opt-in, and no raw logcat is saved.",13,DETAIL,false);
+        rootLiveWatchText=add(rootCard,"D19 capture pending",12,DETAIL,false);
+        rootLiveWatchText.setTextIsSelectable(true);
+        refreshFabLogs();
+
+        LinearLayout diagnosticPicker=card("Read one workflow at a time");
+        add(diagnosticPicker,"Choose a diagnostic below. This is guidance only; the interactive Begin / Finish / Abort controls live inside Instagram's IA panel.",14,DETAIL,false);
+        Spinner selector=new Spinner(this);
+        String[] choices={"Reels Repost", "A/B native comparison", "Feed Repost read-only",
+                          "D05/D06 visible-media evidence", "Account-change signal",
+                          "Friend-avatar shapes A/B", "Passive overview · auto ON"};
+        ArrayAdapter<String> chooserAdapter=new ArrayAdapter<String>(this,
+                android.R.layout.simple_spinner_item,choices) {
+            @Override public View getView(int position,View convertView,ViewGroup parent) {
+                View v=super.getView(position,convertView,parent);
+                if(v instanceof TextView) {
+                    ((TextView)v).setTextColor(WHITE);
+                    v.setBackgroundColor(CARD);v.setPadding(dp(10),dp(12),dp(10),dp(12));
+                }
+                return v;
+            }
+            @Override public View getDropDownView(int position,View convertView,ViewGroup parent){
+                View v=super.getDropDownView(position,convertView,parent);
+                if(v instanceof TextView) {
+                    ((TextView)v).setTextColor(WHITE);
+                    v.setBackgroundColor(0xff2a3a4e);
+                    v.setPadding(dp(12),dp(14),dp(12),dp(14));
+                }
+                return v;
+            }
+        };
+        chooserAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        selector.setAdapter(chooserAdapter);diagnosticPicker.addView(selector);
+
+        LinearLayout guide = card("Do these 5 steps IN ORDER");
+        add(guide, "STEP 1/5 · PREPARE", 16, BLUE, true);
+        add(guide, "In Vector/LSPosed enable InstaActions for Instagram. Keep InstaEclipse ON and restart Instagram. Turn InstaTaskManager's separate Repost recovery OFF. On the affected account, open Instagram's dedicated bottom Reels tab. Wait for native hooks.", 14, WHITE, false);
+        add(guide, "STEP 2/5 · START A", 16, BLUE, true);
+        add(guide, "Tap the floating IA chip, then Start A ONCE. This only records native eligibility observations. Do not choose B or Stop A/B.", 14, WHITE, false);
+        add(guide, "STEP 3/5 · BROWSE AND RETURN", 16, BLUE, true);
+        add(guide, "Close IA and swipe through several Reels in the same bottom Reels tab. Reopen IA. If fresh A evidence is still NOT READY, browse more Reels and return. KEEP A RECORDING.", 14, WHITE, false);
+        add(guide, "STEP 4/5 · CONFIRM, THEN ENABLE", 16, BLUE, true);
+        add(guide, "AFTER fresh A evidence is ready: press 4A (manual ITM recovery OFF confirmation), THEN press 4B (Enable). Start A clears earlier confirmations. Recovery is limited to 90 seconds or 64 changed checks.", 14, WHITE, false);
+        add(guide, "STEP 5/5 · TEST, OFF, EXPORT", 16, BLUE, true);
+        add(guide, "Close IA. Tap Instagram's ORIGINAL Repost button yourself. Reopen IA immediately, press Recovery OFF BEFORE switching account or tab, then Copy D07 safe Repost report. Record the actual result in separate D07C physical acceptance.", 14, WHITE, false);
+        add(guide, "If anything fails: press Recovery OFF anyway and copy the report. Optional Account B and D05/D06 diagnostics are NOT required for this trial.", 14, AMBER, true);
+
+        LinearLayout comparison = card("Optional: compare A and B (separate workflow)");
+        add(comparison, "1. Start A, browse the dedicated Reels tab and reopen IA.", 14, WHITE, false);
+        add(comparison, "2. Press A2: Stop A (preserves original results). Recovery must be OFF.", 14, WHITE, false);
+        add(comparison, "3. Switch Instagram accounts MANUALLY, keeping Instagram running if possible.", 14, WHITE, false);
+        add(comparison, "4. Press Start B, browse Reels, then press Stop B.", 14, WHITE, false);
+        add(comparison, "5. Press Copy combined A/B report. A process restart loses both in-memory captures.", 14, WHITE, false);
+        add(comparison, "These manual labels cannot prove which Instagram account was active. Never use the 90-second Repost recovery during account switching.", 14, AMBER, false);
+
+        add(comparison, "X.02ib and D3r diagnostics: the A/B comparison records native TRUE/FALSE/NULL, ordinal and runtime declaring-class categories. It does not prove why accounts differ.",14,DETAIL,false);
+        LinearLayout d08 = card("D08A · Feed Repost · read-only snapshots");
+        add(d08, "D08A · Feed Repost labels (not an override)", 16, BLUE, true);
+        add(d08, "In Instagram open a normal Feed post, a Feed-opened Reel, and the bottom Reels-tab reference separately. For each, open IA and tap its corresponding D08A Snapshot. The labels and origin are observations/manual claims, not proven media eligibility.", 14, WHITE, false);
+        add(d08, "Begin Feed → Start A (manual affected) → take three snapshots → Stop A → switch and confirm → Start B (manual unaffected) → repeat snapshots → Stop B → Finish. No implicit cohort defaults and no Feed Repost action.",14,AMBER,false);
+        LinearLayout mediaGuide=card("D08C · Visible-media research (D05/D06)");
+        add(mediaGuide, "Begin Media, Start account A, complete D05 four-stage Reel capture (A1/A2/B1/B2 are REELS, not accounts), Stop account A, switch/confirm, Start account B and repeat four-stage capture. Stop B, Finish. No action enabled. Each inconclusive result is broken down by owner/page/pre-menu enum evidence.",14,WHITE,false);
+        add(mediaGuide, "Exact visible-media identity remains NOT VERIFIED. Friends avatars: source candidates only; no fake faces, disabled-state bypass, or avatar mutation.",14,AMBER,false);
+        LinearLayout accountGuide=card("D09 · Account-change signal");
+        add(accountGuide, "Begin account-change diagnostic → Start A → observe → Stop A → switch manually/confirm → Start B → observe → Stop B → Finish. Export All preserves other reports too. The native source-verified callback counts weak UserSession reference transitions only.",14,WHITE,false);
+        add(accountGuide, "No callback does NOT prove same account. Changed reference is a signal, not verified account identity. Keep Repost OFF during investigation.",14,AMBER,false);
+        final LinearLayout[] visibleGuides={guide,comparison,d08,mediaGuide,accountGuide};
+        for(int i=1;i<visibleGuides.length;i++)visibleGuides[i].setVisibility(View.GONE);
+        selector.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener(){
+            @Override public void onItemSelected(AdapterView<?> parent,View view,int index,long id){
+                for(int i=0;i<visibleGuides.length;i++)
+                    visibleGuides[i].setVisibility(i==index?View.VISIBLE:View.GONE);
+            }
+            @Override public void onNothingSelected(AdapterView<?> parent){}
+        });
+
+        LinearLayout passiveGuide=card("Passive diagnostics and ALL reports");
+        add(passiveGuide,"Passive is ON automatically in the Instagram process: existing Repost, UFI, media-menu, session and screen-hint callbacks increment bounded anonymous counters without a manual Begin or any new hook.",14,WHITE,false);
+        add(passiveGuide,"Copy ALL and Export ALL are always visible in IA. They include completed and aborted mode summaries, current-mode report and passive counters since Instagram opened. Export All shares text through Android; it is not unrestricted logcat, and the archive disappears after Instagram exits.",14,DETAIL,false);
+        add(passiveGuide,"Avatar mode: Start A → capture Friends tab, liked-by and reposted-by VIEW candidates → Stop A → switch/confirm → repeat B → Stop B → Finish. Neither generic ImageViews nor labels prove friend identities.",14,AMBER,false);
+        LinearLayout originalPlan = card("Original InstaActions goals · R0–R8");
+        add(originalPlan, "Today: R1C/D07 Repost research with a user-reported successful Reels-tab action. D06 exact active-media identity remains NOT VERIFIED.", 14, WHITE, false);
+        add(originalPlan, "Next: R2 contextual action UI and R3 explicit Like/Save/Repost/Download/Playback actions, only where independently qualified.", 14, DETAIL, false);
+        add(originalPlan, "Later: R4 native sharing, R5 preview-and-confirm single comment, R6 retries and cancellation, R7 Android 16 CI/device proof, R8 release.", 14, DETAIL, false);
+        add(originalPlan, "Do not duplicate InstaEclipse features or dispatch unqualified Feed/Story actions. Friend avatars and Feed Repost remain separate D08 investigations.", 14, AMBER, false);
+
+        LinearLayout safety = card("What the controls actually do");
+        add(safety, "Start A / Start B: read-only native result observations. These are manual labels, NOT verified Instagram account identities.", 14, DETAIL, false);
+        add(safety, "Enable: usual 90-second/64-change trial, or optional foreground-session toggle with 4096-call cap. Neither is automatic Repost. OFF is the default.", 14, DETAIL, false);
+        add(safety, "Recovery OFF: restores original values for subsequent native calls. It does not undo a Repost already performed in Instagram.", 14, DETAIL, false);
+        add(safety, "Advanced D05/D06: optional diagnostics only; media identity remains unverified and unrelated actions remain disabled.", 14, DETAIL, false);
+        add(safety, "UserSession weak-reference changes may be observed, but same-Activity account changes cannot be reliably detected. Turn OFF manually before changing accounts.", 14, AMBER, false);
+
+        LinearLayout limits = card("Supported surfaces and privacy");
+        add(limits, "Dedicated Reels tab: user-reported InstaActions native Repost success; formal D07C checks still pending.", 14, WHITE, false);
+        add(limits, "Reels in Feed, profiles, and ordinary posts: NOT QUALIFIED.", 14, AMBER, false);
+        add(limits, "Reports summarize native return types/counts, not account names, media IDs or captions. No automatic Repost actions.", 14, DETAIL, false);
+        // Historical cards remain dormant in RCA02. All references below are
+        // onCreate-local variables; do not move this block to onResume().
+        for(View legacy : new View[]{pickerGuide,fabGateCard,diagnosticPicker,guide,
+                comparison,d08,mediaGuide,accountGuide,passiveGuide,originalPlan,
+                safety,limits}) legacy.setVisibility(View.GONE);
     }
 
-    private String installedVersion(String pkg) {
-        try {
-            PackageInfo info = getPackageManager().getPackageInfo(pkg, 0);
-            return info.versionName == null ? "installed" : info.versionName;
-        } catch (PackageManager.NameNotFoundException error) {
-            return "not visible / not installed";
+    @Override protected void onResume(){
+        super.onResume();
+        if(fabLogText!=null)refreshFabLogs();
+        // Explicit user preference: automatic root diagnostics, no in-app opt-in.
+        // KernelSU retains independent control of the root grant/denial.
+        R1CD17AutoRootDiagnostics.onAppResumed(this,this::refreshFabLogs);
+        // Automatic capture stays foreground while the user moves into Instagram.
+        // Without this, D18's one-time snapshot can miss all Instagram startup events.
+        if(R1CD19RootWatchService.shouldStart(this)) {
+            try {startForegroundService(new Intent(this,R1CD19RootWatchService.class));}
+            catch(RuntimeException refused) {
+                R1CD19RootWatchService.startupFailure(this,refused);
+            }
         }
     }
-
-    private void section(String value) {
-        title(value, 18);
+    private String combinedFabReport(){
+        return R1CD16LogStore.report(this)+"\n\n"+R1CD17AutoRootDiagnostics.report(this)
+                +"\n\n"+R1CD19RootWatchService.report(this);
+    }
+    private void refreshFabLogs(){
+        if(fabLogText==null || fabLogSummary==null)return;
+        String report=R1CD16LogStore.report(this);
+        fabLogText.setText(report);
+        fabLogSummary.setText(report.contains("NO EVENTS RECEIVED")
+                ? "No Instagram events received yet — root report below may explain why"
+                : "Received FAB events · last 180 retained · scroll below");
+        if(rootDiagnosticsText!=null)rootDiagnosticsText.setText(R1CD17AutoRootDiagnostics.report(this));
+        if(rootLiveWatchText!=null)rootLiveWatchText.setText(R1CD19RootWatchService.report(this));
+        if(rootDiagnosticsStatus!=null){
+            String root=R1CD17AutoRootDiagnostics.report(this);
+            rootDiagnosticsStatus.setText(root.contains("status=READ_ONLY_ROOT_CAPTURE_AVAILABLE")
+                    ? "Root granted · matching InstaActions markers found"
+                    : root.contains("ROOT_PROBE=RUNNING") ? "Automatic root probe running…"
+                    : root.contains("status=ROOT_NOT_GRANTED") || root.contains("status=SU_UNAVAILABLE")
+                    ? "Root unavailable or denied · KernelSU controls access"
+                    : "Automatic root probe result · see classification below");
+        }
+    }
+    private void diagnosticButton(LinearLayout into,String caption,Runnable action){
+        Button button=new Button(this);
+        button.setText(caption);
+        button.setAllCaps(false);
+        button.setTextColor(WHITE);
+        button.setBackgroundTintList(android.content.res.ColorStateList.valueOf(0xff266dbc));
+        button.setOnClickListener(v->action.run());
+        into.addView(button);
     }
 
-    private void title(String value, float size) {
-        label(value, size, Color.WHITE).setTypeface(null, Typeface.BOLD);
+    private LinearLayout column() {
+        LinearLayout result = new LinearLayout(this);
+        result.setOrientation(LinearLayout.VERTICAL);
+        return result;
     }
-
-    private TextView label(String value, float size, int color) {
+    private LinearLayout card(String title) {
+        LinearLayout card = column();
+        card.setPadding(dp(16), dp(12), dp(16), dp(14));
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(CARD);
+        background.setCornerRadius(dp(14));
+        background.setStroke(dp(1), BORDER);
+        card.setBackground(background);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.topMargin = dp(14);
+        root.addView(card, lp);
+        add(card, title, 18, WHITE, true);
+        return card;
+    }
+    private TextView add(LinearLayout container, String value, int sp, int color, boolean bold) {
         TextView text = new TextView(this);
         text.setText(value);
-        text.setTextSize(size);
+        text.setTextSize(sp);
         text.setTextColor(color);
         text.setGravity(Gravity.START);
-        text.setPadding(0, dp(9), 0, dp(9));
-        root.addView(text, new LinearLayout.LayoutParams(
+        text.setLineSpacing(dp(2), 1f);
+        text.setPadding(0, dp(5), 0, dp(5));
+        if (bold) text.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        container.addView(text, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         return text;
     }
-
-    private int dp(int value) {
-        return Math.round(value * getResources().getDisplayMetrics().density);
+    private String installedVersion(String pkg) {
+        try {
+            PackageInfo info = getPackageManager().getPackageInfo(pkg, 0);
+            return info.versionName == null ? "installed (version unknown)" : info.versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            return "not visible or not installed";
+        }
+    }
+    private int dp(int number) {
+        return Math.round(number * getResources().getDisplayMetrics().density);
     }
 }

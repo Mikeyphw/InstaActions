@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "repository": "Mikeyphw/InstaActions",
+  "base_branch": "main",
+  "event": "pull_request",
+  "release_qualification": "separate",
+  "required_workflows": [
+    {
+      "name": "R0 / R1 Android API 102",
+      "workflow_id": 411517720
+    },
+    {
+      "name": "Repository contract",
+      "workflow_id": 411509546
+    }
+  ]
+}
