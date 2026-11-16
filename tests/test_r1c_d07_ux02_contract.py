@@ -24,6 +24,30 @@ class CurrentRca02Ux(unittest.TestCase):
         for token in ('mediaGuide','accountGuide','passiveGuide','originalPlan','safety','limits'):
             self.assertIn(token,APP[APP.index('for(View legacy'):APP.index('R1CD17AutoRootDiagnostics.onAppResumed')])
 
+    def test_legacy_cards_hidden_within_oncreate_java_scope(self):
+        # RCA02's dormant panels are locals declared in onCreate. Hiding them
+        # from onResume causes 12 javac "cannot find symbol" failures.
+        on_create=APP.split('    @Override protected void onCreate(',1)[1].split(
+            '    @Override protected void onResume()',1)[0]
+        on_resume=APP.split('    @Override protected void onResume()',1)[1].split(
+            '    private String combinedFabReport()',1)[0]
+        marker='for(View legacy : new View[]{'
+        self.assertEqual(APP.count(marker),1)
+        self.assertIn(marker,on_create)
+        self.assertNotIn(marker,on_resume)
+        self.assertIn('legacy.setVisibility(View.GONE)',on_create)
+        before=on_create.index(marker)
+        for variable in ('pickerGuide','fabGateCard','diagnosticPicker','guide',
+                         'comparison','d08','mediaGuide','accountGuide','passiveGuide',
+                         'originalPlan','safety','limits'):
+            # All referenced declarations must be in the same Java method,
+            # above the hiding loop. Merely finding a name elsewhere is unsafe.
+            import re
+            pattern=r'\bLinearLayout\s+'+re.escape(variable)+r'\s*=\s*card\('
+            decl=re.search(pattern,on_create)
+            self.assertIsNotNone(decl,variable)
+            self.assertLess(decl.start(),before,variable)
+
     def test_no_legacy_fab_attaches_and_current_step_order(self):
         entry=(J/'InstaActionsEntry.java').read_text()
         bridge=(J/'R1CD12AndroidBridge.java').read_text()

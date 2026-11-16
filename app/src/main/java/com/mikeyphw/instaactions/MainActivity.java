@@ -251,6 +251,11 @@ public final class MainActivity extends Activity {
         add(limits, "Dedicated Reels tab: user-reported InstaActions native Repost success; formal D07C checks still pending.", 14, WHITE, false);
         add(limits, "Reels in Feed, profiles, and ordinary posts: NOT QUALIFIED.", 14, AMBER, false);
         add(limits, "Reports summarize native return types/counts, not account names, media IDs or captions. No automatic Repost actions.", 14, DETAIL, false);
+        // Historical cards remain dormant in RCA02. All references below are
+        // onCreate-local variables; do not move this block to onResume().
+        for(View legacy : new View[]{pickerGuide,fabGateCard,diagnosticPicker,guide,
+                comparison,d08,mediaGuide,accountGuide,passiveGuide,originalPlan,
+                safety,limits}) legacy.setVisibility(View.GONE);
     }
 
     @Override protected void onResume(){
@@ -258,11 +263,6 @@ public final class MainActivity extends Activity {
         if(fabLogText!=null)refreshFabLogs();
         // Explicit user preference: automatic root diagnostics, no in-app opt-in.
         // KernelSU retains independent control of the root grant/denial.
-        // Retain historical guidance as dormant source for regression only;
-        // none of these legacy D05/D07 cards renders in active RCA02 mode.
-        for(View legacy : new View[]{pickerGuide,fabGateCard,diagnosticPicker,guide,
-                comparison,d08,mediaGuide,accountGuide,passiveGuide,originalPlan,
-                safety,limits}) legacy.setVisibility(View.GONE);
         R1CD17AutoRootDiagnostics.onAppResumed(this,this::refreshFabLogs);
         // Automatic capture stays foreground while the user moves into Instagram.
         // Without this, D18's one-time snapshot can miss all Instagram startup events.
