@@ -45,6 +45,11 @@ final class R1CD07GateTrace {
     static boolean ready() {return ready;}
     static int activeIndex() {return STATE.activeIndex();}
     static boolean recording() {return STATE.recording();}
+    /** Exact source-backed A03 presence, never a GraphQL/model identity claim. */
+    static int rca02DataPresence(Object selector) {
+        R1CD07BranchInputs probe=branchInputs;
+        return probe==null?R1CD07BranchInputs.UNAVAILABLE:probe.classify(selector);
+    }
     static int cohortEvents(int index) {return STATE.eventsFor(index);}
     static String feedback() {
         if (!ready) return "P04 · " + installStatus;

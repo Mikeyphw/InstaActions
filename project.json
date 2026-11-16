@@ -203,5 +203,14 @@
   "rca01_original_media_field_causality_proven": false,
   "rca01_shared_friends_gate_proven": false,
   "rca01_hosted_ci_qualified": false,
-  "rca01_device_acceptance": "NOT_RUN"
+  "rca01_device_acceptance": "NOT_RUN",
+  "rca02_source_implemented": true,
+  "rca02_mode": "PASSIVE_A1_B_A2_CALLSITE_LINEAGE",
+  "rca02_old_fab_active": false,
+  "rca02_writer_methods_source_verified": true,
+  "rca02_graphql_to_media_link_verified": false,
+  "rca02_server_origin_verified": false,
+  "rca02_media_identity_across_accounts_verified": false,
+  "rca02_device_acceptance": "NOT_RUN",
+  "rca02_hosted_ci_qualified": false
 }

@@ -86,6 +86,9 @@ public final class InstaActionsEntry extends XposedModule {
                                     && R1CD07GateTrace.recording())
                                 R1CRCA01GateLedger.record(R1CD07GateTrace.activeIndex(),
                                     R1CRCA01GateLedger.Site.EXACT_D3R_ORIGINAL,original);
+                            if(arg instanceof Integer && ((Integer)arg).intValue()==0xdf82522e
+                                    && R1CRCA02LineageLedger.activePass()>=0)
+                                R1CRCA02LineageLedger.d3r(original);
                             return R1CD07PredicateTrace.noteExactData(chain.getArg(0),original);
                         } catch(Throwable ignored) {
                             R1CD07Recovery.onHookFailure();
@@ -123,7 +126,8 @@ public final class InstaActionsEntry extends XposedModule {
                     Object original=chain.proceed();
                     try {R1CRCA01GateLedger.record(
                         R1CD07GateTrace.recording()?R1CD07GateTrace.activeIndex():-1,
-                        R1CRCA01GateLedger.Site.MEDIA_GET_ORIGINAL,original);}
+                        R1CRCA01GateLedger.Site.MEDIA_GET_ORIGINAL,original);
+                        R1CRCA02LineageLedger.mediaGet(chain.getThisObject(),original);}
                     catch(Throwable ignored) { /* no effect on Instagram */ }
                     return original;
                 });
@@ -137,7 +141,8 @@ public final class InstaActionsEntry extends XposedModule {
                     Object original=chain.proceed(); // always honor native success/exception
                     try {R1CRCA01GateLedger.record(
                         R1CD07GateTrace.recording()?R1CD07GateTrace.activeIndex():-1,
-                        R1CRCA01GateLedger.Site.MEDIA_SET_ARGUMENT_AFTER_SUCCESS,chain.getArg(0));}
+                        R1CRCA01GateLedger.Site.MEDIA_SET_ARGUMENT_AFTER_SUCCESS,chain.getArg(0));
+                        R1CRCA02LineageLedger.mediaSet(chain.getThisObject(),chain.getArg(0));}
                     catch(Throwable ignored) { /* never affect native state */ }
                     return original;
                 });
@@ -150,11 +155,56 @@ public final class InstaActionsEntry extends XposedModule {
                 success==1?"PARTIAL_GET_ONLY":success==2?"PARTIAL_SET_ONLY":"UNAVAILABLE");
     }
 
+    /** Two IG455 DEX-verified direct caller scopes; no client/server payload read. */
+    private void installRca02WriterHooks(ClassLoader loader) {
+        boolean delta=false, legacy=false;
+        try {
+            Class<?> owner=Class.forName("X.06nv",false,loader);
+            Class<?> arg=Class.forName("X.06ck",false,loader);
+            Class<?> media=Class.forName("com.instagram.feed.media.Media",false,loader);
+            Method source=owner.getDeclaredMethod("A03",arg,boolean.class);
+            if(source.getReturnType()!=media || !java.lang.reflect.Modifier.isStatic(source.getModifiers()))
+                throw new NoSuchMethodException("IG455 X.06nv.A03 exact shape changed");
+            hook(source).setId("ina-rca02-source-x06nv-A03")
+                .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+                .intercept(chain -> {
+                    int previous=R1CRCA02LineageLedger.enterWriter(
+                            R1CRCA02LineageLedger.DELTA_MERGE_OR_FALLBACK);
+                    try {return chain.proceed();}
+                    finally {R1CRCA02LineageLedger.leaveWriter(previous);}
+                });
+            delta=true;
+        } catch(Throwable unavailable) {
+            Log.i("INA_RCA02","INA_RCA02_X06NV_SOURCE_UNAVAILABLE type="+
+                    unavailable.getClass().getSimpleName());
+        }
+        try {
+            Class<?> owner=Class.forName("X.043F",false,loader);
+            Method source=owner.getDeclaredMethod("A00",owner);
+            if(source.getReturnType()!=void.class || !java.lang.reflect.Modifier.isStatic(source.getModifiers()))
+                throw new NoSuchMethodException("IG455 X.043F.A00 exact shape changed");
+            hook(source).setId("ina-rca02-source-x043f-A00")
+                .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
+                .intercept(chain -> {
+                    int previous=R1CRCA02LineageLedger.enterWriter(
+                            R1CRCA02LineageLedger.LEGACY_FIELD_COPY);
+                    try {return chain.proceed();}
+                    finally {R1CRCA02LineageLedger.leaveWriter(previous);}
+                });
+            legacy=true;
+        } catch(Throwable unavailable) {
+            Log.i("INA_RCA02","INA_RCA02_X043F_SOURCE_UNAVAILABLE type="+
+                    unavailable.getClass().getSimpleName());
+        }
+        R1CRCA02LineageLedger.writerStatus(delta,legacy);
+    }
+
     private void installD07(ClassLoader loader) {
         if (!R1CD04PassiveProbe.isInstalled()) {
             R1CD07GateTrace.setStatus("REFUSED: D04 exact-build attestation absent");
             return;
         }
+        installRca02WriterHooks(loader);
         installRca01MediaHooks(loader);
         StringBuilder unavailable = new StringBuilder();
         try {
@@ -172,6 +222,12 @@ public final class InstaActionsEntry extends XposedModule {
                 .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
                 .intercept(chain -> {
                     R1CD07PredicateTrace.Frame frame=R1CD07GateTrace.enterUi(chain.getThisObject());
+                    R1CRCA02LineageLedger.UiFrame rca02Frame=null;
+                    if(frame!=null) {
+                        try {rca02Frame=R1CRCA02LineageLedger.enterUi(
+                                R1CD07GateTrace.rca02DataPresence(chain.getThisObject()));}
+                        catch(Throwable ignored) { /* optional passive correlation */ }
+                    }
                     if(frame != null) {
                         try {maybeHookActualD07(chain.getThisObject());}
                         catch(Throwable ignored) {R1CD07Recovery.onHookFailure();}
@@ -183,11 +239,20 @@ public final class InstaActionsEntry extends XposedModule {
                                     R1CD07PredicateTrace.classify(result));}
                             catch(Throwable ignored) { /* only primitive status */ }
                         }
+                        if(rca02Frame!=null) {
+                            try {R1CRCA02LineageLedger.finishUi(rca02Frame,
+                                    R1CD07PredicateTrace.classify(result));}
+                            catch(Throwable ignored) { /* native result retained */ }
+                            finally {R1CRCA02LineageLedger.cancelUi(rca02Frame);rca02Frame=null;}
+                        }
                         R1CD07GateTrace.leaveUi(frame,result);
                         frame=null;
                         try {return R1CD07GateTrace.noteUi(chain.getThisObject(),result);}
                         catch(Throwable ignored) {return result;}
-                    } finally {R1CD07GateTrace.leaveUi(frame,null);}
+                    } finally {
+                        R1CRCA02LineageLedger.cancelUi(rca02Frame);
+                        R1CD07GateTrace.leaveUi(frame,null);
+                    }
                 });
             hook(ufi).setId("ina-d07-repost-ufi-selectors11-12")
                 .setExceptionMode(XposedInterface.ExceptionMode.PROTECTIVE)
@@ -230,6 +295,9 @@ public final class InstaActionsEntry extends XposedModule {
                                 && R1CD07GateTrace.recording())
                             R1CRCA01GateLedger.record(R1CD07GateTrace.activeIndex(),
                                 R1CRCA01GateLedger.Site.MOBILECONFIG_FIRST_KEY_ORIGINAL,original);
+                        if(key instanceof Long && ((Long)key).longValue()==0x0081089a0045309dL
+                                && R1CRCA02LineageLedger.activePass()>=0)
+                            R1CRCA02LineageLedger.config(original);
                         // Trial cannot be user-armed. Keep first config unmodified.
                     } catch(Throwable ignored) { }
                     return original;

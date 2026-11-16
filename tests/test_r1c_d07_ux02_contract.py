@@ -1,73 +1,67 @@
-"""UX02 strictly ordered flow and safety contracts, Android-independent."""
+"""Current RCA02 UI contract; retain only meaningful dormant D07 safety regression.
+
+D07's five-step recovery UX must NOT be considered a visible active flow.
+"""
 from pathlib import Path
-import unittest, subprocess, shutil, tempfile, json, re
+import subprocess
+import shutil
+import tempfile
+import unittest
+
 ROOT=Path(__file__).resolve().parents[1]
-JAVA=ROOT/'app/src/main/java/com/mikeyphw/instaactions'
-P=(JAVA/'R1CD05FabPanel.java').read_text()
-H=(JAVA/'MainActivity.java').read_text()
-G=(JAVA/'R1CD07UxGuide.java').read_text()
+J=ROOT/'app/src/main/java/com/mikeyphw/instaactions'
+APP=(J/'MainActivity.java').read_text(encoding='utf-8')
+OLD=(J/'R1CD05FabPanel.java').read_text(encoding='utf-8')
+NEW=(J/'R1CRCA01Fab.java').read_text(encoding='utf-8')
+GUIDE=(J/'R1CD07UxGuide.java').read_text(encoding='utf-8')
 
-class OrderedFlow(unittest.TestCase):
-    def test_five_steps_in_exact_order_for_both_surfaces(self):
-        labels=('STEP 1 OF 5 · PREPARE','STEP 2 OF 5 · START A',
-                'STEP 3 OF 5 · BROWSE','STEP 4 OF 5 · CONFIRM',
-                'STEP 5 OF 5 · TEST')
-        self.assertEqual([P.index(x) for x in labels],sorted(P.index(x) for x in labels))
-        labels2=('STEP 1/5 · PREPARE','STEP 2/5 · START A',
-                 'STEP 3/5 · BROWSE','STEP 4/5 · CONFIRM','STEP 5/5 · TEST')
-        self.assertEqual([H.index(x) for x in labels2],sorted(H.index(x) for x in labels2))
-    def test_confirm_after_start_a_and_fresh_evidence(self):
-        self.assertLess(P.index('"Start A · read-only observation"'),P.index('"4A · Confirm ITM'))
-        self.assertLess(P.index('"4A · Confirm ITM'),P.index('"4B · Enable native Repost'))
-        self.assertIn('runStartA();',P[P.index('startA = mainAction'):P.index('LinearLayout browse = section')])
-        self.assertIn('itmRecoveryOffAcknowledged=false;',P[P.index('private void runStartCohort'):])
-        self.assertIn('if (!itmRecoveryOffAcknowledged)',P)
-        self.assertIn('R1CD07ExactGateTrial.eligibleForHF13Recovery()',P)
-        self.assertIn('enableRecovery.setEnabled(!on',P)
-        self.assertIn('&& observingA && R1CD07ExactGateTrial.eligibleForHF13Recovery()',P)
-    def test_optional_controls_come_after_finish_and_hidden(self):
-        self.assertGreater(P.index('Optional · Start B read-only comparison'),P.index('STEP 5 OF 5'))
-        self.assertGreater(P.index('Reset A/B observations'),P.index('STEP 5 OF 5'))
-        self.assertIn('advancedBody.setVisibility(View.GONE)',P)
-    def test_off_accessible_at_top_and_finish(self):
-        self.assertLess(P.index('Recovery OFF now · emergency stop'),P.index('STEP 1 OF 5'))
-        self.assertIn('5A · Recovery OFF · restore native results',P)
-        self.assertIn('5B · Copy D07 safe Repost report',P)
-        self.assertIn('R1CD07GateTrace.stopExactTrial()',P)
-    def test_legacy_d05_d06_help_contract_is_still_visible(self):
-        # D05/D06 integration tests require these exact user-facing labels.
-        # Keep them on the actual guidance surface, not in dead comments.
-        self.assertIn('InstaEclipse stays ON. Restart Instagram after changing scope.',P)
-        for label in ('Start A1', 'Copy safe report', 'Share safe report'):
-            self.assertIn(label,P)
-        self.assertLess(P.index('STEP 1 OF 5'),P.index('STEP 2 OF 5'))
-        self.assertIn('advancedBody.setVisibility(View.GONE)',P)
+class CurrentRca02Ux(unittest.TestCase):
+    def test_active_guide_first_and_historical_cards_hidden(self):
+        self.assertIn('RCA02 · A1 → B → A2 · active diagnostics',APP)
+        self.assertLess(APP.index('RCA02 · A1 → B → A2'),APP.index('pickerGuide=card('))
+        self.assertIn('legacy.setVisibility(View.GONE)',APP)
+        self.assertIn('new View[]{pickerGuide,fabGateCard,diagnosticPicker,guide',APP)
+        for token in ('mediaGuide','accountGuide','passiveGuide','originalPlan','safety','limits'):
+            self.assertIn(token,APP[APP.index('for(View legacy'):APP.index('R1CD17AutoRootDiagnostics.onAppResumed')])
 
-    def test_no_native_logic_or_identity_upgrade(self):
-        for bad in ('hook(', 'chain.proceed(', 'setResult(', 'Class.forName(', 'getMediaId(', 'performRepost('):
-            self.assertNotIn(bad,P+G+H)
-        self.assertIn('R1CD07Recovery.off("Anchored Reels navigation lost',P)
-        self.assertIn('D06_MEDIA_IDENTITY=NOT_VERIFIED',P)
-        self.assertIn('ITM_REPOST_OFF=MANUAL_ASSERTION_NOT_VERIFIED',P)
-        q=json.loads((ROOT/'project.json').read_text())
-        self.assertEqual(q['r1c_d07_repost_device_acceptance'],'NOT_RUN')
-        self.assertEqual(q['r1c_d07_ux02_device_acceptance'],'NOT_RUN')
-        self.assertFalse(q['r1c_d06_visible_media_verified'])
-        self.assertFalse(q['r1c_d06_action_hooks_enabled'])
-    def test_readiness_and_step_model_are_pure(self):
-        self.assertIn('static int step(',G)
-        self.assertIn('static String checklist(',G)
-        self.assertIn('if (!recordingA) return 2;',G)
-        self.assertIn('if (!freshA) return 3;',G)
-        self.assertIn('if (recoveryOn) return 5;',G)
+    def test_no_legacy_fab_attaches_and_current_step_order(self):
+        entry=(J/'InstaActionsEntry.java').read_text()
+        bridge=(J/'R1CD12AndroidBridge.java').read_text()
+        for source in (entry,bridge):
+            self.assertNotIn('R1CD05FabPanel.onResumed(',source)
+            self.assertIn('R1CRCA01Fab.onResumed(',source)
+        labels=('Start A1 · affected account','Stop A1 · preserve original',
+                'Confirm manual switch to B','Start B · unaffected account',
+                'Stop B · preserve original','Confirm manual return to A',
+                'Start A2 · affected account again','Stop A2 · complete comparison')
+        self.assertEqual([NEW.index(x) for x in labels],sorted(NEW.index(x) for x in labels))
+        self.assertIn('Copy RCA02 A1/B/A2 report',NEW)
+        self.assertIn('Clear samples · Recovery OFF',NEW)
+        self.assertIn('phase!=3',NEW)
+        self.assertIn('phase!=6',NEW)
+
+    def test_dormant_code_retains_emergency_off_no_action_escalation(self):
+        for s in (NEW,GUIDE):
+            for forbidden in ('performRepost(', 'setResult(', 'getUsername(', 'getMediaId('):
+                self.assertNotIn(forbidden,s)
+        self.assertIn('R1CD07Recovery.off("RCA02 reset")',NEW)
+        self.assertNotIn('R1CD07Recovery.arm(',NEW)
+        self.assertIn('R1CD07Recovery.off("Anchored Reels navigation lost',OLD)
+        self.assertIn('ITM_REPOST_OFF=MANUAL_ASSERTION_NOT_VERIFIED',OLD)
+        self.assertIn('D06_MEDIA_IDENTITY=NOT_VERIFIED',OLD)
+
+    def test_still_compiles_original_pure_safety_guide(self):
+        self.assertIn('static int step(',GUIDE)
+        self.assertIn('static String checklist(',GUIDE)
+
     @unittest.skipUnless(shutil.which('javac') and shutil.which('java'),'JDK unavailable')
-    def test_guided_java_smoke(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            src=ROOT/'tests/java/com/mikeyphw/instaactions/R1CD07UxGuideSmoke.java'
-            compile=subprocess.run(['javac','-encoding','UTF-8','-d',tmp,str(JAVA/'R1CD07UxGuide.java'),str(src)],capture_output=True,text=True,timeout=25)
-            self.assertEqual(compile.returncode,0,compile.stderr)
-            result=subprocess.run(['java','-cp',tmp,'com.mikeyphw.instaactions.R1CD07UxGuideSmoke'],capture_output=True,text=True,timeout=20)
-            self.assertEqual(result.returncode,0,result.stderr)
-            self.assertIn('INA_D07_UX02_GUIDANCE_PASS=22',result.stdout)
+    def test_original_pure_helper_regression(self):
+        with tempfile.TemporaryDirectory(prefix='ina-d07-guide-') as tmp:
+            sources=[J/'R1CD07UxGuide.java',ROOT/'tests/java/com/mikeyphw/instaactions/R1CD07UxGuideSmoke.java']
+            c=subprocess.run(['javac','-encoding','UTF-8','-d',tmp,*map(str,sources)],capture_output=True,text=True,timeout=30)
+            self.assertEqual(c.returncode,0,c.stderr)
+            t=subprocess.run(['java','-cp',tmp,'com.mikeyphw.instaactions.R1CD07UxGuideSmoke'],capture_output=True,text=True,timeout=30)
+            self.assertEqual(t.returncode,0,t.stderr)
+            self.assertIn('INA_D07_UX02_GUIDANCE_PASS=22',t.stdout)
 
 if __name__=='__main__':unittest.main()

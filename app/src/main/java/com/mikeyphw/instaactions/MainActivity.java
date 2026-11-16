@@ -70,10 +70,14 @@ public final class MainActivity extends Activity {
         });
         setContentView(scroll);
 
-        add(root, "InstaActions", 25, WHITE, true);
-        add(root, "Personal Instagram quick actions · Feed / Reels / Stories", 16, BLUE, true);
-        add(root, "D07 · Native Repost recovery", 16, BLUE, true);
-        add(root, "User-confirmed: Reels-tab Repost appeared for 90 seconds and worked. Formal D07C acceptance is still pending.", 14, AMBER, false);
+        add(root, "InstaActions · RCA02", 25, WHITE, true);
+        add(root, "Current mode: read-only Repost model provenance", 16, BLUE, true);
+        LinearLayout rca02Guide=card("RCA02 · A1 → B → A2 · active diagnostics");
+        add(rca02Guide, "The ONLY in-Instagram FAB is RCA02. The old Repost enabling panel is disabled. Native eligibility remains untouched.", 15, WHITE, true);
+        add(rca02Guide, "In Instagram: Start A1 → observe the same public Reel → Stop A1 → manually switch to B and confirm → Start B → Stop B → return to A and confirm → Start A2 → Stop A2 → Copy RCA02 report.", 14, DETAIL, false);
+        add(rca02Guide, "RCA02 categorizes two IG455 setter caller methods, matches Media getter/setter only on the same weakly held object, and records missing-data versus false-predicate Repost UI paths. This does NOT prove server rollout, same Reel or account identities.", 14, AMBER, false);
+        add(rca02Guide, "Turn off InstaTaskManager Repost recovery; keep InstaEclipse scope unchanged. Use only exact approved Instagram 455 APKs. Never activate old Repost overrides.", 14, DETAIL, false);
+        add(rca02Guide, "Physical RCA02 acceptance: NOT RUN. Use the explicit Copy button in Instagram; reports are not accessible from this separate app process.", 13, AMBER, false);
 
         LinearLayout pickerGuide=card("NEW · One diagnostic at a time");
         add(pickerGuide, "Open IA → choose a diagnostic. Passive overview runs automatically; active modes require Begin.", 15, WHITE, true);
@@ -83,8 +87,8 @@ public final class MainActivity extends Activity {
         add(pickerGuide, "Account-change diagnostic now combines the existing opaque UserSession reference signal with independent Android Activity lifecycle and new-intent dispatch events. Neither proves account identity; missing callbacks mean NOT VERIFIED.",14,DETAIL,false);
 
         LinearLayout status = card("What is ready?");
-        add(status, "D07 SOURCE PRESENT · DEVICE TEST PENDING", 14, GREEN, true);
-        add(status, "Device acceptance: NOT RUN (formal D07C). Separately, the user reported a successful native Repost on the dedicated Reels tab; feed posts remain unqualified.", 14, DETAIL, false);
+        add(status, "RCA02 SOURCE PRESENT · A1/B/A2 DEVICE ACCEPTANCE PENDING", 14, GREEN, true);
+        add(status, "RCA01 field-origin A/B evidence was captured on device; RCA02 first-writer provenance and A1/B/A2 have not been physically qualified. Repost recovery stays OFF.", 14, DETAIL, false);
         add(status, "Instagram: " + installedVersion(ModuleConstants.TARGET_PACKAGE), 14, WHITE, false);
         add(status, "InstaEclipse: " + installedVersion("ps.reso.instaeclipse"), 14, WHITE, false);
         add(status, "Vector / LSPosed module enabled: NOT VERIFIED from this screen", 13, AMBER, false);
@@ -254,6 +258,11 @@ public final class MainActivity extends Activity {
         if(fabLogText!=null)refreshFabLogs();
         // Explicit user preference: automatic root diagnostics, no in-app opt-in.
         // KernelSU retains independent control of the root grant/denial.
+        // Retain historical guidance as dormant source for regression only;
+        // none of these legacy D05/D07 cards renders in active RCA02 mode.
+        for(View legacy : new View[]{pickerGuide,fabGateCard,diagnosticPicker,guide,
+                comparison,d08,mediaGuide,accountGuide,passiveGuide,originalPlan,
+                safety,limits}) legacy.setVisibility(View.GONE);
         R1CD17AutoRootDiagnostics.onAppResumed(this,this::refreshFabLogs);
         // Automatic capture stays foreground while the user moves into Instagram.
         // Without this, D18's one-time snapshot can miss all Instagram startup events.
